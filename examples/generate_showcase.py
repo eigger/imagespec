@@ -107,10 +107,10 @@ def main():
         {"type": "circle", "x": 145, "y": 165, "radius": 15, "outline": "blue", "width": 2},
         {"type": "ellipse", "x_start": 175, "y_start": 150, "x_end": 225, "y_end": 180, "outline": "red", "width": 2},
         {"type": "polygon", "points": "240,180;265,145;290,180", "fill": "yellow", "outline": "black", "width": 1},
-        # Dashed line and Arc
+        # Dashed separator line for Left Column
         {
             "type": "line",
-            "x_start": 130,
+            "x_start": 20,
             "y_start": 205,
             "x_end": 300,
             "y_end": 205,
@@ -118,22 +118,23 @@ def main():
             "width": 2,
             "dash": [6, 4],
         },
+        # Bottom-Left Arc
         {
             "type": "arc",
-            "x_start": 130,
+            "x_start": 40,
             "y_start": 215,
-            "x_end": 170,
+            "x_end": 80,
             "y_end": 255,
             "start_angle": 0,
             "end_angle": 180,
             "outline": "red",
             "width": 2,
         },
-        # Rectangle Pattern
-        {"type": "text", "x": 190, "y": 215, "value": "Pattern Fill", "size": 10},
+        # Bottom-Left Rectangle Pattern
+        {"type": "text", "x": 160, "y": 215, "value": "Pattern Fill", "size": 10},
         {
             "type": "rectangle_pattern",
-            "x_start": 190,
+            "x_start": 160,
             "y_start": 230,
             "x_size": 4,
             "y_size": 4,
@@ -162,28 +163,28 @@ def main():
         # Pie Chart
         {
             "type": "pie",
-            "x": 555,
-            "y": 130,
-            "radius": 40,
+            "x": 550,
+            "y": 110,
+            "radius": 30,
             "values": "Gas,30,orange;Water,25,blue;Elec,45,red",
-            "inner_radius": 15,
+            "inner_radius": 12,
             "outline": "black",
         },
-        {"type": "text", "x": 555, "y": 180, "value": "Utility Ratio", "size": 10, "anchor": "ma"},
+        {"type": "text", "x": 550, "y": 150, "value": "Utility Ratio", "size": 10, "anchor": "ma"},
         # Bar Diagram
         {
             "type": "diagram",
             "x": 340,
-            "y": 170,
+            "y": 175,
             "width": 260,
-            "height": 85,
+            "height": 80,
             "margin": 15,
             "bars": {"values": "Jan,45;Feb,75;Mar,60", "color": "blue", "legend_color": "black", "legend_size": 10},
         },
         # --- 4. Bottom Row: Tables, Codes, and Text fit ---
         # QR Code & Barcode
-        {"type": "qrcode", "x": 20, "y": 285, "data": "https://github.com/eigger/imagespec", "boxsize": 3},
-        {"type": "barcode", "x": 130, "y": 285, "data": "987654321", "module_height": 35, "font_size": 10},
+        {"type": "qrcode", "x": 20, "y": 285, "data": "https://github.com/eigger/imagespec", "boxsize": 2},
+        {"type": "barcode", "x": 120, "y": 285, "data": "987654321", "module_height": 35, "font_size": 10},
         # Text Fit Box
         {
             "type": "text_fit",
