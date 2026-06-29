@@ -118,8 +118,18 @@ def generate_source_chart() -> Image.Image:
     """Create a 512x256 test image containing various charts (pie, sparkline, diagram) using imagespec rendering."""
     # Define a custom palette containing all our chart colors so they don't get quantized during initial rendering
     chart_colors = [
-        "white", "black", "red", "yellow", "green", "blue", "orange",
-        "#ff7f0e", "#2ca02c", "#1f77b4", "#aec7e8", "#ffbb78"
+        "white",
+        "black",
+        "red",
+        "yellow",
+        "green",
+        "blue",
+        "orange",
+        "#ff7f0e",
+        "#2ca02c",
+        "#1f77b4",
+        "#aec7e8",
+        "#ffbb78",
     ]
     ctx = RenderContext(palette=chart_colors)
 
@@ -133,7 +143,7 @@ def generate_source_chart() -> Image.Image:
             "inner_radius": 40,
             "values": "A,40,#ff7f0e;B,35,#2ca02c;C,25,#1f77b4",
             "outline": "black",
-            "background": "white"
+            "background": "white",
         },
         # 2. Sparkline (Line chart with fill) on the top-right
         {
@@ -148,7 +158,7 @@ def generate_source_chart() -> Image.Image:
             "width_line": 3,
             "dot_last": True,
             "dot_color": "#1f77b4",
-            "dot_radius": 5
+            "dot_radius": 5,
         },
         # 3. Diagram (Bar chart) on the bottom-right
         {
@@ -158,13 +168,8 @@ def generate_source_chart() -> Image.Image:
             "width": 235,
             "height": 95,
             "margin": 15,
-            "bars": {
-                "values": "Mon,40;Tue,85;Wed,55",
-                "color": "#ffbb78",
-                "legend_color": "black",
-                "legend_size": 11
-            }
-        }
+            "bars": {"values": "Mon,40;Tue,85;Wed,55", "color": "#ffbb78", "legend_color": "black", "legend_size": 11},
+        },
     ]
 
     # Render without dithering (raw RGB image with 24-bit colors preserved)

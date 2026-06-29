@@ -27,6 +27,7 @@ RED_DATA_URL = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decod
 
 def get_history_context() -> RenderContext:
     """Return a context equipped with a mock history provider for plot testing."""
+
     class StateMock:
         def __init__(self, value, changed):
             self.state = value
