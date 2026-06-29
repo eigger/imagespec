@@ -14,7 +14,7 @@ standalone.
 
 ## Status
 
-✅ **29 elements** (21 ported + 8 new) rendering, with an 86-test suite.
+✅ **29 elements** (21 ported + 8 new) rendering, with a 97-test suite.
 Architecture (HA-decoupled context, registry dispatch, device-specific rotation
 + palette) is in place. Remaining work is packaging polish and switching the two
 components over to it.
@@ -83,7 +83,7 @@ python examples/smoke_test.py
 
 ```bash
 pip install -e ".[dev,datamatrix]"
-pytest                 # 86 tests: every element, palettes, rotation, dither, errors
+pytest                 # 97 tests: every element, palettes, rotation, dither, errors
 ruff check . && ruff format --check .   # lint + format
 python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
@@ -421,5 +421,5 @@ Replace each component's renderer with a thin adapter (see
 [`docs/migration.md`](docs/migration.md)) and add to `manifest.json`:
 
 ```json
-"requirements": ["imagespec==0.1.0"]
+"requirements": ["imagespec==0.2.0"]
 ```
