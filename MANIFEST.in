@@ -1,0 +1,6 @@
+include LICENSE README.md
+recursive-include src/imagespec/fonts *.ttf *.otf *.json *.md
+recursive-include src/imagespec/icons *.ttf *.otf *.json *.md
+recursive-include tests *.py
+recursive-include examples *.py
+recursive-include docs *.md

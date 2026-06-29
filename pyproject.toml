@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imagespec"
+version = "0.1.0"
+description = "Render images from a declarative YAML/dict spec — shapes, text, charts, QR/barcodes — for e-paper ESL tags and label printers."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "eigger" }]
+keywords = ["image", "render", "yaml", "spec", "e-paper", "esl", "label", "pillow"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pillow>=10.0",
+    "qrcode[pil]>=7.4",
+    "python-barcode>=0.15",
+]
+
+[project.optional-dependencies]
+# 'datamatrix' element requires pyStrich; keep optional so the base install stays light.
+datamatrix = ["pyStrich>=0.8"]
+# Convenience for loading payloads from YAML strings.
+yaml = ["PyYAML>=6.0"]
+dev = ["pytest>=8.0", "ruff>=0.6", "build>=1.2"]
+
+[project.urls]
+Homepage = "https://github.com/eigger/imagespec"
+Repository = "https://github.com/eigger/imagespec"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+# B008: PIL/handlers intentionally build defaults at call sites.
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# tests build deliberately odd payloads and import for side effects
+"tests/*" = ["E741"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+imagespec = ["fonts/*", "icons/*"]

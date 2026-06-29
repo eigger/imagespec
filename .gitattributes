@@ -1,0 +1,9 @@
+# Normalize line endings to LF in the repo for all text files.
+* text=auto eol=lf
+
+# Treat bundled assets as binary (no eol/diff munging).
+*.ttf binary
+*.otf binary
+*.png binary
+*.jpg binary
+*.ico binary
