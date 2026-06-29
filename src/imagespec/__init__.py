@@ -11,7 +11,7 @@ Public API:
 
 from __future__ import annotations
 
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 from .colors import (
     PALETTE_4,
@@ -55,6 +55,3 @@ try:
     __version__ = version("imagespec")
 except PackageNotFoundError:
     __version__ = "unknown"
-
-
-
