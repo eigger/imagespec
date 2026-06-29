@@ -20,9 +20,8 @@ def main():
     # Setup rendering context with a rich 7-color palette (ACeP)
     ctx = RenderContext(palette=PALETTE_7)
 
-    # We will lay out elements inside a 640x384 e-ink dashboard style
     payload = [
-        # --- Background and Layout grid ---
+        # --- Background Canvas Outline ---
         {
             "type": "rectangle",
             "x_start": 0,
@@ -33,68 +32,80 @@ def main():
             "width": 2,
             "radius": 12,
         },
-        # Header separator
-        {"type": "line", "x_start": 10, "y_start": 50, "x_end": 629, "y_end": 50, "fill": "orange", "width": 2},
-        # Middle vertical separator
-        {
-            "type": "line",
-            "x_start": 320,
-            "y_start": 60,
-            "x_end": 320,
-            "y_end": 260,
-            "fill": "black",
-            "width": 1,
-            "dash": [4, 4],
-        },
-        # Bottom separator
-        {"type": "line", "x_start": 10, "y_start": 270, "x_end": 629, "y_end": 270, "fill": "black", "width": 2},
         # --- 1. Header (Title, Icons, Rich text) ---
         {"type": "icon", "x": 20, "y": 15, "value": "mdi:home-assistant", "size": 24, "color": "blue"},
         {
             "type": "text",
             "x": 55,
             "y": 12,
-            "value": "Smart Home Hub Showcase",
+            "value": "Smart Home Hub",
             "size": 22,
             "color": "black",
-            "font": "NotoSansKR-Regular.ttf",
         },
         {
             "type": "rich_text",
             "x": 620,
-            "y": 25,
+            "y": 20,
             "align": "right",
             "spans": [
-                {"text": "Temp: "},
-                {"text": "24.5C ", "color": "red"},
-                {"icon": "mdi:thermometer", "color": "red", "size": 16},
-                {"text": "  Humid: "},
-                {"text": "55% ", "color": "blue"},
-                {"icon": "mdi:water-percent", "color": "blue", "size": 16},
+                {"text": "Mon, Jun 29 "},
+                {"icon": "mdi:clock-outline", "color": "blue", "size": 16},
+                {"text": " 19:42"},
             ],
             "size": 14,
         },
-        # --- 2. Left Column: Shapes, Gauges, Progress bars ---
-        {"type": "text", "x": 20, "y": 65, "value": "Device Status (Left Column)", "size": 14, "color": "black"},
-        # Circular gauge
+
+        # --- 2. Left Card: System & Climate ---
+        {
+            "type": "rectangle",
+            "x_start": 10,
+            "y_start": 60,
+            "x_end": 310,
+            "y_end": 265,
+            "outline": "black",
+            "width": 1,
+            "radius": 8,
+        },
+        {"type": "text", "x": 20, "y": 68, "value": "System & Climate", "size": 12, "color": "black"},
+
+        # Climate Sun Circle & Cloud Ellipse
+        {"type": "circle", "x": 240, "y": 105, "radius": 10, "outline": "orange", "width": 2},
+        {"type": "ellipse", "x_start": 250, "y_start": 98, "x_end": 280, "y_end": 112, "outline": "blue", "width": 2},
+
+        # Climate text & Up polygon chevron
+        {"type": "text", "x": 20, "y": 90, "value": "Living Room Temp", "size": 10, "color": "gray"},
+        {
+            "type": "rich_text",
+            "x": 20,
+            "y": 105,
+            "spans": [{"text": "24.5°C ", "size": 20, "color": "red"}],
+        },
+        {"type": "polygon", "points": "100,120;110,105;120,120", "fill": "red", "outline": "black", "width": 1},
+
+        # Divider line inside card
+        {"type": "line", "x_start": 20, "y_start": 140, "x_end": 300, "y_end": 140, "fill": "black", "width": 1, "dash": [2, 2]},
+
+        # CPU circular gauge
         {
             "type": "gauge",
-            "x": 70,
-            "y": 110,
-            "radius": 25,
+            "x": 60,
+            "y": 190,
+            "radius": 22,
             "progress": 72,
             "fill": "green",
             "outline": "black",
             "width": 5,
         },
-        {"type": "text", "x": 70, "y": 145, "value": "CPU Use", "size": 11, "anchor": "ma"},
-        # Progress bar
+        {"type": "text", "x": 60, "y": 222, "value": "CPU", "size": 10, "anchor": "ma"},
+
+        # Storage progress bar
+        {"type": "text", "x": 130, "y": 155, "value": "Storage Volume", "size": 10},
         {
             "type": "progress_bar",
-            "x_start": 140,
-            "y_start": 105,
+            "x_start": 130,
+            "y_start": 170,
             "x_end": 290,
-            "y_end": 125,
+            "y_end": 188,
             "progress": 60,
             "fill": "orange",
             "outline": "black",
@@ -102,124 +113,142 @@ def main():
             "radius": 4,
             "show_percentage": True,
         },
-        {"type": "text", "x": 140, "y": 85, "value": "Storage Volume", "size": 11},
-        # Labeled Vector Elements Box
-        {
-            "type": "rectangle",
-            "x_start": 20,
-            "y_start": 170,
-            "x_end": 300,
-            "y_end": 260,
-            "outline": "black",
-            "width": 1,
-            "radius": 6,
-        },
-        {"type": "text", "x": 30, "y": 175, "value": "Vector Elements", "size": 10, "color": "black"},
-        # Shapes inside the box
-        {"type": "circle", "x": 50, "y": 220, "radius": 12, "outline": "blue", "width": 2},
-        {"type": "ellipse", "x_start": 75, "y_start": 205, "x_end": 120, "y_end": 235, "outline": "red", "width": 2},
-        {"type": "polygon", "points": "135,235;155,205;175,235", "fill": "yellow", "outline": "black", "width": 1},
+
+        # Fan airflow Speed Arc
+        {"type": "text", "x": 130, "y": 205, "value": "Airflow", "size": 10, "color": "gray"},
         {
             "type": "arc",
-            "x_start": 190,
+            "x_start": 175,
             "y_start": 205,
-            "x_end": 220,
+            "x_end": 205,
             "y_end": 235,
             "start_angle": 0,
-            "end_angle": 180,
+            "end_angle": 135,
             "outline": "red",
             "width": 2,
         },
+
+        # Signal dot matrix pattern
+        {"type": "text", "x": 225, "y": 205, "value": "Signal", "size": 10, "color": "gray"},
         {
             "type": "rectangle_pattern",
-            "x_start": 235,
+            "x_start": 265,
             "y_start": 208,
-            "x_size": 3,
-            "y_size": 3,
-            "x_repeat": 8,
-            "y_repeat": 8,
+            "x_size": 2,
+            "y_size": 2,
+            "x_repeat": 5,
+            "y_repeat": 5,
             "x_offset": 2,
             "y_offset": 2,
             "fill": "black",
         },
-        # --- 3. Right Column: Charts (Pie, Sparkline, Diagram) ---
-        {"type": "text", "x": 340, "y": 65, "value": "Data & History (Right Column)", "size": 14, "color": "black"},
+
+        # --- 3. Right Card: Energy & History ---
+        {
+            "type": "rectangle",
+            "x_start": 320,
+            "y_start": 60,
+            "x_end": 625,
+            "y_end": 265,
+            "outline": "black",
+            "width": 1,
+            "radius": 8,
+        },
+        {"type": "text", "x": 330, "y": 68, "value": "Energy & Usage", "size": 12, "color": "black"},
+
         # Sparkline
-        {"type": "text", "x": 340, "y": 85, "value": "24h Power Consumption", "size": 10, "color": "orange"},
+        {"type": "text", "x": 330, "y": 88, "value": "24h Power Consumption", "size": 9, "color": "orange"},
         {
             "type": "sparkline",
-            "x": 340,
+            "x": 330,
             "y": 100,
-            "width": 140,
-            "height": 45,
+            "width": 130,
+            "height": 40,
             "values": [12, 15, 8, 24, 32, 19, 45, 28, 50, 35],
             "fill": "yellow",
             "color": "red",
             "width_line": 2,
             "dot_last": True,
         },
+
         # Pie Chart
         {
             "type": "pie",
-            "x": 550,
+            "x": 555,
             "y": 110,
-            "radius": 30,
+            "radius": 24,
             "values": "Gas,30,orange;Water,25,blue;Elec,45,red",
-            "inner_radius": 12,
+            "inner_radius": 10,
             "outline": "black",
         },
-        {"type": "text", "x": 550, "y": 150, "value": "Utility Ratio", "size": 10, "anchor": "ma"},
+        {"type": "text", "x": 555, "y": 142, "value": "Utility Ratio", "size": 9, "anchor": "ma"},
+
         # Bar Diagram
         {
             "type": "diagram",
-            "x": 340,
-            "y": 175,
-            "width": 260,
-            "height": 80,
+            "x": 330,
+            "y": 160,
+            "width": 280,
+            "height": 90,
             "margin": 15,
-            "bars": {"values": "Jan,45;Feb,75;Mar,60", "color": "blue", "legend_color": "black", "legend_size": 10},
+            "bars": {"values": "Jan,45;Feb,75;Mar,60", "color": "blue", "legend_color": "black", "legend_size": 9},
         },
-        # --- 4. Bottom Row: Tables, Codes, and Text fit ---
+
+        # --- 4. Bottom Card: Access & Schedule ---
+        {
+            "type": "rectangle",
+            "x_start": 10,
+            "y_start": 275,
+            "x_end": 625,
+            "y_end": 373,
+            "outline": "black",
+            "width": 1,
+            "radius": 8,
+        },
+        {"type": "text", "x": 20, "y": 282, "value": "Access Control & Schedule", "size": 12, "color": "black"},
+
         # QR Code & Barcode
-        {"type": "qrcode", "x": 20, "y": 285, "data": "https://github.com/eigger/imagespec", "boxsize": 2},
+        {"type": "qrcode", "x": 20, "y": 300, "data": "https://github.com/eigger/imagespec", "boxsize": 2},
         {
             "type": "barcode",
-            "x": 120,
-            "y": 290,
-            "data": "987654321",
-            "module_height": 4.0,
-            "font_size": 1.5,
-            "quiet_zone": 1.0,
-            "text_distance": 1.0,
+            "x": 105,
+            "y": 315,
+            "data": "1234",
+            "module_width": 0.15,
+            "module_height": 2.5,
+            "quiet_zone": 0.5,
+            "write_text": False,
         },
+
         # Text Fit Box
         {
             "type": "text_fit",
-            "x": 280,
-            "y": 285,
-            "width": 150,
-            "height": 80,
-            "value": "Auto-fit text shrinks to fit this box tightly without overflowing.",
-            "size": 18,
+            "x": 215,
+            "y": 300,
+            "width": 185,
+            "height": 62,
+            "value": "Guest network is active. Scan QR to connect or use passcode.",
+            "size": 12,
             "fit": "shrink",
-            "padding": 5,
+            "padding": 4,
             "background": "white",
             "outline": "black",
-            "radius": 6,
+            "radius": 4,
         },
+
         # Simple Table
         {
             "type": "table",
-            "x": 450,
-            "y": 285,
-            "columns": [90, 80],
-            "rows": [["Sensor", "Status"], ["Living Room", "Active"], ["Kitchen", "Offline"]],
+            "x": 420,
+            "y": 298,
+            "columns": [95, 90],
+            "rows": [["Time", "Event Status"], ["08:00", "AC On (Eco)"], ["18:00", "Lights On"]],
             "font_size": 9,
             "header_fill": "blue",
             "header_color": "white",
             "cell_color": "black",
             "align": "center",
-            "row_height": 22,
+            "row_height": 20,
         },
     ]
 
