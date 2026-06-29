@@ -116,14 +116,14 @@ def main():
         },
         {"type": "text", "x": 30, "y": 175, "value": "Vector Elements", "size": 10, "color": "black"},
         # Shapes inside the box
-        {"type": "circle", "x": 55, "y": 220, "radius": 15, "outline": "blue", "width": 2},
-        {"type": "ellipse", "x_start": 85, "y_start": 205, "x_end": 135, "y_end": 235, "outline": "red", "width": 2},
-        {"type": "polygon", "points": "150,235;170,205;190,235", "fill": "yellow", "outline": "black", "width": 1},
+        {"type": "circle", "x": 50, "y": 220, "radius": 12, "outline": "blue", "width": 2},
+        {"type": "ellipse", "x_start": 75, "y_start": 205, "x_end": 120, "y_end": 235, "outline": "red", "width": 2},
+        {"type": "polygon", "points": "135,235;155,205;175,235", "fill": "yellow", "outline": "black", "width": 1},
         {
             "type": "arc",
-            "x_start": 205,
+            "x_start": 190,
             "y_start": 205,
-            "x_end": 235,
+            "x_end": 220,
             "y_end": 235,
             "start_angle": 0,
             "end_angle": 180,
@@ -132,11 +132,11 @@ def main():
         },
         {
             "type": "rectangle_pattern",
-            "x_start": 250,
+            "x_start": 235,
             "y_start": 208,
             "x_size": 3,
             "y_size": 3,
-            "x_repeat": 12,
+            "x_repeat": 8,
             "y_repeat": 8,
             "x_offset": 2,
             "y_offset": 2,
@@ -182,7 +182,16 @@ def main():
         # --- 4. Bottom Row: Tables, Codes, and Text fit ---
         # QR Code & Barcode
         {"type": "qrcode", "x": 20, "y": 285, "data": "https://github.com/eigger/imagespec", "boxsize": 2},
-        {"type": "barcode", "x": 120, "y": 285, "data": "987654321", "module_height": 35, "font_size": 10},
+        {
+            "type": "barcode",
+            "x": 120,
+            "y": 290,
+            "data": "987654321",
+            "module_height": 4.0,
+            "font_size": 1.5,
+            "quiet_zone": 1.0,
+            "text_distance": 1.0,
+        },
         # Text Fit Box
         {
             "type": "text_fit",
