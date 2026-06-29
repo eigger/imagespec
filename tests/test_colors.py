@@ -30,6 +30,17 @@ def test_unknown_name_falls_back_white():
     assert quantize_color("chartreuse", PALETTE_4) == white
 
 
+def test_shorthand_hex_3digit():
+    # #f00 should expand to #ff0000 -> red on a 4-color device
+    assert quantize_color("#f00", PALETTE_4) == red
+    assert quantize_color("#fff", PALETTE_BW) == white
+    assert quantize_color("#000", PALETTE_BW) == black
+
+
+def test_get_palette_accepts_3digit_hex():
+    assert get_palette(["#000", "#fff", "#f00"]) == [black, white, red]
+
+
 def test_get_palette_from_names():
     assert get_palette(["black", "white", "red"]) == [black, white, red]
 

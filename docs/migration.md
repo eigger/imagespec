@@ -20,14 +20,14 @@ element types are warned-and-skipped rather than raising.
 
 ```json
 "requirements": [
-  "imagespec[datamatrix] @ git+https://github.com/eigger/imagespec.git@v0.1.0"
+  "imagespec[datamatrix] @ git+https://github.com/eigger/imagespec.git@v0.2.0"
 ]
 ```
 
 - The `[datamatrix]` extra pulls in `pyStrich` (only needed for the `datamatrix`
   element); drop it if a component never uses datamatrix.
-- Pin to a **tag** (`@v0.1.0`), not a branch, so installs are reproducible.
-- If/when published to PyPI, this simplifies to `"imagespec[datamatrix]==0.1.0"`.
+- Pin to a **tag** (`@v0.2.0`), not a branch, so installs are reproducible.
+- If/when published to PyPI, this simplifies to `"imagespec[datamatrix]==0.2.0"`.
 
 **Remove the now-duplicated deps.** `qrcode[pil]`, `python-barcode` and `pyStrich`
 become transitive deps of `imagespec`, so delete them from each component's

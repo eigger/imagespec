@@ -10,10 +10,9 @@ from PIL import Image
 # Importing the elements package registers all handlers via @element(...).
 from . import elements  # noqa: E402,F401  (side-effect import)
 from .context import RenderContext
+from .dispatch import render_element
 from .exceptions import RenderError
-from .registry import get_handler
 from .state import RenderState
-from .utils import should_show
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,9 +60,11 @@ def render(
     background:
         Background color name or ``#RRGGBB`` (mapped via :func:`get_index_color`).
     dither:
-        If True, Floyd–Steinberg dither the final image to ``context.palette``
-        (better for photos/logos on limited-color panels). Per-image dithering is
-        also available on the ``dlimg`` element.
+        Elements are always drawn in full color and mapped to ``context.palette``
+        once at the end. ``dither`` picks *how*: True → Floyd–Steinberg halftone
+        (off-palette fills become distinguishable dot patterns — better for
+        photos/charts on limited-color panels); False (default) → flat nearest
+        color. Either way the output is strictly on-palette.
     context:
         Host-supplied :class:`RenderContext` (fonts, history, ...).
     """
@@ -93,14 +94,8 @@ def render(
             raise RenderError(f"each payload element must be a dict, got {type(element).__name__}")
         etype = element.get("type", "")
         _LOGGER.debug("type: %s", etype)
-        if not should_show(element):
-            continue
-        handler = get_handler(etype)
-        if handler is None:
-            _LOGGER.warning("Unknown element type '%s' — skipping.", etype)
-            continue
         try:
-            handler(state, element)
+            render_element(state, element)
         except RenderError:
             raise  # already descriptive (names the element type / missing arg)
         except Exception as exc:  # noqa: BLE001 — add element context, then surface
@@ -110,8 +105,8 @@ def render(
     if rotate in (90, 180, 270):
         img = img.rotate(-rotate, expand=True)
     result = img.convert("RGB")
-    if dither:
-        from .dither import dither_to_palette
+    # Elements are drawn in true color; map the whole image to the device palette
+    # once here — Floyd–Steinberg halftone when `dither`, flat nearest otherwise.
+    from .dither import dither_to_palette
 
-        result = dither_to_palette(result, context.palette)
-    return result
+    return dither_to_palette(result, context.palette, dither=dither)

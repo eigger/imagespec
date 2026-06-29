@@ -14,7 +14,7 @@ standalone.
 
 ## Status
 
-✅ **26 elements** (21 ported + 5 new) rendering, with a 74-test suite.
+✅ **29 elements** (21 ported + 8 new) rendering, with a 97-test suite.
 Architecture (HA-decoupled context, registry dispatch, device-specific rotation
 + palette) is in place. Remaining work is packaging polish and switching the two
 components over to it.
@@ -47,7 +47,9 @@ components over to it.
   `"3"`/`"bwr"`, `"4"`, `"7"`/`"acep"`. Any requested color in a payload is then
   quantized to the nearest color in this list — on a 2-color device `red`
   becomes black; on 4-color a blue `#1e90ff` becomes white; on 7-color it stays
-  blue.
+  blue. Elements are drawn in full color and this mapping is applied to the whole
+  image once at the end of `render()` (dithered or flat, per `dither` — see
+  *Dithering*).
 - **Merged behaviour.** Where the two sources differed, the superset wins:
   - qrcode gains `eclevel` (niimbot)
 - **Device-dependent rotation** (`rotate_mode`), *not* unified — both behaviours
@@ -81,7 +83,7 @@ python examples/smoke_test.py
 
 ```bash
 pip install -e ".[dev,datamatrix]"
-pytest                 # 74 tests: every element, palettes, rotation, dither, errors
+pytest                 # 97 tests: every element, palettes, rotation, dither, errors
 ruff check . && ruff format --check .   # lint + format
 python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
@@ -138,10 +140,14 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
 | ![](examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
 | ![](examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
+| ![](examples/elements/legend.png) | `legend` | widgets | **new** — color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
+| ![](examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
+| ![](examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
 
-Plus enhancements: `dlimg` gained `dither` (Floyd–Steinberg to palette) and
-`circle`/`mask` (circular crop); `render(..., dither=True)` dithers the whole
-output; `text_fit` fits text into a fixed box (shrink / ellipsis / wrap).
+Plus enhancements: `render(..., dither=True)` dithers the whole output and **any
+element** can carry its own `dither: true`/`false` to override it just for itself
+(Floyd–Steinberg to palette); `dlimg` also gained `circle`/`mask` (circular crop);
+`text_fit` fits text into a fixed box (shrink / ellipsis / wrap).
 
 ## Payload Specification & Element Reference
 
@@ -236,23 +242,57 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 - **`qrcode`**: Generates a QR Code.
   - `x`, `y` (int top-left, required)
   - `data` (string, required)
-  - `boxsize` (int module pixel size, default: `2`)
+  - `boxsize` (int pixels per module, default: `2`), **or** `width`/`height` (int px
+    box — the code is scaled square & crisp to fit it, for predictable layout)
   - `color`, `bgcolor`, `border`, `eclevel` (`"l"`, `"m"`, `"q"`, `"h"`, optional)
 - **`barcode`**: Generates a standard linear barcode.
   - `x`, `y` (int top-left, required)
   - `data` (string, required)
   - `code` (string format, e.g. `"code128"`, `"ean13"`, default: `"code128"`)
-  - `module_width` (float, default: `0.2`), `module_height` (float, default: `7.0`)
-  - `quiet_zone` (float padding, default: `6.5`), `font_size`, `write_text` (bool, optional)
+  - **Sizing (easy, pixel-based):** `width` and/or `height` (int px) — scales the
+    barcode to fit that box at `(x, y)`, like `dlimg`/`icon`. Give one to scale
+    proportionally, or both for an exact box. This is the recommended way to place
+    a barcode predictably.
+  - **Sizing (physical, advanced):** when `width`/`height` are omitted it uses
+    python-barcode's millimetre options — `module_width` (float mm, default `0.2`),
+    `module_height` (float mm, default `7.0`), `quiet_zone` (float mm, default `6.5`)
+    rendered at `dpi` (int, default `300`). Pixel size then depends on the DPI.
+  - `color`, `bgcolor` (quantized to the palette), `font_size`, `text_distance`,
+    `write_text` (bool, default `true`) — optional.
+- **`datamatrix`**: Generates a DataMatrix 2D code (needs the `datamatrix` extra).
+  - `x`, `y`, `data` (required)
+  - `boxsize` (int pixels per cell, default: `2`), **or** `width`/`height` (int px box
+    — scaled square & crisp to fit, like `qrcode`)
+  - `color`, `bgcolor` (optional)
 - **`icon`**: Renders a vector icon from Material Design Icons.
   - `x`, `y` (int top-left, required)
   - `value` (string slug, e.g. `"mdi:home"`, required)
   - `size` (int, default: `24`), `color` (optional)
 - **`dlimg`**: Downloads and renders an external image (with fit and dithering).
-  - `x`, `y`, `width`, `height` (int box, required)
-  - `url` (http/https or base64 data: url, required)
+  - `x`, `y`, `xsize`, `ysize` (int box, required)
+  - `url` (http/https or base64 data: url, required; local paths need `RenderContext(allow_local_images=True)`)
   - `mode` (`"stretch"`, `"fit"`, `"fill"`, `"contain"`, default: `"stretch"`)
-  - `dither` (bool, optional), `mask` (`"circle"`, `"rounded"`, optional)
+  - `rotate` (int degrees, optional), `timeout` (seconds, default: `30`)
+  - `dither` (bool, optional), `mask` (`"circle"`, optional; or `circle: true`)
+
+#### Widgets
+- **`legend`**: Draws color-swatch ↔ label rows (companion to `pie`/`plot`).
+  - `x`, `y` (int top-left, required)
+  - `items` (required) — list of `{"label": ..., "color": ..., "icon": ...}` dicts, or a `"label,color;label,color"` string
+  - `orientation` (`"vertical"` / `"horizontal"`, default: `"vertical"`)
+  - `shape` (`"square"` / `"circle"` / `"line"`, default: `"square"`)
+  - `size` (font size, default: `12`), `swatch_size`, `gap`, `spacing` (optional)
+- **`star_rating`**: Renders a star rating.
+  - `x`, `y` (int top-left, required)
+  - `rating` (float, required), `max` (int stars, default: `5`)
+  - `size` (int, default: `16`), `color` (filled, default: `"orange"`), `empty_color`, `spacing`
+  - `half` (bool half-stars, default: `true`)
+- **`battery`**: Vector battery gauge with a proportional fill.
+  - `x`, `y`, `width`, `height` (int box, required)
+  - `level` (int/float `0`-`100`, required)
+  - `fill`, `background`, `outline`, `radius`, `padding` (optional)
+  - `low_threshold` (int, default: `20`), `low_color` (swap fill at/below threshold, optional)
+  - `show_percentage` (bool, optional), `text_color` (optional)
 
 ### Dithering
 
@@ -272,6 +312,73 @@ Dithering creates a natural halftone pattern that simulates smooth shading and e
 #### 3. Charts & Solid Fills
 Dithering is useful when you have solid color regions (like pie slices or bar diagrams) in colors outside your device palette (e.g. orange on a black/white screen). Dithering simulates these colors with dot patterns to help distinguish segments, though it introduces some edge noise.
 ![Chart Dithering Comparison](examples/dither_comparison_chart.png)
+
+#### How palette mapping works
+Every element is drawn in **full color**, and the whole image is mapped to
+`context.palette` **once at the end** of `render()`. The `dither` flag only picks
+*how* that single mapping happens:
+
+- `dither=True` → Floyd–Steinberg halftone: off-palette fills become
+  distinguishable dot patterns (an `orange`/`green`/`blue` pie on a 2-color panel
+  renders as three different textures instead of collapsing into one black blob).
+- `dither=False` (default) → flat nearest color.
+
+Either way the output is **strictly on-palette**. Because mapping is deferred,
+in-palette colors (e.g. black text on white) stay crisp under dithering —
+Floyd–Steinberg diffuses no error when a pixel already equals a palette color —
+while the text guidance above still applies to *off-palette* text you choose to
+dither.
+
+```python
+ctx = RenderContext(palette="bw")
+img = render(payload, 296, 128, dither=True, context=ctx)
+# orange/green/blue pie slices -> different dot patterns, not one black blob
+```
+
+#### Per-element `dither` override
+Any element may carry its own `dither: true`/`false` to override the global flag
+just for itself — so you can dither only the parts that benefit (photos, charts)
+and keep the rest flat (labels, QR codes), in a single render:
+
+```yaml
+- type: dlimg          # this photo -> halftone
+  url: "https://…/photo.png"
+  xsize: 100
+  ysize: 100
+  dither: true
+- type: pie            # this chart -> halftone (segments stay distinguishable)
+  x: 60; y: 60; radius: 40
+  values: "Gas,30,orange;Water,25,blue;Elec,45,red"
+  dither: true
+- type: text           # left flat regardless of the global flag
+  x: 10; y: 110
+  value: "Energy mix"
+```
+
+An element with an explicit `dither` is rendered in isolation and mapped to the
+palette immediately (then composited in payload order), so its choice survives
+the final whole-image pass. Elements without the key follow the global `dither`
+argument. (QR/barcode and black text are pure palette colors, so they stay crisp
+under the global flag anyway — set `dither: false` only for *off-palette* content
+you want kept solid.)
+
+#### Device samples
+Both labels below mix crisp content (text, QR, barcode) with charts authored in
+off-palette colors and marked `dither: true` — the charts become halftones so
+their segments stay distinguishable, while everything else stays sharp.
+
+**Electronic shelf label — 3-color (black / white / red):**
+
+![ESL 3-color dithering sample](examples/dither_esl_3color.png)
+
+**Label printer — 2-color (black / white):**
+
+![Label printer 2-color dithering sample](examples/dither_label_2color.png)
+
+Regenerate them with:
+```bash
+python examples/generate_dither_labels.py
+```
 
 To run the dithering comparison generator yourself:
 ```bash
@@ -314,5 +421,5 @@ Replace each component's renderer with a thin adapter (see
 [`docs/migration.md`](docs/migration.md)) and add to `manifest.json`:
 
 ```json
-"requirements": ["imagespec==0.1.0"]
+"requirements": ["imagespec==0.2.0"]
 ```

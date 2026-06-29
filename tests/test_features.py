@@ -95,3 +95,109 @@ def test_sparkline_renders(ctx):
         "dot_last": True,
     }
     assert render([el], 60, 30, context=ctx).size == (60, 30)
+
+
+def test_legend_draws_swatches(bw_ctx):
+    el = {
+        "type": "legend",
+        "x": 0,
+        "y": 0,
+        "items": [{"label": "a", "color": "black"}],
+        "size": 10,
+        "swatch_size": 10,
+    }
+    img = render([el], 40, 20, background="white", context=bw_ctx)
+    # the swatch square (top-left) should be black
+    assert img.getpixel((5, 5)) == (0, 0, 0)
+
+
+def test_legend_accepts_string_items(ctx):
+    el = {"type": "legend", "x": 0, "y": 0, "items": "gas,red;water,blue", "size": 8}
+    assert render([el], 60, 30, context=ctx).size == (60, 30)
+
+
+def test_star_rating_partial(ctx):
+    el = {"type": "star_rating", "x": 0, "y": 0, "rating": 3, "max": 5, "size": 12, "color": "red"}
+    img = render([el], 70, 16, background="white", context=ctx)
+    # at least some star pixels are drawn (red on a 4-color device stays red)
+    assert any(img.getpixel((x, y)) == (255, 0, 0) for x in range(70) for y in range(16))
+
+
+def test_battery_fill_proportional(bw_ctx):
+    el = {
+        "type": "battery",
+        "x": 0,
+        "y": 0,
+        "width": 40,
+        "height": 16,
+        "level": 50,
+        "fill": "black",
+        "background": "white",
+        "padding": 2,
+    }
+    img = render([el], 50, 20, background="white", context=bw_ctx)
+    # left half (filled) has black; far right interior (empty) stays white
+    assert img.getpixel((6, 8)) == (0, 0, 0)
+    assert img.getpixel((30, 8)) == (255, 255, 255)
+
+
+def test_battery_low_color(ctx):
+    el = {
+        "type": "battery",
+        "x": 0,
+        "y": 0,
+        "width": 40,
+        "height": 16,
+        "level": 10,
+        "low_threshold": 20,
+        "low_color": "red",
+        "padding": 2,
+    }
+    img = render([el], 50, 20, background="white", context=ctx)
+    assert any(img.getpixel((x, 8)) == (255, 0, 0) for x in range(40))
+
+
+def test_barcode_pixel_sizing_fits_box(bw_ctx):
+    # width/height scale the barcode into a pixel box at (x, y)
+    el = {
+        "type": "barcode",
+        "x": 10,
+        "y": 10,
+        "data": "12345670",
+        "code": "code128",
+        "width": 120,
+        "height": 40,
+        "write_text": False,
+    }
+    img = render([el], 150, 70, background="white", context=bw_ctx)
+    black = [(x, y) for y in range(70) for x in range(150) if img.getpixel((x, y)) == (0, 0, 0)]
+    xs = [p[0] for p in black]
+    ys = [p[1] for p in black]
+    assert black  # bars drawn
+    # stays within the requested box (x: 10..130, y: 10..50), pure black/white
+    assert min(xs) >= 10 and max(xs) <= 130
+    assert min(ys) >= 10 and max(ys) <= 50
+    assert {c for _, c in img.getcolors(maxcolors=1 << 24)} <= {(0, 0, 0), (255, 255, 255)}
+
+
+def test_barcode_width_controls_extent(bw_ctx):
+    # a wider target box yields a wider barcode
+    def extent(w):
+        el = {"type": "barcode", "x": 5, "y": 5, "data": "9876543", "width": w, "height": 30, "write_text": False}
+        img = render([el], w + 60, 50, background="white", context=bw_ctx)
+        xs = [x for y in range(50) for x in range(w + 60) if img.getpixel((x, y)) == (0, 0, 0)]
+        return max(xs) - min(xs)
+
+    assert extent(160) > extent(90)
+
+
+def test_qrcode_pixel_box_fits_and_square(bw_ctx):
+    el = {"type": "qrcode", "x": 5, "y": 5, "data": "https://example.com/p/1", "width": 60, "height": 60}
+    img = render([el], 80, 80, background="white", context=bw_ctx)
+    black = [(x, y) for y in range(80) for x in range(80) if img.getpixel((x, y)) == (0, 0, 0)]
+    xs = [p[0] for p in black]
+    ys = [p[1] for p in black]
+    assert black
+    # fits within the 5..65 box on both axes and is (near-)square
+    assert max(xs) <= 65 and max(ys) <= 65
+    assert abs((max(xs) - min(xs)) - (max(ys) - min(ys))) <= 1

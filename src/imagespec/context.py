@@ -21,7 +21,7 @@ from typing import Any
 
 from PIL import ImageFont
 
-from .colors import DEFAULT_PALETTE, get_palette, quantize_color
+from .colors import DEFAULT_PALETTE, get_palette, resolve_color
 from .exceptions import RenderError
 
 FontResolver = Callable[[str], str | None]
@@ -59,8 +59,13 @@ class RenderContext:
         self.palette = get_palette(self.palette)
 
     def color(self, value):
-        """Quantize a requested color to this device's palette (or ``None``)."""
-        return quantize_color(value, self.palette)
+        """Resolve a requested color to its **true** RGBA (or ``None``).
+
+        Handlers always draw in full color; palette mapping (dithered or flat
+        nearest, per the ``dither`` flag) happens once for the whole image at the
+        end of :func:`~imagespec.core.render`.
+        """
+        return resolve_color(value)
 
     def resolve_font_path(self, name: str | None) -> str:
         """Resolve a payload font name to an absolute file path.

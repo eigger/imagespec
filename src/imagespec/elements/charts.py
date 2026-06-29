@@ -99,6 +99,7 @@ def sparkline(state: RenderState, element: dict) -> None:
 
 @element("diagram")
 def diagram(state: RenderState, element: dict) -> None:
+    require(element, ["x", "y", "height"], "diagram")
     draw = ImageDraw.Draw(state.img)
     draw.fontmode = "1"
     pos_x, pos_y = element["x"], element["y"]
@@ -125,7 +126,11 @@ def diagram(state: RenderState, element: dict) -> None:
         font = state.context.font(element.get("font"), bars_cfg.get("legend_size", 10))
         legend_color = state.context.color(bars_cfg.get("legend_color", "black"))
         bar_color = state.context.color(bars_cfg["color"])
-        max_val = max(int(b.split(",", 1)[1]) for b in bars)
+        max_val = max(float(b.split(",", 1)[1]) for b in bars)
+        if max_val <= 0:
+            raise RenderError(
+                f"diagram: bar values must include a positive maximum, got max {max_val} — check 'bars.values'."
+            )
         height_factor = (height - offset) / max_val
         for bar_pos, bar in enumerate(bars):
             name, value = bar.split(",", 1)
@@ -139,7 +144,7 @@ def diagram(state: RenderState, element: dict) -> None:
             )
             draw.rectangle(
                 [
-                    (x_pos, pos_y + height - offset - (height_factor * int(value))),
+                    (x_pos, pos_y + height - offset - (height_factor * float(value))),
                     (x_pos + bar_width, pos_y + height - offset),
                 ],
                 fill=bar_color,
@@ -199,7 +204,7 @@ def plot(state: RenderState, element: dict) -> None:
     x_start = element.get("x_start", 0)
     y_start = element.get("y_start", 0)
     x_end = element.get("x_end", state.canvas_width - 1 - x_start)
-    y_end = element.get("y_end", state.canvas_height - 1 - x_start)
+    y_end = element.get("y_end", state.canvas_height - 1 - y_start)
     width = x_end - x_start + 1
     height = y_end - y_start + 1
     duration = timedelta(seconds=element.get("duration", 60 * 60 * 24))
@@ -251,10 +256,13 @@ def plot(state: RenderState, element: dict) -> None:
         if p["entity"] not in all_states:
             raise RenderError("no recorded data found for " + p["entity"])
         states = all_states[p["entity"]]
-        state_obj = states[0]
-        states[0] = {"state": state_obj.state, "last_changed": str(state_obj.last_changed)}
+        # The provider yields the first sample as a State-like object (with
+        # .state/.last_changed attrs) and the rest as dicts; normalize the head
+        # without mutating the caller's list.
+        head = states[0]
+        normalized = [{"state": head.state, "last_changed": str(head.last_changed)}, *states[1:]]
         states = [
-            (datetime.fromisoformat(s["last_changed"]), float(s["state"])) for s in states if is_decimal(s["state"])
+            (datetime.fromisoformat(s["last_changed"]), float(s["state"])) for s in normalized if is_decimal(s["state"])
         ]
         lo, hi = min_max([s[1] for s in states])
         min_v = min(min_v or lo, lo)
