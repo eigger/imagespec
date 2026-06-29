@@ -3,6 +3,8 @@
 Render images from a declarative **YAML/dict spec** — shapes, text, charts,
 QR/barcodes — for e-paper ESL tags and label printers.
 
+![imagespec Showcase](examples/showcase.png)
+
 This is the shared rendering core extracted from
 [`hass-gicisky`](https://github.com/eigger/hass-gicisky) and
 [`hass-niimbot`](https://github.com/eigger/hass-niimbot). Both integrations had
@@ -108,38 +110,62 @@ keeping coverage exhaustive by construction.
 
 All ported from the original renderers (superset behaviour where they differed):
 
-| Element             | Module    | Notes |
-|---------------------|-----------|-------|
-| `line`              | shapes    | + dashed lines |
-| `rectangle`         | shapes    | |
-| `rectangle_pattern` | shapes    | |
-| `circle`            | shapes    | |
-| `ellipse`           | shapes    | |
-| `arc`               | shapes    | |
-| `polygon`           | shapes    | |
-| `gauge`             | shapes    | |
-| `text`              | text      | + rotation, background box |
-| `text_box`          | text      | |
-| `multiline`         | text      | |
-| `new_multiline`     | text      | fit-to-width/height autosize (niimbot) |
-| `text_fit`          | text      | fit text into a fixed box: shrink font / ellipsis / wrap |
-| `table`             | text      | |
-| `qrcode`            | codes     | + `eclevel` (niimbot) |
-| `barcode`           | codes     | |
-| `datamatrix`        | codes     | optional dep `pyStrich` (`imagespec[datamatrix]`) |
-| `icon`              | media     | Material Design Icons; needs bundled `icons/` assets |
-| `dlimg`             | media     | + fit modes (stretch/fit/fill/contain) |
-| `diagram`           | charts    | bar chart |
-| `plot`              | charts    | needs `history_provider`; + area_fill, xlegend |
-| `progress_bar`      | charts    | + rounded corners |
-| `pie`               | charts    | **new** — pie / donut (`inner_radius`) |
-| `sparkline`         | charts    | **new** — compact axis-less line from inline values |
-| `rich_text`         | text      | **new** — inline spans: icon + text + color on one line |
-| `group`             | layout    | **new** — container: child elements at an offset, clipped, optionally rotated |
+| Preview | Element | Module | Notes |
+|:---:|---|---|---|
+| ![](examples/elements/line.png) | `line` | shapes | + dashed lines |
+| ![](examples/elements/rectangle.png) | `rectangle` | shapes | |
+| ![](examples/elements/rectangle_pattern.png) | `rectangle_pattern` | shapes | |
+| ![](examples/elements/circle.png) | `circle` | shapes | |
+| ![](examples/elements/ellipse.png) | `ellipse` | shapes | |
+| ![](examples/elements/arc.png) | `arc` | shapes | |
+| ![](examples/elements/polygon.png) | `polygon` | shapes | |
+| ![](examples/elements/gauge.png) | `gauge` | shapes | |
+| ![](examples/elements/text.png) | `text` | text | + rotation, background box |
+| ![](examples/elements/text_box.png) | `text_box` | text | |
+| ![](examples/elements/multiline.png) | `multiline` | text | |
+| ![](examples/elements/new_multiline.png) | `new_multiline` | text | fit-to-width/height autosize (niimbot) |
+| ![](examples/elements/text_fit.png) | `text_fit` | text | fit text into a fixed box: shrink font / ellipsis / wrap |
+| ![](examples/elements/table.png) | `table` | text | |
+| ![](examples/elements/qrcode.png) | `qrcode` | codes | + `eclevel` (niimbot) |
+| ![](examples/elements/barcode.png) | `barcode` | codes | |
+| ![](examples/elements/datamatrix.png) | `datamatrix` | codes | optional dep `pyStrich` (`imagespec[datamatrix]`) |
+| ![](examples/elements/icon.png) | `icon` | media | Material Design Icons; needs bundled `icons/` assets |
+| ![](examples/elements/dlimg.png) | `dlimg` | media | + fit modes (stretch/fit/fill/contain) |
+| ![](examples/elements/diagram.png) | `diagram` | charts | bar chart |
+| ![](examples/elements/plot.png) | `plot` | charts | needs `history_provider`; + area_fill, xlegend |
+| ![](examples/elements/progress_bar.png) | `progress_bar` | charts | + rounded corners |
+| ![](examples/elements/pie.png) | `pie` | charts | **new** — pie / donut (`inner_radius`) |
+| ![](examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
+| ![](examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
+| ![](examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
 
 Plus enhancements: `dlimg` gained `dither` (Floyd–Steinberg to palette) and
 `circle`/`mask` (circular crop); `render(..., dither=True)` dithers the whole
 output; `text_fit` fits text into a fixed box (shrink / ellipsis / wrap).
+
+### Dithering
+
+`imagespec` supports Floyd–Steinberg dithering to trade spatial resolution for perceived color depth. This is crucial for rendering detailed gradients, shaded spheres, or photo elements on limited-palette screens (like 2-color black/white, 3-color BWR, or 7-color ACeP e-paper panels).
+
+Without dithering, colors are mapped to the nearest palette entry (direct quantization), leading to severe color banding.
+
+#### 1. Gradient & 3D Shading
+Dithering creates a natural halftone pattern that simulates smooth shading and eliminates color banding.
+![Gradient Dithering Comparison](examples/dither_comparison_gradient.png)
+
+#### 2. Font Rendering (Anti-aliasing vs. Dithering)
+> [!IMPORTANT]
+> **Guidelines for Text:** Avoid dithering on text layers. Dithering anti-aliased font edges creates tiny dot noise, which severely degrades readability on low-resolution e-ink screens. For sharp text, use direct quantization or disable anti-aliasing (`fontmode = "1"`). The built-in `text` element enforces `fontmode = "1"` for this reason.
+![Font Dithering Comparison](examples/dither_comparison_font.png)
+
+#### 3. Charts & Solid Fills
+Dithering is useful when you have solid color regions (like pie slices or bar diagrams) in colors outside your device palette (e.g. orange on a black/white screen). Dithering simulates these colors with dot patterns to help distinguish segments, though it introduces some edge noise.
+![Chart Dithering Comparison](examples/dither_comparison_chart.png)
+
+To run the dithering comparison generator yourself:
+```bash
+python examples/compare_dither.py
+```
 
 ## Fonts & assets
 
