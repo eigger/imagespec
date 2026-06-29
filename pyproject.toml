@@ -25,6 +25,7 @@ dependencies = [
     "pillow>=10.0",
     "qrcode[pil]>=7.4",
     "python-barcode>=0.15",
+    "requests>=2.25",
 ]
 
 [project.optional-dependencies]
