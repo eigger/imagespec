@@ -143,6 +143,117 @@ Plus enhancements: `dlimg` gained `dither` (Floyd–Steinberg to palette) and
 `circle`/`mask` (circular crop); `render(..., dither=True)` dithers the whole
 output; `text_fit` fits text into a fixed box (shrink / ellipsis / wrap).
 
+## Payload Specification & Element Reference
+
+Payloads are specified as a list (sequence) of dictionary elements, which can be easily authored in YAML or JSON. Each element requires a `type` string and varying geometric/styling attributes.
+
+### Common Attributes
+- **Colors**: Supported color specifications include names (e.g., `"black"`, `"white"`, `"red"`, `"green"`, `"blue"`, `"orange"`, `"yellow"`) or HEX strings (e.g., `"#FF0000"`). Colors are automatically quantized to the host device's palette.
+- **Coordinates**: Standard 2D cartesian coordinate system starting at `(0, 0)` at the top-left corner.
+
+### Elements Reference
+
+#### Shapes & Vector Elements
+- **`line`**: Draws a line path.
+  - `x_start`, `y_start`, `x_end`, `y_end` (int, required)
+  - `fill` (color, default: `"black"`)
+  - `width` (int, default: `1`)
+  - `dash` (list of integers, e.g. `[4, 4]`, optional)
+- **`rectangle`**: Draws a square or rectangle.
+  - `x_start`, `y_start`, `x_end`, `y_end` (int, required)
+  - `fill` (color, optional)
+  - `outline` (color, default: `"black"`)
+  - `width` (int, default: `1`)
+  - `radius` (int, rounded corner radius, default: `0`)
+- **`circle`**: Draws a circle.
+  - `x`, `y` (int center, required), `radius` (int, required)
+  - `fill`, `outline`, `width` (optional)
+- **`ellipse`**: Draws an ellipse.
+  - `x_start`, `y_start`, `x_end`, `y_end` (int, required)
+  - `fill`, `outline`, `width` (optional)
+- **`polygon`**: Draws a custom polygon path.
+  - `points` (string, list of coordinates separated by semicolons: `"x1,y1;x2,y2;x3,y3"`, required)
+  - `fill`, `outline`, `width` (optional)
+- **`arc`**: Draws a curved arc path.
+  - `x_start`, `y_start`, `x_end`, `y_end` (int bounding box, required)
+  - `start_angle`, `end_angle` (int degrees, e.g., `0` to `180` for bottom semi-circle, required)
+  - `outline`, `width` (optional)
+- **`rectangle_pattern`**: Fills a grid area with a repeating pixel dot-matrix pattern.
+  - `x_start`, `y_start` (int, required)
+  - `x_size`, `y_size` (int module size, required)
+  - `x_repeat`, `y_repeat` (int repetitions, required)
+  - `x_offset`, `y_offset` (int spacing between modules, required)
+  - `fill` (color, required)
+
+#### Text & Typography
+- **`text`**: Standard single-line text layer.
+  - `x`, `y` (int anchor position, required)
+  - `value` (string to print, required)
+  - `color` (default: `"black"`), `size` (default: `12`), `font` (string name, optional)
+  - `anchor` (string PIL anchor alignment, e.g. `"lt"`, `"mm"`, `"ma"`, optional)
+- **`text_fit`**: Fits text dynamically inside a fixed box by wrapping and shrinking.
+  - `x`, `y`, `width`, `height` (int box boundaries, required)
+  - `value` (string text, required)
+  - `size` (int start size, default: `20`)
+  - `min_size` (int minimum shrink size, default: `8`)
+  - `max_lines` (int max lines, default: `1`)
+  - `fit` (string shrink behavior: `"shrink"`, `"ellipsis"`, `"shrink_ellipsis"`, default: `"shrink"`)
+  - `padding` (int, default: `0`), `background`, `outline`, `radius` (optional)
+- **`rich_text`**: Draws a single line of text with mixed formatting (text, icons, colors, sizes) side-by-side.
+  - `x`, `y` (int, required)
+  - `spans` (list of span dicts: `[{"text": "Temp: "}, {"icon": "mdi:fire", "color": "orange"}]`, required)
+  - `size` (default: `12`), `align` (left/right/center, default: `"left"`)
+- **`table`**: Renders a simple structured table.
+  - `x`, `y` (int top-left, required)
+  - `columns` (list of column width integers, required)
+  - `rows` (list of lists of strings, required)
+  - `font_size` (default: `9`), `header_fill`, `header_color`, `cell_color`, `align`, `row_height`
+
+#### Gauges & Charts
+- **`gauge`**: Renders a circular gauge indicator.
+  - `x`, `y` (int center, required), `radius` (int, required)
+  - `progress` (int `0`-`100` percentage value, required)
+  - `fill` (progress color), `outline` (background track color), `width` (optional)
+- **`progress_bar`**: Renders a linear progress bar.
+  - `x_start`, `y_start`, `x_end`, `y_end` (int bounding box, required)
+  - `progress` (int `0`-`100` percentage value, required)
+  - `direction` (`"right"`, `"left"`, `"up"`, `"down"`, default: `"right"`)
+  - `fill`, `background`, `outline`, `width`, `radius`, `show_percentage` (bool, optional)
+- **`sparkline`**: Renders a compact axis-less line chart.
+  - `x`, `y` (int top-left, required), `width`, `height` (int, required)
+  - `values` (list of floats, required)
+  - `color` (line color), `fill` (area color below line), `width_line`, `dot_last` (bool, optional)
+- **`pie`**: Renders a pie or donut chart segment.
+  - `x`, `y` (int center, required), `radius` (int, required)
+  - `values` (string semicolon-separated: `"Gas,30,orange;Water,25,blue"`, required)
+  - `inner_radius` (int inner donut hole radius, optional)
+- **`diagram`**: Renders a bar chart.
+  - `x`, `y` (int top-left, required), `width`, `height` (int, required)
+  - `bars` (dict: `{"values": "Jan,45;Feb,75", "color": "blue"}`, required)
+  - `margin` (int chart padding, default: `20`)
+
+#### Machine-Readable Codes & Media
+- **`qrcode`**: Generates a QR Code.
+  - `x`, `y` (int top-left, required)
+  - `data` (string, required)
+  - `boxsize` (int module pixel size, default: `2`)
+  - `color`, `bgcolor`, `border`, `eclevel` (`"l"`, `"m"`, `"q"`, `"h"`, optional)
+- **`barcode`**: Generates a standard linear barcode.
+  - `x`, `y` (int top-left, required)
+  - `data` (string, required)
+  - `code` (string format, e.g. `"code128"`, `"ean13"`, default: `"code128"`)
+  - `module_width` (float, default: `0.2`), `module_height` (float, default: `7.0`)
+  - `quiet_zone` (float padding, default: `6.5`), `font_size`, `write_text` (bool, optional)
+- **`icon`**: Renders a vector icon from Material Design Icons.
+  - `x`, `y` (int top-left, required)
+  - `value` (string slug, e.g. `"mdi:home"`, required)
+  - `size` (int, default: `24`), `color` (optional)
+- **`dlimg`**: Downloads and renders an external image (with fit and dithering).
+  - `x`, `y`, `width`, `height` (int box, required)
+  - `url` (http/https or base64 data: url, required)
+  - `mode` (`"stretch"`, `"fit"`, `"fill"`, `"contain"`, default: `"stretch"`)
+  - `dither` (bool, optional), `mask` (`"circle"`, `"rounded"`, optional)
+
 ### Dithering
 
 `imagespec` supports Floyd–Steinberg dithering to trade spatial resolution for perceived color depth. This is crucial for rendering detailed gradients, shaded spheres, or photo elements on limited-palette screens (like 2-color black/white, 3-color BWR, or 7-color ACeP e-paper panels).

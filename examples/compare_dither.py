@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import os
 import sys
+
 from PIL import Image, ImageDraw, ImageFont
 
 # Add src to sys.path so we can import imagespec without installation
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
 from imagespec import RenderContext, render
-from imagespec.colors import PALETTE_BW, PALETTE_BWR, PALETTE_7
+from imagespec.colors import PALETTE_7, PALETTE_BW, PALETTE_BWR
 from imagespec.dither import dither_to_palette
 
 
@@ -69,12 +70,10 @@ def generate_source_text() -> Image.Image:
         font_title = ImageFont.truetype(font_path, 16)
         font_large = ImageFont.truetype(font_path, 36)
         font_medium = ImageFont.truetype(font_path, 20)
-        font_small = ImageFont.truetype(font_path, 11)
     except Exception:
         font_title = ImageFont.load_default()
         font_large = ImageFont.load_default()
         font_medium = ImageFont.load_default()
-        font_small = ImageFont.load_default()
 
     # Upper Half: Anti-aliased Text (fontmode = "L")
     img_l = Image.new("L", (512, 128), 255)
@@ -119,8 +118,18 @@ def generate_source_chart() -> Image.Image:
     """Create a 512x256 test image containing various charts (pie, sparkline, diagram) using imagespec rendering."""
     # Define a custom palette containing all our chart colors so they don't get quantized during initial rendering
     chart_colors = [
-        "white", "black", "red", "yellow", "green", "blue", "orange",
-        "#ff7f0e", "#2ca02c", "#1f77b4", "#aec7e8", "#ffbb78"
+        "white",
+        "black",
+        "red",
+        "yellow",
+        "green",
+        "blue",
+        "orange",
+        "#ff7f0e",
+        "#2ca02c",
+        "#1f77b4",
+        "#aec7e8",
+        "#ffbb78",
     ]
     ctx = RenderContext(palette=chart_colors)
 
@@ -134,7 +143,7 @@ def generate_source_chart() -> Image.Image:
             "inner_radius": 40,
             "values": "A,40,#ff7f0e;B,35,#2ca02c;C,25,#1f77b4",
             "outline": "black",
-            "background": "white"
+            "background": "white",
         },
         # 2. Sparkline (Line chart with fill) on the top-right
         {
@@ -149,7 +158,7 @@ def generate_source_chart() -> Image.Image:
             "width_line": 3,
             "dot_last": True,
             "dot_color": "#1f77b4",
-            "dot_radius": 5
+            "dot_radius": 5,
         },
         # 3. Diagram (Bar chart) on the bottom-right
         {
@@ -159,13 +168,8 @@ def generate_source_chart() -> Image.Image:
             "width": 235,
             "height": 95,
             "margin": 15,
-            "bars": {
-                "values": "Mon,40;Tue,85;Wed,55",
-                "color": "#ffbb78",
-                "legend_color": "black",
-                "legend_size": 11
-            }
-        }
+            "bars": {"values": "Mon,40;Tue,85;Wed,55", "color": "#ffbb78", "legend_color": "black", "legend_size": 11},
+        },
     ]
 
     # Render without dithering (raw RGB image with 24-bit colors preserved)
@@ -211,7 +215,12 @@ def create_comparison_layout(src: Image.Image, title: str, palettes: dict) -> Im
         # Left Column: No Dither
         no_dither_img = dither_to_palette(src, palette, dither=False)
         canvas.paste(no_dither_img, (30, y_pos + 35))
-        draw.text((30, y_pos + 35 + row_height + 5), "Quantized (Dither = False)", fill=(100, 100, 100), font=label_font)
+        draw.text(
+            (30, y_pos + 35 + row_height + 5),
+            "Quantized (Dither = False)",
+            fill=(100, 100, 100),
+            font=label_font,
+        )
 
         # Right Column: Dithered
         dither_img = dither_to_palette(src, palette, dither=True)

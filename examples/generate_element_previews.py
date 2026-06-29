@@ -10,6 +10,7 @@ import base64
 import io
 import os
 import sys
+
 from PIL import Image
 
 # Add src to sys.path
@@ -26,12 +27,13 @@ RED_DATA_URL = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decod
 
 def get_history_context() -> RenderContext:
     """Return a context equipped with a mock history provider for plot testing."""
+
     class StateMock:
         def __init__(self, value, changed):
             self.state = value
             self.last_changed = changed
 
-    from datetime import datetime, timedelta, UTC
+    from datetime import timedelta
 
     def mock_provider(entity_ids, start, end):
         result = {}
@@ -288,7 +290,11 @@ def main():
             "x": 75,
             "y": 40,
             "align": "center",
-            "spans": [{"text": "Alert: "}, {"icon": "mdi:fire", "color": "orange", "size": 18}, {"text": " Active", "color": "red"}],
+            "spans": [
+                {"text": "Alert: "},
+                {"icon": "mdi:fire", "color": "orange", "size": 18},
+                {"text": " Active", "color": "red"},
+            ],
             "size": 14,
         },
         "group": {
