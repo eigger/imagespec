@@ -10,6 +10,7 @@ import base64
 import io
 import os
 import sys
+
 from PIL import Image
 
 # Add src to sys.path
@@ -31,7 +32,7 @@ def get_history_context() -> RenderContext:
             self.state = value
             self.last_changed = changed
 
-    from datetime import datetime, timedelta, UTC
+    from datetime import timedelta
 
     def mock_provider(entity_ids, start, end):
         result = {}
@@ -288,7 +289,11 @@ def main():
             "x": 75,
             "y": 40,
             "align": "center",
-            "spans": [{"text": "Alert: "}, {"icon": "mdi:fire", "color": "orange", "size": 18}, {"text": " Active", "color": "red"}],
+            "spans": [
+                {"text": "Alert: "},
+                {"icon": "mdi:fire", "color": "orange", "size": 18},
+                {"text": " Active", "color": "red"},
+            ],
             "size": 14,
         },
         "group": {
