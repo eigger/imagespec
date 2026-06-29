@@ -47,4 +47,6 @@ __all__ = [
     "directory_resolver",
 ]
 
+# Single source of truth for the version. pyproject.toml reads this via
+# [tool.setuptools.dynamic]; bump it here only.
 __version__ = "0.1.0"
