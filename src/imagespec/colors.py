@@ -62,10 +62,23 @@ PALETTES = {
 DEFAULT_PALETTE = PALETTE_4
 
 
+def _parse_hex(s):
+    """Parse a ``#RGB`` or ``#RRGGBB`` string to RGBA, or ``None`` if malformed."""
+    h = s.lstrip("#")
+    try:
+        if len(h) == 3:  # shorthand #RGB -> #RRGGBB
+            return (int(h[0] * 2, 16), int(h[1] * 2, 16), int(h[2] * 2, 16), 255)
+        if len(h) >= 6:
+            return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
+    except ValueError:
+        return None
+    return None
+
+
 def _normalize_color(c):
     """Resolve one palette entry to an RGBA tuple.
 
-    Accepts a color name ("red"), a HEX string ("#ff0000"), or an
+    Accepts a color name ("red"), a HEX string ("#ff0000" or "#f00"), or an
     ``(r, g, b)`` / ``(r, g, b, a)`` tuple/list.
     """
     if isinstance(c, (tuple, list)):
@@ -78,10 +91,10 @@ def _normalize_color(c):
     if s in NAMED_COLORS:
         return NAMED_COLORS[s]
     if s.startswith("#"):
-        h = s.lstrip("#")
-        if len(h) >= 6:
-            return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
-    raise ValueError(f"Unknown palette color {c!r} (not a known name or #RRGGBB)")
+        rgba = _parse_hex(s)
+        if rgba is not None:
+            return rgba
+    raise ValueError(f"Unknown palette color {c!r} (not a known name or #RGB/#RRGGBB)")
 
 
 def get_palette(spec):
@@ -105,20 +118,21 @@ def get_palette(spec):
 
 
 def _requested_rgb(color):
-    """Resolve a color name or ``#RRGGBB`` to an RGBA tuple, or ``None``."""
+    """Resolve a color name or ``#RGB``/``#RRGGBB`` to an RGBA tuple, or ``None``.
+
+    An unrecognized value falls back to ``white`` (the renderer never raises on a
+    bad element color) but logs a warning so typos are diagnosable.
+    """
     if color is None:
         return None
     s = str(color).strip().lower()
     if s in NAMED_COLORS:
         return NAMED_COLORS[s]
     if s.startswith("#"):
-        try:
-            h = s.lstrip("#")
-            if len(h) >= 6:
-                return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), 255)
-        except ValueError:
-            pass
-        return white
+        rgba = _parse_hex(s)
+        if rgba is not None:
+            return rgba
+    _LOGGER.warning("Unknown color %r — falling back to white. Use a known name or #RGB/#RRGGBB.", color)
     return white
 
 
@@ -132,6 +146,17 @@ def nearest_in_palette(rgba, palette):
             best_dist = dist
             best = c
     return best
+
+
+def resolve_color(color):
+    """Resolve a color name or ``#RGB``/``#RRGGBB`` to its **true** RGBA tuple.
+
+    Unlike :func:`quantize_color`, this does *not* snap to a device palette — it
+    is used by deferred-quantization rendering, where every element is drawn in
+    full color and the whole image is quantized/dithered once at the end.
+    Returns ``None`` for a ``None`` input (meaning "no fill").
+    """
+    return _requested_rgb(color)
 
 
 def quantize_color(color, palette):

@@ -319,6 +319,39 @@ def main():
             "xlegend": None,
             "yaxis": None,
         },
+        "legend": {
+            "type": "legend",
+            "x": 20,
+            "y": 12,
+            "items": [
+                {"label": "Gas", "color": "red"},
+                {"label": "Water", "color": "blue"},
+                {"label": "Solar", "color": "orange"},
+            ],
+            "size": 15,
+            "swatch_size": 15,
+        },
+        "star_rating": {
+            "type": "star_rating",
+            "x": 12,
+            "y": 28,
+            "rating": 3.5,
+            "max": 5,
+            "size": 25,
+            "color": "orange",
+        },
+        "battery": {
+            "type": "battery",
+            "x": 25,
+            "y": 25,
+            "width": 100,
+            "height": 35,
+            "level": 65,
+            "fill": "green",
+            "outline": "black",
+            "show_percentage": True,
+            "text_color": "white",
+        },
     }
 
     for name, el in samples.items():

@@ -27,7 +27,7 @@ def main():
             "x_start": 0,
             "y_start": 0,
             "x_end": 639,
-            "y_end": 383,
+            "y_end": 499,
             "outline": "black",
             "width": 2,
             "radius": 12,
@@ -94,7 +94,7 @@ def main():
             "show_percentage": True,
         },
         # Memory Sparkline
-        {"type": "text", "x": 25, "y": 178, "value": "Memory Usage (24h)", "size": 9, "color": "gray"},
+        {"type": "text", "x": 25, "y": 178, "value": "Memory Usage (24h)", "size": 9, "color": "black"},
         {
             "type": "sparkline",
             "x": 25,
@@ -131,7 +131,7 @@ def main():
         },
         {"type": "text", "x": 280, "y": 152, "value": "Utility Ratio", "size": 9, "anchor": "ma"},
         # Small Sparkline
-        {"type": "text", "x": 330, "y": 98, "value": "Power (24h)", "size": 8, "color": "gray"},
+        {"type": "text", "x": 330, "y": 98, "value": "Power (24h)", "size": 8, "color": "black"},
         {
             "type": "sparkline",
             "x": 330,
@@ -258,9 +258,53 @@ def main():
             "align": "center",
             "row_height": 20,
         },
+        # --- 6. Card E: Status, Ratings & Power (Bottom) ---
+        {
+            "type": "rectangle",
+            "x_start": 15,
+            "y_start": 385,
+            "x_end": 625,
+            "y_end": 485,
+            "outline": "black",
+            "width": 1,
+            "radius": 8,
+        },
+        {"type": "text", "x": 25, "y": 392, "value": "Status, Ratings & Power", "size": 12, "color": "black"},
+        # Legend (left)
+        {"type": "text", "x": 25, "y": 412, "value": "Sources", "size": 9, "color": "black"},
+        {
+            "type": "legend",
+            "x": 25,
+            "y": 426,
+            "items": [
+                {"label": "Gas", "color": "orange"},
+                {"label": "Water", "color": "blue"},
+                {"label": "Elec", "color": "red"},
+            ],
+            "size": 12,
+            "swatch_size": 12,
+        },
+        # Star rating (center)
+        {"type": "text", "x": 250, "y": 412, "value": "Customer Rating", "size": 9, "color": "black"},
+        {"type": "star_rating", "x": 250, "y": 428, "rating": 4.5, "max": 5, "size": 26, "color": "orange"},
+        {"type": "text", "x": 250, "y": 462, "value": "4.5 / 5.0", "size": 10, "color": "black"},
+        # Battery (right)
+        {"type": "text", "x": 440, "y": 412, "value": "Battery", "size": 9, "color": "black"},
+        {
+            "type": "battery",
+            "x": 440,
+            "y": 428,
+            "width": 160,
+            "height": 40,
+            "level": 80,
+            "fill": "green",
+            "outline": "black",
+            "show_percentage": True,
+            "text_color": "white",
+        },
     ]
 
-    img = render(payload, width=640, height=384, background="white", dither=False, context=ctx)
+    img = render(payload, width=640, height=500, background="white", dither=False, context=ctx)
     os.makedirs("examples", exist_ok=True)
     output_path = "examples/showcase.png"
     img.save(output_path)

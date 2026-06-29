@@ -8,15 +8,13 @@ children use coordinates relative to the group's top-left, the group clips to it
 
 from __future__ import annotations
 
-import logging
-
 from PIL import Image
 
-from ..registry import element, get_handler
+from ..dispatch import render_element
+from ..exceptions import RenderError
+from ..registry import element
 from ..state import RenderState
-from ..utils import require, should_show
-
-_LOGGER = logging.getLogger(__name__)
+from ..utils import require
 
 
 @element("group")
@@ -31,16 +29,16 @@ def group(state: RenderState, element: dict) -> None:
     sub = Image.new("RGBA", (gw, gh), (0, 0, 0, 0))
     substate = RenderState(img=sub, canvas_width=gw, canvas_height=gh, context=state.context)
 
-    for child in element["elements"]:
+    for idx, child in enumerate(element["elements"]):
         if not isinstance(child, dict):
             continue
-        if not should_show(child):
-            continue
-        handler = get_handler(child.get("type", ""))
-        if handler is None:
-            _LOGGER.warning("group: unknown element type '%s' — skipping.", child.get("type"))
-            continue
-        handler(substate, child)
+        ctype = child.get("type", "")
+        try:
+            render_element(substate, child)
+        except RenderError:
+            raise  # already descriptive
+        except Exception as exc:  # noqa: BLE001 — add child context, then surface
+            raise RenderError(f"group: error rendering child #{idx} (type '{ctype}'): {exc}") from exc
 
     result = substate.img
     if rotate in (90, 180, 270):

@@ -136,14 +136,14 @@ def dlimg(state: RenderState, element: dict) -> None:
     rotate2 = element.get("rotate", 0)
     fit_mode = element.get("mode", "stretch")
 
-    if "http://" in url or "https://" in url:
+    if url.startswith(("http://", "https://")):
         try:
             response = requests.get(url, timeout=element.get("timeout", 30))
             response.raise_for_status()
         except requests.RequestException as exc:
             raise RenderError(f"dlimg: failed to fetch {url}: {exc}") from exc
         imgdl = Image.open(io.BytesIO(response.content))
-    elif "data:" in url:
+    elif url.startswith("data:"):
         s = url[5:]
         if not s or "," not in s:
             raise RenderError("dlimg: invalid data url")
@@ -171,13 +171,9 @@ def dlimg(state: RenderState, element: dict) -> None:
         imgdl = imgdl.rotate(-rotate2, expand=True)
     imgdl = _resize_image(imgdl, xsize, ysize, fit_mode).convert("RGBA")
 
-    # Optional Floyd–Steinberg dithering to the device palette (keeps alpha).
-    if element.get("dither"):
-        from ..dither import dither_to_palette
-
-        alpha = imgdl.split()[-1]
-        imgdl = dither_to_palette(imgdl, state.context.palette).convert("RGBA")
-        imgdl.putalpha(alpha)
+    # `dither` is handled generically by the render dispatcher (it isolates and
+    # quantizes any element carrying a `dither` flag), so there is nothing
+    # image-specific to do here.
 
     # Optional circular crop (avatar style).
     if element.get("mask") == "circle" or element.get("circle"):

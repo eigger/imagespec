@@ -117,6 +117,15 @@ def _samples(data_url):
                 {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 20, "y_end": 20, "outline": "black"}
             ],
         },
+        "legend": {
+            "type": "legend",
+            "x": 0,
+            "y": 0,
+            "items": [{"label": "a", "color": "black"}, {"label": "b", "color": "red"}],
+            "size": 8,
+        },
+        "star_rating": {"type": "star_rating", "x": 0, "y": 0, "rating": 3.5, "max": 5, "size": 8},
+        "battery": {"type": "battery", "x": 0, "y": 0, "width": 30, "height": 14, "level": 60},
     }
 
 

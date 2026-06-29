@@ -15,4 +15,5 @@ from . import (
     media,  # noqa: F401
     shapes,  # noqa: F401
     text,  # noqa: F401
+    widgets,  # noqa: F401
 )
