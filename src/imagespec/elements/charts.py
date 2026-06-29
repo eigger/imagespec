@@ -129,7 +129,7 @@ def diagram(state: RenderState, element: dict) -> None:
         height_factor = (height - offset) / max_val
         for bar_pos, bar in enumerate(bars):
             name, value = bar.split(",", 1)
-            x_pos = ((bar_margin + bar_width) * bar_pos) + offset
+            x_pos = pos_x + ((bar_margin + bar_width) * bar_pos) + offset
             draw.text(
                 (x_pos + (bar_width / 2), pos_y + height - offset / 2),
                 str(name),
