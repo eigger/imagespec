@@ -75,7 +75,7 @@ jobs:
               print("MISSING from wheel:", missing); sys.exit(1)
           print("All bundled assets present in", wheel)
           PY
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/*
