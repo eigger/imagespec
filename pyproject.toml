@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imagespec"
-dynamic = ["version"]  # single-sourced from imagespec.__version__ (see [tool.setuptools.dynamic])
+version = "0.1.0"
 description = "Render images from a declarative YAML/dict spec — shapes, text, charts, QR/barcodes — for e-paper ESL tags and label printers."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -57,8 +57,6 @@ ignore = ["B008"]
 # tests build deliberately odd payloads and import for side effects
 "tests/*" = ["E741"]
 
-[tool.setuptools.dynamic]
-version = { attr = "imagespec.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

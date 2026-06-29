@@ -11,6 +11,8 @@ Public API:
 
 from __future__ import annotations
 
+from importlib.metadata import version, PackageNotFoundError
+
 from .colors import (
     PALETTE_4,
     PALETTE_7,
@@ -47,6 +49,12 @@ __all__ = [
     "directory_resolver",
 ]
 
-# Single source of truth for the version. pyproject.toml reads this via
-# [tool.setuptools.dynamic]; bump it here only.
-__version__ = "0.1.0"
+# The version is defined statically in pyproject.toml.
+# We read it dynamically here via importlib.metadata.
+try:
+    __version__ = version("imagespec")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
+
+
