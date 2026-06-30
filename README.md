@@ -421,5 +421,5 @@ Replace each component's renderer with a thin adapter (see
 [`docs/migration.md`](docs/migration.md)) and add to `manifest.json`:
 
 ```json
-"requirements": ["imagespec==0.2.0"]
+"requirements": ["imagespec"]
 ```
