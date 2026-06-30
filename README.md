@@ -140,6 +140,7 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
 | ![](examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
 | ![](examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
+| | `stack` / `row` / `column` | layout | **new** — auto-layout: packs children along an axis (gap/padding/justify/align), flexbox-style, with optional Tailwind-like `class` shorthand |
 | ![](examples/elements/legend.png) | `legend` | widgets | **new** — color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
 | ![](examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
 | ![](examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
@@ -152,6 +153,14 @@ element** can carry its own `dither: true`/`false` to override it just for itsel
 ## Payload Specification & Element Reference
 
 Payloads are specified as a list (sequence) of dictionary elements, which can be easily authored in YAML or JSON. Each element requires a `type` string and varying geometric/styling attributes.
+
+> [!TIP]
+> **Generating payloads with an LLM?** See [`docs/authoring.md`](docs/authoring.md) — a
+> **self-contained authoring guide** you can paste straight into an AI's context. It
+> covers the output contract, the layout decision model (`stack`/`row`/`column` vs
+> `group` vs absolute coordinates), the Tailwind-like `class` shorthand, common
+> pitfalls (e.g. the YAML "one key per line" trap), device canvas sizes, and full
+> worked examples — every example verified by actually rendering it.
 
 ### Common Attributes
 - **Colors**: Supported color specifications include names (e.g., `"black"`, `"white"`, `"red"`, `"green"`, `"blue"`, `"orange"`, `"yellow"`) or HEX strings (e.g., `"#FF0000"`). Colors are automatically quantized to the host device's palette.
@@ -275,6 +284,35 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
   - `rotate` (int degrees, optional), `timeout` (seconds, default: `30`)
   - `dither` (bool, optional), `mask` (`"circle"`, optional; or `circle: true`)
 
+#### Layout / Auto-layout
+- **`group`**: Container that renders children at an offset, clipped to its box, optionally rotated.
+  - `x`, `y` (int offset, default `0`), `width`, `height` (int clip box, default: canvas), `rotate` (`90`/`180`/`270`, optional)
+  - `elements` (list of child element dicts, required) — children use coordinates **relative to the group**.
+- **`stack`** (aliases **`row`** = horizontal, **`column`** = vertical): *Auto-layout* container that **packs** its children along an axis so they need no explicit coordinates — the stack measures each child's drawn size and positions it. Purely additive: children are still drawn by their normal handlers, so **any element** can be a child, and absolute-coordinate payloads outside a stack are unaffected.
+  - `elements` (list of child element dicts, required)
+  - `direction` (`"vertical"` / `"horizontal"`, default: `"vertical"`; `row`/`column` set this)
+  - `gap` (int px between children, default: `0`)
+  - `padding` (int, all sides) or `padding_x`/`padding_y`/`padding_top`/`padding_right`/`padding_bottom`/`padding_left`
+  - `justify` (main-axis distribution: `"start"`, `"end"`, `"center"`, `"between"`, `"around"`, `"evenly"`, default: `"start"`)
+  - `align` (cross-axis item alignment: `"start"`, `"end"`, `"center"`, default: `"start"`)
+  - `x`, `y` (int offset of the whole stack, default `0`), `width`, `height` (int box, default: canvas), `rotate` (optional)
+  - **Per-child layout** via the child's own `class` string or a `layout: {...}` sub-dict (kept separate from the child's drawing keys so e.g. a `diagram`'s own `margin` is never confused for a layout margin): `grow` (int, share of leftover main-axis space), `self` (`"start"`/`"end"`/`"center"` cross-axis override), `margin`/`margin_x`/`margin_y`/`margin_<side>` (int px).
+  - **`class` shorthand** (optional, Tailwind-like — desugars to the keys above; explicit keys win). Only the **layout** subset is recognized; styling/colour classes are ignored (those stay on each element's own keys).
+    - container: `flex-row` / `flex-col`, `gap-N`, `p-N` / `px-N` / `py-N` / `pt-N` / `pr-N` / `pb-N` / `pl-N`, `justify-start|end|center|between|around|evenly`, `items-start|end|center`
+    - child: `grow` / `flex-1` / `grow-N`, `self-start|end|center`, `m-N` / `mx-N` / `my-N` / `mt-N` / `mr-N` / `mb-N` / `ml-N`
+    - **Spacing scale = real Tailwind**, not raw pixels: a unit is `N × 4px` (`gap-2` → 8px, `p-4` → 16px, `mt-0.5` → 2px). For exact pixels use the *arbitrary value* form `gap-[10]` / `p-[3px]`. Margins may be **negative** (`-mt-2` → -8px, `-ml-[3]` → -3px) for fine nudges; padding/gap cannot.
+
+  ```yaml
+  - type: row                     # horizontal auto-layout
+    x: 8
+    y: 8
+    class: "gap-2 items-center"    # gap-2 = 8px, vertically centered
+    elements:
+      - { type: icon, value: "mdi:thermometer", size: 18, color: red }
+      - { type: text, value: "24°C", size: 16 }       # no x/y needed
+      - { type: battery, width: 30, height: 14, level: 72, class: "ml-2" }
+  ```
+
 #### Widgets
 - **`legend`**: Draws color-swatch ↔ label rows (companion to `pie`/`plot`).
   - `x`, `y` (int top-left, required)
@@ -347,11 +385,14 @@ and keep the rest flat (labels, QR codes), in a single render:
   ysize: 100
   dither: true
 - type: pie            # this chart -> halftone (segments stay distinguishable)
-  x: 60; y: 60; radius: 40
+  x: 60
+  y: 60
+  radius: 40
   values: "Gas,30,orange;Water,25,blue;Elec,45,red"
   dither: true
 - type: text           # left flat regardless of the global flag
-  x: 10; y: 110
+  x: 10
+  y: 110
   value: "Energy mix"
 ```
 

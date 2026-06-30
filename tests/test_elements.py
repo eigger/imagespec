@@ -117,6 +117,37 @@ def _samples(data_url):
                 {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 20, "y_end": 20, "outline": "black"}
             ],
         },
+        "stack": {
+            "type": "stack",
+            "x": 0,
+            "y": 0,
+            "direction": "vertical",
+            "gap": 2,
+            "elements": [
+                {"type": "text", "value": "a", "size": 8},
+                {"type": "text", "value": "b", "size": 8},
+            ],
+        },
+        "row": {
+            "type": "row",
+            "x": 0,
+            "y": 0,
+            "class": "gap-2 items-center",
+            "elements": [
+                {"type": "icon", "value": "mdi:home", "size": 12},
+                {"type": "text", "value": "Hi", "size": 8},
+            ],
+        },
+        "column": {
+            "type": "column",
+            "x": 0,
+            "y": 0,
+            "gap": 1,
+            "elements": [
+                {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 10, "y_end": 5, "fill": "black"},
+                {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 6, "y_end": 5, "fill": "red"},
+            ],
+        },
         "legend": {
             "type": "legend",
             "x": 0,
