@@ -21,6 +21,7 @@ yellow = (255, 255, 0, 255)
 green = (0, 128, 0, 255)
 blue = (0, 0, 255, 255)
 orange = (255, 165, 0, 255)
+gray = (128, 128, 128, 255)
 
 NAMED_COLORS = {
     "white": white,
@@ -36,6 +37,8 @@ NAMED_COLORS = {
     "blue": blue,
     "orange": orange,
     "o": orange,
+    "gray": gray,
+    "grey": gray,
 }
 
 # ── Device palettes (ordered subsets of the canonical colors) ──────────────
