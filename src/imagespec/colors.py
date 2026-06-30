@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from PIL import ImageColor, ImageColor as _ImageColor  # for getrgb
+from PIL import ImageColor
 
 _LOGGER = logging.getLogger(__name__)
 
