@@ -90,4 +90,3 @@ def test_css_named_colors():
     assert quantize_color("papayawhip", PALETTE_BW) == white
     assert quantize_color("darkgreen", PALETTE_BW) == black
     assert get_palette(["chartreuse"]) == [(127, 255, 0, 255)]
-
