@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import logging
 
+from PIL import ImageColor, ImageColor as _ImageColor  # for getrgb
+
 _LOGGER = logging.getLogger(__name__)
 
 # ── Canonical named colors (RGBA) ──────────────────────────────────────────
@@ -21,21 +23,6 @@ yellow = (255, 255, 0, 255)
 green = (0, 128, 0, 255)
 blue = (0, 0, 255, 255)
 orange = (255, 165, 0, 255)
-gray = (128, 128, 128, 255)
-silver = (192, 192, 192, 255)
-lightgray = (211, 211, 211, 255)
-darkgray = (169, 169, 169, 255)
-maroon = (128, 0, 0, 255)
-olive = (128, 128, 0, 255)
-lime = (0, 255, 0, 255)
-teal = (0, 128, 128, 255)
-navy = (0, 0, 128, 255)
-purple = (128, 0, 128, 255)
-fuchsia = (255, 0, 255, 255)
-aqua = (0, 255, 255, 255)
-pink = (255, 192, 203, 255)
-brown = (165, 42, 42, 255)
-gold = (255, 215, 0, 255)
 
 NAMED_COLORS = {
     "white": white,
@@ -51,26 +38,6 @@ NAMED_COLORS = {
     "blue": blue,
     "orange": orange,
     "o": orange,
-    "gray": gray,
-    "grey": gray,
-    "silver": silver,
-    "lightgray": lightgray,
-    "lightgrey": lightgray,
-    "darkgray": darkgray,
-    "darkgrey": darkgray,
-    "maroon": maroon,
-    "olive": olive,
-    "lime": lime,
-    "teal": teal,
-    "navy": navy,
-    "purple": purple,
-    "fuchsia": fuchsia,
-    "magenta": fuchsia,
-    "aqua": aqua,
-    "cyan": aqua,
-    "pink": pink,
-    "brown": brown,
-    "gold": gold,
 }
 
 # ── Device palettes (ordered subsets of the canonical colors) ──────────────
@@ -125,6 +92,13 @@ def _normalize_color(c):
     s = str(c).strip().lower()
     if s in NAMED_COLORS:
         return NAMED_COLORS[s]
+    try:
+        rgb = ImageColor.getrgb(s)
+        if len(rgb) == 3:
+            return (rgb[0], rgb[1], rgb[2], 255)
+        return rgb
+    except ValueError:
+        pass
     if s.startswith("#"):
         rgba = _parse_hex(s)
         if rgba is not None:
@@ -163,6 +137,13 @@ def _requested_rgb(color):
     s = str(color).strip().lower()
     if s in NAMED_COLORS:
         return NAMED_COLORS[s]
+    try:
+        rgb = ImageColor.getrgb(s)
+        if len(rgb) == 3:
+            return (rgb[0], rgb[1], rgb[2], 255)
+        return rgb
+    except ValueError:
+        pass
     if s.startswith("#"):
         rgba = _parse_hex(s)
         if rgba is not None:

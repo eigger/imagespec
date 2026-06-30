@@ -27,7 +27,7 @@ def test_hex_nearest_on_bw():
 
 def test_unknown_name_falls_back_white():
     # not a palette definition — a runtime color request; unknowns -> white
-    assert quantize_color("chartreuse", PALETTE_4) == white
+    assert quantize_color("notacolor", PALETTE_4) == white
 
 
 def test_shorthand_hex_3digit():
@@ -83,3 +83,11 @@ def test_custom_palette_list():
     img_ctx_red = quantize_color("orange", get_palette(["black", "white", "red"]))
     # orange nearest among {black,white,red} -> red
     assert img_ctx_red == red
+
+
+def test_css_named_colors():
+    # Test that standard X11/CSS named colors are recognized and parsed correctly
+    assert quantize_color("papayawhip", PALETTE_BW) == white
+    assert quantize_color("darkgreen", PALETTE_BW) == black
+    assert get_palette(["chartreuse"]) == [(127, 255, 0, 255)]
+
