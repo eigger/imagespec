@@ -3,7 +3,7 @@
 Render images from a declarative **YAML/dict spec** — shapes, text, charts,
 QR/barcodes — for e-paper ESL tags and label printers.
 
-![imagespec Showcase](examples/showcase.png)
+![imagespec Showcase](https://raw.githubusercontent.com/eigger/imagespec/main/examples/showcase.png)
 
 This is the shared rendering core extracted from
 [`hass-gicisky`](https://github.com/eigger/hass-gicisky) and
@@ -13,7 +13,7 @@ removes the Home Assistant dependency so the engine can be reused and tested
 standalone. The rendering engine itself was originally adapted from
 [OpenEPaperLink's Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration)
 (`imagegen` module, Apache License 2.0) and has since been substantially
-rewritten and extended — see [`NOTICE`](NOTICE) for the full attribution.
+rewritten and extended — see [`NOTICE`](https://github.com/eigger/imagespec/blob/main/NOTICE) for the full attribution.
 
 ## Status
 
@@ -117,36 +117,36 @@ All ported from the original renderers (superset behaviour where they differed):
 
 | Preview | Element | Module | Notes |
 |:---:|---|---|---|
-| ![](examples/elements/line.png) | `line` | shapes | + dashed lines |
-| ![](examples/elements/rectangle.png) | `rectangle` | shapes | |
-| ![](examples/elements/rectangle_pattern.png) | `rectangle_pattern` | shapes | |
-| ![](examples/elements/circle.png) | `circle` | shapes | |
-| ![](examples/elements/ellipse.png) | `ellipse` | shapes | |
-| ![](examples/elements/arc.png) | `arc` | shapes | |
-| ![](examples/elements/polygon.png) | `polygon` | shapes | |
-| ![](examples/elements/gauge.png) | `gauge` | shapes | |
-| ![](examples/elements/text.png) | `text` | text | + rotation, background box |
-| ![](examples/elements/text_box.png) | `text_box` | text | |
-| ![](examples/elements/multiline.png) | `multiline` | text | |
-| ![](examples/elements/new_multiline.png) | `new_multiline` | text | fit-to-width/height autosize (niimbot) |
-| ![](examples/elements/text_fit.png) | `text_fit` | text | fit text into a fixed box: shrink font / ellipsis / wrap |
-| ![](examples/elements/table.png) | `table` | text | |
-| ![](examples/elements/qrcode.png) | `qrcode` | codes | + `eclevel` (niimbot) |
-| ![](examples/elements/barcode.png) | `barcode` | codes | |
-| ![](examples/elements/datamatrix.png) | `datamatrix` | codes | optional dep `pyStrich` (`imagespec[datamatrix]`) |
-| ![](examples/elements/icon.png) | `icon` | media | Material Design Icons (default) **+ Font Awesome Free** (`fa:`/`fas:`/`far:`/`fab:`); needs bundled `icons/` assets |
-| ![](examples/elements/dlimg.png) | `dlimg` | media | + fit modes (stretch/fit/fill/contain) |
-| ![](examples/elements/diagram.png) | `diagram` | charts | bar chart |
-| ![](examples/elements/plot.png) | `plot` | charts | needs `history_provider`; + area_fill, xlegend |
-| ![](examples/elements/progress_bar.png) | `progress_bar` | charts | + rounded corners |
-| ![](examples/elements/pie.png) | `pie` | charts | **new** — pie / donut (`inner_radius`) |
-| ![](examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
-| ![](examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
-| ![](examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/line.png) | `line` | shapes | + dashed lines |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/rectangle.png) | `rectangle` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/rectangle_pattern.png) | `rectangle_pattern` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/circle.png) | `circle` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/ellipse.png) | `ellipse` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/arc.png) | `arc` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/polygon.png) | `polygon` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/gauge.png) | `gauge` | shapes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/text.png) | `text` | text | + rotation, background box |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/text_box.png) | `text_box` | text | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/multiline.png) | `multiline` | text | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/new_multiline.png) | `new_multiline` | text | fit-to-width/height autosize (niimbot) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/text_fit.png) | `text_fit` | text | fit text into a fixed box: shrink font / ellipsis / wrap |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/table.png) | `table` | text | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/qrcode.png) | `qrcode` | codes | + `eclevel` (niimbot) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/barcode.png) | `barcode` | codes | |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/datamatrix.png) | `datamatrix` | codes | optional dep `pyStrich` (`imagespec[datamatrix]`) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/icon.png) | `icon` | media | Material Design Icons (default) **+ Font Awesome Free** (`fa:`/`fas:`/`far:`/`fab:`); needs bundled `icons/` assets |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/dlimg.png) | `dlimg` | media | + fit modes (stretch/fit/fill/contain) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/diagram.png) | `diagram` | charts | bar chart |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/plot.png) | `plot` | charts | needs `history_provider`; + area_fill, xlegend |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/progress_bar.png) | `progress_bar` | charts | + rounded corners |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/pie.png) | `pie` | charts | **new** — pie / donut (`inner_radius`) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
 | | `stack` / `row` / `column` | layout | **new** — auto-layout: packs children along an axis (gap/padding/justify/align), flexbox-style, with optional Tailwind-like `class` shorthand |
-| ![](examples/elements/legend.png) | `legend` | widgets | **new** — color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
-| ![](examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
-| ![](examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/legend.png) | `legend` | widgets | **new** — color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
 
 Plus enhancements: `render(..., dither=True)` dithers the whole output and **any
 element** can carry its own `dither: true`/`false` to override it just for itself
@@ -158,7 +158,7 @@ element** can carry its own `dither: true`/`false` to override it just for itsel
 Payloads are specified as a list (sequence) of dictionary elements, which can be easily authored in YAML or JSON. Each element requires a `type` string and varying geometric/styling attributes.
 
 > [!TIP]
-> **Generating payloads with an LLM?** See [`docs/authoring.md`](docs/authoring.md) — a
+> **Generating payloads with an LLM?** See [`docs/authoring.md`](https://github.com/eigger/imagespec/blob/main/docs/authoring.md) — a
 > **self-contained authoring guide** you can paste straight into an AI's context. It
 > covers the output contract, the layout decision model (`stack`/`row`/`column` vs
 > `group` vs absolute coordinates), the Tailwind-like `class` shorthand, common
@@ -349,16 +349,16 @@ Without dithering, colors are mapped to the nearest palette entry (direct quanti
 
 #### 1. Gradient & 3D Shading
 Dithering creates a natural halftone pattern that simulates smooth shading and eliminates color banding.
-![Gradient Dithering Comparison](examples/dither_comparison_gradient.png)
+![Gradient Dithering Comparison](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_comparison_gradient.png)
 
 #### 2. Font Rendering (Anti-aliasing vs. Dithering)
 > [!IMPORTANT]
 > **Guidelines for Text:** Avoid dithering on text layers. Dithering anti-aliased font edges creates tiny dot noise, which severely degrades readability on low-resolution e-ink screens. For sharp text, use direct quantization or disable anti-aliasing (`fontmode = "1"`). The built-in `text` element enforces `fontmode = "1"` for this reason.
-![Font Dithering Comparison](examples/dither_comparison_font.png)
+![Font Dithering Comparison](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_comparison_font.png)
 
 #### 3. Charts & Solid Fills
 Dithering is useful when you have solid color regions (like pie slices or bar diagrams) in colors outside your device palette (e.g. orange on a black/white screen). Dithering simulates these colors with dot patterns to help distinguish segments, though it introduces some edge noise.
-![Chart Dithering Comparison](examples/dither_comparison_chart.png)
+![Chart Dithering Comparison](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_comparison_chart.png)
 
 #### How palette mapping works
 Every element is drawn in **full color**, and the whole image is mapped to
@@ -419,11 +419,11 @@ their segments stay distinguishable, while everything else stays sharp.
 
 **Electronic shelf label — 3-color (black / white / red):**
 
-![ESL 3-color dithering sample](examples/dither_esl_3color.png)
+![ESL 3-color dithering sample](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_esl_3color.png)
 
 **Label printer — 2-color (black / white):**
 
-![Label printer 2-color dithering sample](examples/dither_label_2color.png)
+![Label printer 2-color dithering sample](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_label_2color.png)
 
 Regenerate them with:
 ```bash
@@ -474,21 +474,21 @@ below. Pass `default_font=` your own niimbot-style font if you need that look.)
 
 | Component | License | Source |
 |---|---|---|
-| imagespec's own code/modifications | MIT | [`LICENSE`](LICENSE) |
-| Rendering engine origin (registry dispatch, element handlers) | Apache License 2.0 | [OpenEPaperLink Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration) — see [`NOTICE`](NOTICE) |
+| imagespec's own code/modifications | MIT | [`LICENSE`](https://github.com/eigger/imagespec/blob/main/LICENSE) |
+| Rendering engine origin (registry dispatch, element handlers) | Apache License 2.0 | [OpenEPaperLink Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration) — see [`NOTICE`](https://github.com/eigger/imagespec/blob/main/NOTICE) |
 | `icons/materialdesignicons-webfont.ttf` (+ metadata) | Apache License 2.0 | [Pictogrammers / Templarian MaterialDesign-Webfont](https://github.com/Templarian/MaterialDesign-Webfont) |
 | `icons/fontawesome-free-*.otf` (+ metadata) | SIL OFL 1.1 (fonts) / CC BY 4.0 (icons) | [Font Awesome Free](https://github.com/FortAwesome/Font-Awesome) |
 | `fonts/NotoSansKR-Regular.ttf` | SIL Open Font License 1.1 | [Google Noto Fonts](https://fonts.google.com/noto/specimen/Noto+Sans+KR) |
 
 The engine was originally adapted from OpenEPaperLink's code and has since been
 substantially rewritten and extended (palette/color model, device-aware
-rotation, dithering, new elements, ...); [`NOTICE`](NOTICE) documents this per
+rotation, dithering, new elements, ...); [`NOTICE`](https://github.com/eigger/imagespec/blob/main/NOTICE) documents this per
 the Apache License's redistribution terms. Full license texts ship in the
-package: [`LICENSE-APACHE-2.0`](LICENSE-APACHE-2.0) (covers the engine origin
-and the MDI font), [`icons/LICENSE`](src/imagespec/icons/LICENSE) (a co-located
-copy for the icons directory), [`icons/LICENSE-FONTAWESOME`](src/imagespec/icons/LICENSE-FONTAWESOME)
+package: [`LICENSE-APACHE-2.0`](https://github.com/eigger/imagespec/blob/main/LICENSE-APACHE-2.0) (covers the engine origin
+and the MDI font), [`icons/LICENSE`](https://github.com/eigger/imagespec/blob/main/src/imagespec/icons/LICENSE) (a co-located
+copy for the icons directory), [`icons/LICENSE-FONTAWESOME`](https://github.com/eigger/imagespec/blob/main/src/imagespec/icons/LICENSE-FONTAWESOME)
 (Font Awesome Free — also notes brand-icon trademark restrictions), and
-[`fonts/OFL.txt`](src/imagespec/fonts/OFL.txt).
+[`fonts/OFL.txt`](https://github.com/eigger/imagespec/blob/main/src/imagespec/fonts/OFL.txt).
 
 ## Open decisions
 
@@ -505,7 +505,7 @@ None currently open.
 ## Integrating back into the components
 
 Replace each component's renderer with a thin adapter (see
-[`docs/migration.md`](docs/migration.md)) and add to `manifest.json`:
+[`docs/migration.md`](https://github.com/eigger/imagespec/blob/main/docs/migration.md)) and add to `manifest.json`:
 
 ```json
 "requirements": ["imagespec"]
