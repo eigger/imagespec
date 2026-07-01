@@ -1,4 +1,5 @@
-"""Asset-backed elements: icon (Material Design Icons glyph), dlimg (image)."""
+"""Asset-backed elements: icon (Material Design Icons / Font Awesome Free
+glyph), dlimg (image)."""
 
 from __future__ import annotations
 
@@ -72,13 +73,108 @@ def mdi_font(icons_dir: str, size):
     return ImageFont.truetype(font_file, size)
 
 
+# ── Font Awesome Free (solid/regular/brands) ───────────────────────────────
+# Metadata is trimmed from upstream's metadata/icons.json (name -> codepoint,
+# which of the 3 Free webfonts contain it, and aliases) by
+# scripts/build_fontawesome_assets.py — Pro-only icons are not included.
+_fa_meta_cache: dict[str, list] = {}
+_FA_STYLE_FILES = {
+    "solid": "fontawesome-free-solid.otf",
+    "regular": "fontawesome-free-regular.otf",
+    "brands": "fontawesome-free-brands.otf",
+}
+_FA_STYLE_PREFERENCE = ("solid", "regular", "brands")  # used by the generic "fa:" prefix
+_FA_PREFIX_STYLE = {"fas": "solid", "far": "regular", "fab": "brands"}
+_FA_PREFIXES = ("fa:", "fas:", "far:", "fab:")
+
+
+def _fa_meta(icons_dir: str) -> list:
+    meta_file = os.path.join(icons_dir, "fontawesome-free_meta.json")
+    cached = _fa_meta_cache.get(meta_file)
+    if cached is None:
+        if not os.path.exists(meta_file):
+            raise RenderError(
+                f"icon: Font Awesome metadata not found at {meta_file}. Run "
+                "scripts/build_fontawesome_assets.py to (re)generate the bundled assets."
+            )
+        with open(meta_file, encoding="utf-8") as f:
+            cached = json.load(f)
+        _fa_meta_cache[meta_file] = cached
+    return cached
+
+
+def _fa_lookup(name: str, icons_dir: str) -> dict:
+    icon_data = _fa_meta(icons_dir)
+    for ic in icon_data:
+        if ic["name"] == name:
+            return ic
+    for ic in icon_data:
+        if name in ic["aliases"]:
+            return ic
+    raise RenderError("Non valid Font Awesome icon used: " + name)
+
+
+def fa_font(icons_dir: str, size, style: str):
+    """Load one of the bundled Font Awesome Free webfonts at ``size``."""
+    from PIL import ImageFont
+
+    filename = _FA_STYLE_FILES.get(style)
+    if filename is None:
+        raise RenderError(f"icon: unknown Font Awesome style {style!r} (expected solid/regular/brands)")
+    font_file = os.path.join(icons_dir, filename)
+    if not os.path.exists(font_file):
+        raise RenderError(f"icon: Font Awesome webfont not found at {font_file}.")
+    return ImageFont.truetype(font_file, size)
+
+
+def fa_char_and_style(value: str, icons_dir: str) -> tuple[str, str]:
+    """Resolve ``fa:name`` / ``fas:name`` / ``far:name`` / ``fab:name`` to ``(glyph, style)``.
+
+    ``fas``/``far``/``fab`` force solid/regular/brands respectively (error if the
+    icon has no glyph in that style); plain ``fa:`` auto-picks the first
+    available style in solid > regular > brands order.
+    """
+    forced_style = None
+    for prefix, style in _FA_PREFIX_STYLE.items():
+        if value.startswith(f"{prefix}:"):
+            forced_style, value = style, value[len(prefix) + 1 :]
+            break
+    else:
+        if value.startswith("fa:"):
+            value = value[3:]
+    entry = _fa_lookup(value, icons_dir)
+    if forced_style is not None:
+        if forced_style not in entry["styles"]:
+            raise RenderError(
+                f"icon: Font Awesome icon '{value}' has no {forced_style!r} style "
+                f"(available: {', '.join(entry['styles'])})"
+            )
+        chosen = forced_style
+    else:
+        chosen = next((s for s in _FA_STYLE_PREFERENCE if s in entry["styles"]), entry["styles"][0])
+    return chr(int(entry["codepoint"], 16)), chosen
+
+
+def resolve_icon(value: str, icons_dir: str, size):
+    """Resolve an ``icon``/``rich_text``/``legend`` icon ``value`` to ``(glyph, font)``.
+
+    ``value`` is a Font Awesome name (``"fa:home"``, or with an explicit style —
+    ``"fas:"``/``"far:"``/``"fab:"``) or a Material Design Icons name
+    (``"mdi:..."``; also the default when no recognized prefix is present, for
+    backward compatibility).
+    """
+    if value.startswith(_FA_PREFIXES):
+        glyph, style = fa_char_and_style(value, icons_dir)
+        return glyph, fa_font(icons_dir, size, style)
+    return mdi_char(value, icons_dir), mdi_font(icons_dir, size)
+
+
 @element("icon")
 def icon(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "value", "size"], "icon")
     d = ImageDraw.Draw(state.img)
     d.fontmode = "1"
-    glyph = mdi_char(element["value"], state.context.icons_dir)
-    font = mdi_font(state.context.icons_dir, element["size"])
+    glyph, font = resolve_icon(element["value"], state.context.icons_dir, element["size"])
     anchor = element.get("anchor", "la")
     stroke_width = element.get("stroke_width", 0)
     stroke_fill = state.context.color(element.get("stroke_fill", "white"))

@@ -322,13 +322,14 @@ def table(state: RenderState, element: dict) -> None:
 def rich_text(state: RenderState, element: dict) -> None:
     """Draw inline spans (text and/or icons) left-to-right on one baseline.
 
-    Each span is ``{"text": ...}`` or ``{"icon": "mdi:..."}`` with optional
-    per-span ``size``/``color``/``font``. ``element["y"]`` is the vertical center
-    (spans are middle-anchored); ``align`` (left/center/right) positions the run
-    relative to ``element["x"]``.
+    Each span is ``{"text": ...}`` or ``{"icon": "mdi:..."}`` (also accepts
+    ``"fa:..."``/``"fas:..."``/``"far:..."``/``"fab:..."`` for Font Awesome) with
+    optional per-span ``size``/``color``/``font``. ``element["y"]`` is the
+    vertical center (spans are middle-anchored); ``align`` (left/center/right)
+    positions the run relative to ``element["x"]``.
     """
     require(element, ["x", "y", "spans"], "rich_text")
-    from .media import mdi_char, mdi_font
+    from .media import resolve_icon
 
     spacing = element.get("spacing", 0)
     default_size = element.get("size", 20)
@@ -340,8 +341,7 @@ def rich_text(state: RenderState, element: dict) -> None:
         size = sp.get("size", default_size)
         color = sp.get("color", default_color)
         if "icon" in sp:
-            text = mdi_char(sp["icon"], state.context.icons_dir)
-            font = mdi_font(state.context.icons_dir, size)
+            text, font = resolve_icon(sp["icon"], state.context.icons_dir, size)
         else:
             text = str(sp.get("text", ""))
             font = state.context.font(sp.get("font", default_font), size)

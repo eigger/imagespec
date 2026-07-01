@@ -1,0 +1,52 @@
+imagespec — Third-Party Notices
+================================
+
+imagespec's own source code is licensed under the MIT License (see LICENSE).
+
+Code origin (Apache License 2.0)
+---------------------------------
+The rendering engine in this project (registry-based element dispatch, color
+quantization, and the shape/text/media/codes/charts element handlers) was
+originally adapted from the `imagegen` module of:
+
+    OpenEPaperLink Home Assistant Integration
+    https://github.com/OpenEPaperLink/Home_Assistant_Integration
+    Copyright (c) OpenEPaperLink and contributors
+    Licensed under the Apache License, Version 2.0
+    (full text: LICENSE-APACHE-2.0, or http://www.apache.org/licenses/LICENSE-2.0)
+
+That code has since been substantially modified, rewritten, and extended —
+including porting/merging behaviour from the separate `hass-gicisky` and
+`hass-niimbot` integrations (see README), changing the color/palette model,
+adding device-aware rotation, dithering, new element types, and more — but
+the original architecture and several element handlers trace back to it, so
+this notice is included per the Apache License's redistribution terms
+(Section 4). It does not change the MIT license that covers imagespec's own
+code and modifications; it documents the origin of code that predates this
+project's MIT copyright.
+
+Bundled assets (Apache License 2.0 / SIL Open Font License 1.1 / CC BY 4.0)
+------------------------------------------------------------------------------
+- `src/imagespec/icons/materialdesignicons-webfont.ttf` (+ metadata) —
+  Material Design Icons webfont, Copyright (c) Pictogrammers / Austin Andrews
+  and Contributors, licensed under the Apache License, Version 2.0.
+  Source: https://github.com/Templarian/MaterialDesign-Webfont
+  Full text: src/imagespec/icons/LICENSE
+
+- `src/imagespec/fonts/NotoSansKR-Regular.ttf` — Noto Sans KR, Copyright 2014-
+  2021 Adobe, with Reserved Font Name 'Noto', licensed under the SIL Open Font
+  License, Version 1.1.
+  Source: https://fonts.google.com/noto/specimen/Noto+Sans+KR
+  Full text: src/imagespec/fonts/OFL.txt
+
+- `src/imagespec/icons/fontawesome-free-{solid,regular,brands}.otf` (+ trimmed
+  metadata) — Font Awesome Free, Copyright (c) 2024 Fonticons, Inc., with
+  Reserved Font Name "Font Awesome". Fonts licensed under the SIL Open Font
+  License, Version 1.1; icons licensed under CC BY 4.0. Brand icons are
+  trademarks of their respective owners (not Fonticons/Font Awesome) — use them
+  only to represent the brand they refer to.
+  Source: https://github.com/FortAwesome/Font-Awesome
+  Full text: src/imagespec/icons/LICENSE-FONTAWESOME
+
+The contents of this NOTICE file are for informational purposes only and do
+not modify any license.
