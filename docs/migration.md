@@ -115,7 +115,11 @@ def customimage(entity_id, service, hass):
             rotate=service.data.get("rotate", 0),
             rotate_mode="image",    # label printer: variable size, drawing rotates
             background=service.data.get("background", "white"),
-            context=_make_context(hass, default_font="ppb.ttf", palette="bw"),
+            # niimbot's old `ppb.ttf` default isn't bundled by imagespec (its
+            # license/origin couldn't be verified) — supply it via font_resolver
+            # (e.g. from `www/fonts`) if you need that look; otherwise this falls
+            # back to imagespec's bundled NotoSansKR-Regular.ttf.
+            context=_make_context(hass, palette="bw"),
         )
     except RenderError as err:
         raise HomeAssistantError(str(err)) from err
@@ -129,7 +133,7 @@ def customimage(entity_id, service, hass):
 |---|---|---|
 | `rotate_mode` | `"canvas"` (output stays W×H) | `"image"` (output dims swap) |
 | `palette` | varies by model (`"2"`/`"4"`/`"7"`) | usually `"bw"` |
-| `default_font` | `NotoSansKR-Regular.ttf` | `ppb.ttf` |
+| `default_font` | `NotoSansKR-Regular.ttf` (imagespec default) | bring your own via `font_resolver`/`www/fonts` (`ppb.ttf` is no longer bundled — unverified license) |
 | canvas size | from `device.width/height` | from `service.data["width"/"height"]` |
 
 Colors in a payload are auto-quantized to the device `palette`, so the same
@@ -140,9 +144,10 @@ payload renders correctly on a 2/4/7-color panel without changes.
 ## 6. Optional cleanups enabled by the move
 
 - **Delete bundled fonts** from each component that `imagespec` already ships
-  (`NotoSansKR-Regular.ttf`, `ppb.ttf`, the MDI webfont + meta). Decorative fonts
-  the components still need can stay in `www/fonts`, or be downloaded on demand
-  via `imagespec.resolvers.caching_resolver` (download-once, cache offline).
+  (`NotoSansKR-Regular.ttf`, the MDI webfont + meta). Decorative fonts the
+  components still need (e.g. niimbot's `ppb.ttf`, if its license is confirmed)
+  can stay in `www/fonts`, or be downloaded on demand via
+  `imagespec.resolvers.caching_resolver` (download-once, cache offline).
 - **Image quality**: pass `dither=True` to `render(...)`, or `"dither": true` on a
   `dlimg`, for Floyd–Steinberg dithering on limited-color panels.
 

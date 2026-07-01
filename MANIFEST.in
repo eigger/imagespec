@@ -1,6 +1,7 @@
-include LICENSE README.md
-recursive-include src/imagespec/fonts *.ttf *.otf *.json *.md
-recursive-include src/imagespec/icons *.ttf *.otf *.json *.md
+include LICENSE LICENSE-APACHE-2.0 NOTICE README.md
+recursive-include src/imagespec/fonts *.ttf *.otf *.json *.md *.txt
+recursive-include src/imagespec/icons *.ttf *.otf *.json *.md LICENSE LICENSE-FONTAWESOME
 recursive-include tests *.py
 recursive-include examples *.py
+recursive-include scripts *.py
 recursive-include docs *.md

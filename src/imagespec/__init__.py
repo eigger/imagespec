@@ -27,7 +27,13 @@ from .context import RenderContext
 from .core import ROTATE_MODE_CANVAS, ROTATE_MODE_IMAGE, render
 from .exceptions import RenderError
 from .registry import known_types
-from .resolvers import caching_resolver, chain_resolvers, directory_resolver
+from .resolvers import (
+    GOOGLE_FONTS_SOURCES,
+    caching_resolver,
+    chain_resolvers,
+    directory_resolver,
+    google_fonts_resolver,
+)
 
 __all__ = [
     "render",
@@ -47,6 +53,8 @@ __all__ = [
     "caching_resolver",
     "chain_resolvers",
     "directory_resolver",
+    "google_fonts_resolver",
+    "GOOGLE_FONTS_SOURCES",
 ]
 
 # The version is defined statically in pyproject.toml.

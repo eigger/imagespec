@@ -58,7 +58,7 @@ jobs:
         run: python -m build
       - name: Verify metadata
         run: twine check dist/*
-      - name: Verify bundled assets are in the wheel
+      - name: Verify bundled assets and license files are in the wheel
         run: |
           python - <<'PY'
           import glob, zipfile, sys
@@ -66,14 +66,26 @@ jobs:
           names = zipfile.ZipFile(wheel).namelist()
           required = [
               "imagespec/fonts/NotoSansKR-Regular.ttf",
-              "imagespec/fonts/ppb.ttf",
+              "imagespec/fonts/OFL.txt",
               "imagespec/icons/materialdesignicons-webfont.ttf",
               "imagespec/icons/materialdesignicons-webfont_meta.json",
+              "imagespec/icons/LICENSE",
+              "imagespec/icons/fontawesome-free-solid.otf",
+              "imagespec/icons/fontawesome-free-regular.otf",
+              "imagespec/icons/fontawesome-free-brands.otf",
+              "imagespec/icons/fontawesome-free_meta.json",
+              "imagespec/icons/LICENSE-FONTAWESOME",
           ]
           missing = [r for r in required if r not in names]
           if missing:
               print("MISSING from wheel:", missing); sys.exit(1)
-          print("All bundled assets present in", wheel)
+          # license-files (PEP 639) land under <dist-info>/licenses/
+          license_names = {n.rsplit("/", 1)[-1] for n in names if "/licenses/" in n}
+          required_licenses = {"LICENSE", "LICENSE-APACHE-2.0", "NOTICE"}
+          missing_licenses = required_licenses - license_names
+          if missing_licenses:
+              print("MISSING from dist-info/licenses:", missing_licenses); sys.exit(1)
+          print("All bundled assets and license files present in", wheel)
           PY
       - uses: actions/upload-artifact@v7
         with:

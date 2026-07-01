@@ -8,7 +8,7 @@ import io
 import pytest
 from PIL import Image
 
-from imagespec import render
+from imagespec import RenderError, render
 
 
 @pytest.fixture
@@ -201,3 +201,74 @@ def test_qrcode_pixel_box_fits_and_square(bw_ctx):
     # fits within the 5..65 box on both axes and is (near-)square
     assert max(xs) <= 65 and max(ys) <= 65
     assert abs((max(xs) - min(xs)) - (max(ys) - min(ys))) <= 1
+
+
+# --- Font Awesome Free icons (icon / rich_text / legend), alongside MDI ---
+
+
+def _has_dark_pixel(img):
+    return any(img.getpixel((x, y)) != (255, 255, 255) for x in range(img.width) for y in range(img.height))
+
+
+def test_icon_fa_auto_style_renders(bw_ctx):
+    # "fa:" with no forced style auto-picks solid (house's only free style)
+    el = {"type": "icon", "x": 2, "y": 2, "value": "fa:house", "size": 24}
+    img = render([el], 30, 30, background="white", context=bw_ctx)
+    assert _has_dark_pixel(img)
+
+
+def test_icon_fa_forced_solid_and_brands_render(bw_ctx):
+    solid = render([{"type": "icon", "x": 2, "y": 2, "value": "fas:house", "size": 24}], 30, 30, context=bw_ctx)
+    brands = render([{"type": "icon", "x": 2, "y": 2, "value": "fab:github", "size": 24}], 30, 30, context=bw_ctx)
+    assert _has_dark_pixel(solid)
+    assert _has_dark_pixel(brands)
+
+
+def test_icon_fa_alias_resolves(bw_ctx):
+    # FA6 renamed "home" -> "house"; "home" is registered as an alias
+    el = {"type": "icon", "x": 2, "y": 2, "value": "fa:home", "size": 24}
+    img = render([el], 30, 30, background="white", context=bw_ctx)
+    assert _has_dark_pixel(img)
+
+
+def test_icon_mdi_still_default_without_prefix(ctx):
+    # backward compatibility: a bare/`mdi:` name still resolves via MDI
+    el = {"type": "icon", "x": 0, "y": 0, "value": "home", "size": 16}
+    assert render([el], 20, 20, context=ctx).size == (20, 20)
+
+
+def test_icon_fa_forced_style_without_glyph_raises(ctx):
+    # "house" has no brands-style glyph
+    el = {"type": "icon", "x": 0, "y": 0, "value": "fab:house", "size": 16}
+    with pytest.raises(RenderError, match="brands"):
+        render([el], 20, 20, context=ctx)
+
+
+def test_icon_fa_unknown_name_raises(ctx):
+    el = {"type": "icon", "x": 0, "y": 0, "value": "fa:not-a-real-icon", "size": 16}
+    with pytest.raises(RenderError):
+        render([el], 20, 20, context=ctx)
+
+
+def test_rich_text_fa_icon_span(ctx):
+    el = {
+        "type": "rich_text",
+        "x": 2,
+        "y": 10,
+        "spans": [{"text": "Temp "}, {"icon": "fas:house", "size": 14}],
+        "size": 12,
+    }
+    assert render([el], 80, 20, context=ctx).size == (80, 20)
+
+
+def test_legend_fa_icon_item(bw_ctx):
+    el = {
+        "type": "legend",
+        "x": 0,
+        "y": 0,
+        "items": [{"label": "home", "icon": "fas:house", "color": "black"}],
+        "size": 12,
+        "swatch_size": 12,
+    }
+    img = render([el], 60, 20, background="white", context=bw_ctx)
+    assert _has_dark_pixel(img)

@@ -64,10 +64,10 @@ def legend(state: RenderState, element: dict) -> None:
         cy = cursor_y + line_h / 2
         col = state.context.color(color)
         if icon is not None:
-            from .media import mdi_char, mdi_font
+            from .media import resolve_icon
 
-            glyph = mdi_char(icon, state.context.icons_dir)
-            d.text((cursor_x, cy), glyph, font=mdi_font(state.context.icons_dir, swatch), fill=col, anchor="lm")
+            glyph, icon_font = resolve_icon(icon, state.context.icons_dir, swatch)
+            d.text((cursor_x, cy), glyph, font=icon_font, fill=col, anchor="lm")
         elif shape == "circle":
             d.ellipse([(cursor_x, cy - swatch / 2), (cursor_x + swatch, cy + swatch / 2)], fill=col)
         elif shape == "line":

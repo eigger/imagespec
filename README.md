@@ -10,11 +10,14 @@ This is the shared rendering core extracted from
 [`hass-niimbot`](https://github.com/eigger/hass-niimbot). Both integrations had
 near-identical renderers that had drifted apart; `imagespec` unifies them and
 removes the Home Assistant dependency so the engine can be reused and tested
-standalone.
+standalone. The rendering engine itself was originally adapted from
+[OpenEPaperLink's Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration)
+(`imagegen` module, Apache License 2.0) and has since been substantially
+rewritten and extended — see [`NOTICE`](NOTICE) for the full attribution.
 
 ## Status
 
-✅ **29 elements** (21 ported + 8 new) rendering, with a 97-test suite.
+✅ **29 elements** (21 ported + 8 new) rendering, with a 128-test suite.
 Architecture (HA-decoupled context, registry dispatch, device-specific rotation
 + palette) is in place. Remaining work is packaging polish and switching the two
 components over to it.
@@ -83,7 +86,7 @@ python examples/smoke_test.py
 
 ```bash
 pip install -e ".[dev,datamatrix]"
-pytest                 # 97 tests: every element, palettes, rotation, dither, errors
+pytest                 # 128 tests: every element, palettes, rotation, dither, errors
 ruff check . && ruff format --check .   # lint + format
 python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
@@ -131,7 +134,7 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](examples/elements/qrcode.png) | `qrcode` | codes | + `eclevel` (niimbot) |
 | ![](examples/elements/barcode.png) | `barcode` | codes | |
 | ![](examples/elements/datamatrix.png) | `datamatrix` | codes | optional dep `pyStrich` (`imagespec[datamatrix]`) |
-| ![](examples/elements/icon.png) | `icon` | media | Material Design Icons; needs bundled `icons/` assets |
+| ![](examples/elements/icon.png) | `icon` | media | Material Design Icons (default) **+ Font Awesome Free** (`fa:`/`fas:`/`far:`/`fab:`); needs bundled `icons/` assets |
 | ![](examples/elements/dlimg.png) | `dlimg` | media | + fit modes (stretch/fit/fill/contain) |
 | ![](examples/elements/diagram.png) | `diagram` | charts | bar chart |
 | ![](examples/elements/plot.png) | `plot` | charts | needs `history_provider`; + area_fill, xlegend |
@@ -217,6 +220,7 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 - **`rich_text`**: Draws a single line of text with mixed formatting (text, icons, colors, sizes) side-by-side.
   - `x`, `y` (int, required)
   - `spans` (list of span dicts: `[{"text": "Temp: "}, {"icon": "mdi:fire", "color": "orange"}]`, required)
+    — `icon` accepts the same `mdi:`/`fa:`/`fas:`/`far:`/`fab:` names as the `icon` element
   - `size` (default: `12`), `align` (left/right/center, default: `"left"`)
 - **`table`**: Renders a simple structured table.
   - `x`, `y` (int top-left, required)
@@ -273,9 +277,12 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
   - `boxsize` (int pixels per cell, default: `2`), **or** `width`/`height` (int px box
     — scaled square & crisp to fit, like `qrcode`)
   - `color`, `bgcolor` (optional)
-- **`icon`**: Renders a vector icon from Material Design Icons.
+- **`icon`**: Renders a vector icon from Material Design Icons or Font Awesome Free.
   - `x`, `y` (int top-left, required)
-  - `value` (string slug, e.g. `"mdi:home"`, required)
+  - `value` (string slug, required) — `"mdi:home"` (or a bare name, e.g. `"home"`,
+    for backward compatibility) for **Material Design Icons**; `"fa:home"` /
+    `"fas:home"` (solid) / `"far:star"` (regular) / `"fab:github"` (brands) for
+    **Font Awesome Free**. Plain `"fa:"` auto-picks solid > regular > brands.
   - `size` (int, default: `24`), `color` (optional)
 - **`dlimg`**: Downloads and renders an external image (with fit and dithering).
   - `x`, `y`, `xsize`, `ysize` (int box, required)
@@ -316,7 +323,9 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 #### Widgets
 - **`legend`**: Draws color-swatch ↔ label rows (companion to `pie`/`plot`).
   - `x`, `y` (int top-left, required)
-  - `items` (required) — list of `{"label": ..., "color": ..., "icon": ...}` dicts, or a `"label,color;label,color"` string
+  - `items` (required) — list of `{"label": ..., "color": ..., "icon": ...}` dicts (icon
+    accepts `mdi:`/`fa:`/`fas:`/`far:`/`fab:` names, same as `icon`), or a
+    `"label,color;label,color"` string
   - `orientation` (`"vertical"` / `"horizontal"`, default: `"vertical"`)
   - `shape` (`"square"` / `"circle"` / `"line"`, default: `"square"`)
   - `size` (font size, default: `12`), `swatch_size`, `gap`, `spacing` (optional)
@@ -428,10 +437,14 @@ python examples/compare_dither.py
 
 ## Fonts & assets
 
-Bundled in the package (offline baseline):
+Bundled in the package (offline baseline, ~12 MB total):
 
-- `icons/materialdesignicons-webfont.ttf` + `_meta.json` — required by `icon`.
-- `fonts/NotoSansKR-Regular.ttf` (default) and `fonts/ppb.ttf` (niimbot default).
+- `icons/materialdesignicons-webfont.ttf` + `_meta.json` — `icon`'s default set
+  (`mdi:` prefix, or no prefix).
+- `icons/fontawesome-free-{solid,regular,brands}.otf` + trimmed metadata —
+  `icon`'s second set (`fa:`/`fas:`/`far:`/`fab:` prefix).
+- `fonts/NotoSansKR-Regular.ttf` — the only bundled font, and the default for
+  every payload (`RenderContext.default_font`).
 
 Anything else is resolved at runtime, in order: `font_resolver` (host) →
 bundled font of the same basename → bundled default. Helpers in
@@ -440,21 +453,54 @@ bundled font of the same basename → bundled default. Helpers in
 - `directory_resolver(dir)` — look up fonts in a host directory (e.g. `www/fonts`).
 - `caching_resolver(cache_dir, sources)` — **download on first use, cache to
   disk, reuse offline** (internet needed only once per font).
+- `google_fonts_resolver(cache_dir, families=None)` — a `caching_resolver`
+  preset over verified-license Google Fonts (`ofl/` directory → all SIL OFL
+  1.1), covering scripts the bundled Noto Sans KR doesn't: Japanese, Simplified/
+  Traditional Chinese, Arabic, Thai, plus a broader Latin/Cyrillic/Greek family.
+  See `GOOGLE_FONTS_SOURCES` for the exact list.
 - `chain_resolvers(a, b, ...)` — try several in order.
 
-This is why the core bundles only the essentials (~11 MB) and **not** gicisky's
-full 74 MB font set — decorative fonts are better downloaded-and-cached or served
-from `www/fonts`.
+This is why the core bundles only the essentials and **not** gicisky's full
+74 MB font set — decorative/other-script fonts are better downloaded-and-cached
+(`google_fonts_resolver`/`caching_resolver`) or served from `www/fonts`. (Earlier
+builds also bundled niimbot's `ppb.ttf` as a second default font; it was dropped
+because its license/origin could not be confirmed — see *Licensing & attribution*
+below. Pass `default_font=` your own niimbot-style font if you need that look.)
+
+### Licensing & attribution
+
+`imagespec` is **MIT AND Apache-2.0** (see the `license` field in
+`pyproject.toml`) — not pure MIT — because it's a combined work:
+
+| Component | License | Source |
+|---|---|---|
+| imagespec's own code/modifications | MIT | [`LICENSE`](LICENSE) |
+| Rendering engine origin (registry dispatch, element handlers) | Apache License 2.0 | [OpenEPaperLink Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration) — see [`NOTICE`](NOTICE) |
+| `icons/materialdesignicons-webfont.ttf` (+ metadata) | Apache License 2.0 | [Pictogrammers / Templarian MaterialDesign-Webfont](https://github.com/Templarian/MaterialDesign-Webfont) |
+| `icons/fontawesome-free-*.otf` (+ metadata) | SIL OFL 1.1 (fonts) / CC BY 4.0 (icons) | [Font Awesome Free](https://github.com/FortAwesome/Font-Awesome) |
+| `fonts/NotoSansKR-Regular.ttf` | SIL Open Font License 1.1 | [Google Noto Fonts](https://fonts.google.com/noto/specimen/Noto+Sans+KR) |
+
+The engine was originally adapted from OpenEPaperLink's code and has since been
+substantially rewritten and extended (palette/color model, device-aware
+rotation, dithering, new elements, ...); [`NOTICE`](NOTICE) documents this per
+the Apache License's redistribution terms. Full license texts ship in the
+package: [`LICENSE-APACHE-2.0`](LICENSE-APACHE-2.0) (covers the engine origin
+and the MDI font), [`icons/LICENSE`](src/imagespec/icons/LICENSE) (a co-located
+copy for the icons directory), [`icons/LICENSE-FONTAWESOME`](src/imagespec/icons/LICENSE-FONTAWESOME)
+(Font Awesome Free — also notes brand-icon trademark restrictions), and
+[`fonts/OFL.txt`](src/imagespec/fonts/OFL.txt).
 
 ## Open decisions
 
-- **Default font.** `NotoSansKR-Regular.ttf` (gicisky) vs `ppb.ttf` (niimbot).
-  Default is Noto; bundle both so existing payloads render unchanged.
+None currently open.
 
 > Resolved: rotation is now a per-device `rotate_mode` (`"canvas"` for gicisky,
 > `"image"` for niimbot), and `RenderState.canvas_width/height` always reflect
 > the actual drawing surface — so `plot`/`diagram` default extents are
 > consistent in both modes.
+>
+> Resolved: the default font is `NotoSansKR-Regular.ttf` only — niimbot's
+> `ppb.ttf` was dropped (unverifiable license; see *Licensing & attribution*).
 
 ## Integrating back into the components
 
