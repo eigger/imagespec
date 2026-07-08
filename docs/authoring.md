@@ -263,7 +263,8 @@ row using `justify-evenly` with two centered icon+value columns.
 
 ## 8. Cheat-sheet — most-used elements
 
-Full list & all keys: *Element Reference* in [`../README.md`](../README.md).
+Full list & all keys: *Element Reference* in [`README.md`](../README.md) and
+[`elements.md`](elements.md) (copy-paste examples per type).
 `(req)` = required.
 
 - **`text`** — `x`(req), `value`(req), `y`, `size`(=12), `color`(="black"), `font`, `anchor`. *Inside a stack, omit `x`/`y`.*

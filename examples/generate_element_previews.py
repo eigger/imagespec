@@ -352,13 +352,90 @@ def main():
             "show_percentage": True,
             "text_color": "white",
         },
+        "stack": {
+            "type": "stack",
+            "x": 10,
+            "y": 8,
+            "gap": 4,
+            "elements": [
+                {"type": "text", "value": "First", "size": 12},
+                {"type": "text", "value": "Second", "size": 12},
+                {"type": "text", "value": "Third", "size": 12},
+            ],
+        },
+        "row": {
+            "type": "row",
+            "x": 8,
+            "y": 28,
+            "class": "gap-2 items-center",
+            "elements": [
+                {"type": "icon", "value": "mdi:thermometer", "size": 18, "color": "red"},
+                {"type": "text", "value": "24°C", "size": 14},
+                {"type": "battery", "width": 30, "height": 14, "level": 72, "class": "ml-2"},
+            ],
+        },
+        "column": {
+            "type": "column",
+            "x": 8,
+            "y": 8,
+            "class": "gap-1 items-center",
+            "elements": [
+                {"type": "icon", "value": "mdi:home", "size": 20},
+                {"type": "text", "value": "Home", "size": 12},
+                {"type": "text", "value": "23 C", "size": 16, "color": "red"},
+            ],
+        },
+        "label_combo": [
+            {
+                "type": "column",
+                "x": 4,
+                "y": 4,
+                "width": 142,
+                "class": "gap-1",
+                "elements": [
+                    {"type": "text", "value": "Warehouse A-12", "size": 10},
+                    {
+                        "type": "row",
+                        "class": "gap-1 items-center",
+                        "elements": [
+                            {"type": "qrcode", "data": "https://example.com/item/12345", "width": 36, "height": 36},
+                            {
+                                "type": "column",
+                                "class": "gap-0",
+                                "elements": [
+                                    {"type": "text", "value": "Widget XL", "size": 9},
+                                    {
+                                        "type": "barcode",
+                                        "data": "123456789012",
+                                        "width": 90,
+                                        "height": 18,
+                                        "write_text": False,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        "type": "progress_bar",
+                        "x_start": 0,
+                        "y_start": 0,
+                        "x_end": 130,
+                        "y_end": 10,
+                        "progress": 80,
+                        "show_percentage": True,
+                    },
+                ],
+            }
+        ],
     }
 
     for name, el in samples.items():
         # Select appropriate context for the plot element
         active_ctx = history_ctx if name == "plot" else ctx
         try:
-            img = render([el], width=150, height=80, background="white", dither=False, context=active_ctx)
+            payload = el if name == "label_combo" else [el]
+            size = (150, 80) if name != "label_combo" else (150, 80)
+            img = render(payload, width=size[0], height=size[1], background="white", dither=False, context=active_ctx)
             output_file = f"examples/elements/{name}.png"
             img.save(output_file)
             print(f"Generated preview for '{name}' at {output_file}")

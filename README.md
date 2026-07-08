@@ -113,6 +113,9 @@ keeping coverage exhaustive by construction.
 
 ## Elements
 
+> [!TIP]
+> **Copy-paste examples for every element:** [`docs/elements.md`](docs/elements.md)
+
 All ported from the original renderers (superset behaviour where they differed):
 
 | Preview | Element | Module | Notes |
@@ -143,7 +146,7 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
-| | `stack` / `row` / `column` | layout | **new** — auto-layout: packs children along an axis (gap/padding/justify/align), flexbox-style, with optional Tailwind-like `class` shorthand |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/column.png) | `stack` / `row` / `column` | layout | **new** — auto-layout: packs children along an axis (gap/padding/justify/align), flexbox-style, with optional Tailwind-like `class` shorthand |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/legend.png) | `legend` | widgets | **new** — color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
@@ -158,7 +161,9 @@ element** can carry its own `dither: true`/`false` to override it just for itsel
 Payloads are specified as a list (sequence) of dictionary elements, which can be easily authored in YAML or JSON. Each element requires a `type` string and varying geometric/styling attributes.
 
 > [!TIP]
-> **Generating payloads with an LLM?** See [`docs/authoring.md`](https://github.com/eigger/imagespec/blob/main/docs/authoring.md) — a
+> **Element-by-element YAML examples:** [`docs/elements.md`](docs/elements.md)
+>
+> **Generating payloads with an LLM?** See [`docs/authoring.md`](docs/authoring.md) — a
 > **self-contained authoring guide** you can paste straight into an AI's context. It
 > covers the output contract, the layout decision model (`stack`/`row`/`column` vs
 > `group` vs absolute coordinates), the Tailwind-like `class` shorthand, common
