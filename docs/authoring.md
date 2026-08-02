@@ -18,7 +18,8 @@ A payload is a **list (sequence) of element dicts** — author it as YAML or JSO
 - It is rendered by:
   ```python
   from imagespec import render, RenderContext
-  ctx = RenderContext(palette="bwr")        # device colors (see §4)
+
+  ctx = RenderContext(palette="bwr")  # device colors (see §4)
   img = render(payload, width=296, height=128, background="white", context=ctx)
   ```
 - **Coordinates are integer pixels.** Origin `(0, 0)` is the **top-left**; `x`

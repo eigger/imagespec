@@ -59,8 +59,12 @@ def _make_context(hass, *, default_font, palette):
 
     def history_provider(entity_ids, start, end):
         return get_significant_states(
-            hass, start_time=start, entity_ids=list(entity_ids),
-            significant_changes_only=False, minimal_response=True, no_attributes=False,
+            hass,
+            start_time=start,
+            entity_ids=list(entity_ids),
+            significant_changes_only=False,
+            minimal_response=True,
+            no_attributes=False,
         )
 
     return RenderContext(
@@ -86,10 +90,11 @@ def render_image(entity_id, device, service, hass):
             width=device.width,
             height=device.height,
             rotate=int(service.data.get("rotate", 0)),
-            rotate_mode="canvas",   # ESL panel: fixed resolution, background rotates
+            rotate_mode="canvas",  # ESL panel: fixed resolution, background rotates
             background=service.data.get("background", "white"),
-            context=_make_context(hass, default_font="NotoSansKR-Regular.ttf",
-                                  palette=device.palette),  # "2"/"4"/"7" per model
+            context=_make_context(
+                hass, default_font="NotoSansKR-Regular.ttf", palette=device.palette
+            ),  # "2"/"4"/"7" per model
         )
     except RenderError as err:
         raise HomeAssistantError(str(err)) from err
@@ -113,7 +118,7 @@ def customimage(entity_id, service, hass):
             width=service.data.get("width", 400),
             height=service.data.get("height", 240),
             rotate=service.data.get("rotate", 0),
-            rotate_mode="image",    # label printer: variable size, drawing rotates
+            rotate_mode="image",  # label printer: variable size, drawing rotates
             background=service.data.get("background", "white"),
             # niimbot's old `ppb.ttf` default isn't bundled by imagespec (its
             # license/origin couldn't be verified) — supply it via font_resolver

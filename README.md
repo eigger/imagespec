@@ -41,9 +41,9 @@ components over to it.
   supports** (names, HEX, or RGBA tuples):
 
   ```python
-  RenderContext(palette=["black", "white", "red"])          # names
+  RenderContext(palette=["black", "white", "red"])  # names
   RenderContext(palette=["#000000", "#ffffff", "#ff0000"])  # HEX
-  RenderContext(palette=[(0, 0, 0), (255, 255, 255)])       # RGBA tuples
+  RenderContext(palette=[(0, 0, 0), (255, 255, 255)])  # RGBA tuples
   ```
 
   Shorthand names are optional convenience for common panels: `"2"`/`"bw"`,
@@ -68,11 +68,10 @@ components over to it.
 from imagespec import render, RenderContext
 
 ctx = RenderContext(
-    font_resolver=my_font_lookup,        # optional
+    font_resolver=my_font_lookup,  # optional
     history_provider=my_history_lookup,  # optional, only for `plot`
 )
-image = render(payload, width=296, height=128, rotate=0,
-               background="white", context=ctx)   # -> PIL.Image (RGB)
+image = render(payload, width=296, height=128, rotate=0, background="white", context=ctx)  # -> PIL.Image (RGB)
 ```
 
 Run the smoke test (no fonts required):
