@@ -25,6 +25,7 @@ from .colors import (
 )
 from .context import RenderContext
 from .core import ROTATE_MODE_CANVAS, ROTATE_MODE_IMAGE, render
+from .dither import DITHER_METHODS, resolve_dither_method
 from .exceptions import RenderError
 from .registry import known_types
 from .resolvers import (
@@ -41,6 +42,8 @@ __all__ = [
     "RenderError",
     "ROTATE_MODE_CANVAS",
     "ROTATE_MODE_IMAGE",
+    "DITHER_METHODS",
+    "resolve_dither_method",
     "PALETTE_BW",
     "PALETTE_BWR",
     "PALETTE_4",

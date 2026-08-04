@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from imagespec import known_types  # noqa: E402
+from imagespec import DITHER_METHODS, known_types  # noqa: E402
 
 
 def extract_editor_types(schema_js: Path) -> list[str]:
@@ -59,10 +59,12 @@ def main() -> int:
     schema_dir.mkdir(exist_ok=True)
 
     types = sorted(known_types())
+    dither_methods = list(DITHER_METHODS)
     elements_doc = {
         "schema_version": 1,
         "package": "imagespec",
         "types": types,
+        "dither_methods": dither_methods,
     }
 
     elements_path = schema_dir / "elements.json"
@@ -71,15 +73,17 @@ def main() -> int:
             print(f"MISSING {elements_path}", file=sys.stderr)
             return 1
         current = json.loads(elements_path.read_text(encoding="utf-8"))
-        if current.get("types") != types:
+        if current.get("types") != types or current.get("dither_methods") != dither_methods:
             print("schema/elements.json is stale; run: python scripts/export_schema.py", file=sys.stderr)
-            print("  committed:", current.get("types"), file=sys.stderr)
-            print("  expected :", types, file=sys.stderr)
+            print("  committed types:", current.get("types"), file=sys.stderr)
+            print("  expected  types:", types, file=sys.stderr)
+            print("  committed dither_methods:", current.get("dither_methods"), file=sys.stderr)
+            print("  expected  dither_methods:", dither_methods, file=sys.stderr)
             return 1
-        print(f"OK {elements_path} ({len(types)} types)")
+        print(f"OK {elements_path} ({len(types)} types, {len(dither_methods)} dither methods)")
     else:
         elements_path.write_text(json.dumps(elements_doc, indent=2) + "\n", encoding="utf-8")
-        print(f"Wrote {elements_path} ({len(types)} types)")
+        print(f"Wrote {elements_path} ({len(types)} types, {len(dither_methods)} dither methods)")
 
     editor_types_path = schema_dir / "editor_types.json"
     if args.editor_schema:

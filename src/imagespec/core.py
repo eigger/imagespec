@@ -30,7 +30,7 @@ def render(
     rotate: int = 0,
     rotate_mode: str = ROTATE_MODE_CANVAS,
     background="white",
-    dither: bool = False,
+    dither: bool | str | int | None = False,
     context: RenderContext,
 ) -> Image.Image:
     """Render ``payload`` to an ``RGB`` :class:`PIL.Image.Image`.
@@ -61,10 +61,17 @@ def render(
         Background color name or ``#RRGGBB`` (mapped via :func:`get_index_color`).
     dither:
         Elements are always drawn in full color and mapped to ``context.palette``
-        once at the end. ``dither`` picks *how*: True → Floyd–Steinberg halftone
-        (off-palette fills become distinguishable dot patterns — better for
-        photos/charts on limited-color panels); False (default) → flat nearest
-        color. Either way the output is strictly on-palette.
+        once at the end. ``dither`` picks *how*:
+
+        * ``False`` / ``"none"`` (default) — flat nearest palette color
+        * ``True`` / ``"floyd"`` — Floyd–Steinberg (backward-compatible default
+          when dithering is on)
+        * any other name from :data:`imagespec.dither.DITHER_METHODS` (e.g.
+          ``"atkinson"``, ``"bayer8"``, ``"sierra"``)
+
+        Off-palette fills become distinguishable dot patterns — better for
+        photos/charts on limited-color panels. Either way the output is
+        strictly on-palette.
     context:
         Host-supplied :class:`RenderContext` (fonts, history, ...).
     """
@@ -106,7 +113,7 @@ def render(
         img = img.rotate(-rotate, expand=True)
     result = img.convert("RGB")
     # Elements are drawn in true color; map the whole image to the device palette
-    # once here — Floyd–Steinberg halftone when `dither`, flat nearest otherwise.
+    # once here — method selected by `dither` (bool or algorithm name).
     from .dither import dither_to_palette
 
     return dither_to_palette(result, context.palette, dither=dither)

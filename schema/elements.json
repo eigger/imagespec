@@ -34,5 +34,23 @@
     "text",
     "text_box",
     "text_fit"
+  ],
+  "dither_methods": [
+    "none",
+    "floyd",
+    "atkinson",
+    "jarvis",
+    "stucki",
+    "burkes",
+    "sierra",
+    "sierra2",
+    "sierra-lite",
+    "stevenson-arce",
+    "bayer2",
+    "bayer4",
+    "bayer8",
+    "bayer16",
+    "clustered4",
+    "clustered8"
   ]
 }
