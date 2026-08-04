@@ -169,6 +169,13 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 > pitfalls (e.g. the YAML "one key per line" trap), device canvas sizes, and full
 > worked examples — every example verified by actually rendering it.
 
+### Machine-readable type list
+
+`schema/elements.json` lists every registered element `type` (from `known_types()`).
+Regenerate with `python scripts/export_schema.py`. The web payload editors in
+[`eigger.github.io`](https://github.com/eigger/eigger.github.io) keep a subset in
+`schema/editor_types.json`; CI fails if either file drifts from the registry.
+
 ### Common Attributes
 - **Colors**: Supported color specifications include names (e.g., `"black"`, `"white"`, `"red"`, `"green"`, `"blue"`, `"orange"`, `"yellow"`) or HEX strings (e.g., `"#FF0000"`). Colors are automatically quantized to the host device's palette.
 - **Coordinates**: Standard 2D cartesian coordinate system starting at `(0, 0)` at the top-left corner.
