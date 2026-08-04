@@ -32,8 +32,11 @@ def test_editor_types_subset_of_known_types():
 
 
 def test_elements_json_structure():
+    from imagespec import DITHER_METHODS
+
     data = json.loads((ROOT / "schema" / "elements.json").read_text(encoding="utf-8"))
     assert data["schema_version"] == 1
     assert data["package"] == "imagespec"
     assert isinstance(data["types"], list)
     assert data["types"] == sorted(data["types"])
+    assert data["dither_methods"] == list(DITHER_METHODS)

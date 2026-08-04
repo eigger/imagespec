@@ -153,8 +153,9 @@ payload renders correctly on a 2/4/7-color panel without changes.
   components still need (e.g. niimbot's `ppb.ttf`, if its license is confirmed)
   can stay in `www/fonts`, or be downloaded on demand via
   `imagespec.resolvers.caching_resolver` (download-once, cache offline).
-- **Image quality**: pass `dither=True` to `render(...)`, or `"dither": true` on a
-  `dlimg`, for Floyd–Steinberg dithering on limited-color panels.
+- **Image quality**: pass `dither=True` / `dither="atkinson"` / … to
+  `render(...)`, or `"dither": true` / a method name on an element, for
+  palette dithering on limited-color panels. See [`dithering.md`](dithering.md).
 
 ---
 

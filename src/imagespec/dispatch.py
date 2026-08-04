@@ -17,7 +17,7 @@ from .utils import should_show
 _LOGGER = logging.getLogger(__name__)
 
 
-def _draw_isolated(state, element, handler, dither: bool) -> None:
+def _draw_isolated(state, element, handler, dither) -> None:
     """Render one element on its own layer and map it to the palette now.
 
     Used for a per-element ``dither`` override: the element is drawn in isolation,
@@ -26,18 +26,36 @@ def _draw_isolated(state, element, handler, dither: bool) -> None:
     whole-image pass in :func:`~imagespec.core.render` leaves it untouched — so
     this element keeps its chosen treatment regardless of the global ``dither``
     flag, and payload (z-)order is preserved.
+
+    Only the opaque bounding box is quantized (aligned down to
+    :data:`~imagespec.dither.ORDERED_ORIGIN_ALIGN` so Bayer/clustered phase
+    matches a full-canvas pass).
     """
-    from .dither import dither_to_palette
+    from .dither import ORDERED_ORIGIN_ALIGN, dither_to_palette
 
     base = state.img
     state.img = Image.new("RGBA", base.size, (0, 0, 0, 0))
     handler(state, element)  # handler may reassign state.img (rotation/composite)
     layer = state.img.convert("RGBA")
     state.img = base
-    alpha = layer.split()[-1]
-    quant = dither_to_palette(layer, state.context.palette, dither=dither).convert("RGBA")
-    quant.putalpha(alpha)  # only the pixels the element actually drew
-    base.alpha_composite(quant)
+
+    bbox = layer.getbbox()
+    if bbox is None:
+        return
+
+    left, top, right, bottom = bbox
+    ox = (left // ORDERED_ORIGIN_ALIGN) * ORDERED_ORIGIN_ALIGN
+    oy = (top // ORDERED_ORIGIN_ALIGN) * ORDERED_ORIGIN_ALIGN
+    cropped = layer.crop((ox, oy, right, bottom))
+    alpha = cropped.split()[-1]
+    quant = dither_to_palette(
+        cropped,
+        state.context.palette,
+        dither=dither,
+        origin=(ox, oy),
+    ).convert("RGBA")
+    quant.putalpha(alpha)
+    base.alpha_composite(quant, dest=(ox, oy))
 
 
 def render_element(state, element: dict) -> None:
@@ -53,6 +71,6 @@ def render_element(state, element: dict) -> None:
         _LOGGER.warning("Unknown element type '%s' — skipping.", etype)
         return
     if "dither" in element:
-        _draw_isolated(state, element, handler, bool(element["dither"]))
+        _draw_isolated(state, element, handler, element["dither"])
     else:
         handler(state, element)

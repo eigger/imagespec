@@ -85,7 +85,7 @@ python examples/smoke_test.py
 
 ```bash
 pip install -e ".[dev,datamatrix]"
-pytest                 # 128 tests: every element, palettes, rotation, dither, errors
+pytest                 # unit tests: every element, palettes, rotation, dither, errors
 ruff check . && ruff format --check .   # lint + format
 python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
@@ -150,9 +150,10 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
 
-Plus enhancements: `render(..., dither=True)` dithers the whole output and **any
-element** can carry its own `dither: true`/`false` to override it just for itself
-(Floyd–Steinberg to palette); `dlimg` also gained `circle`/`mask` (circular crop);
+Plus enhancements: `render(..., dither=True|"atkinson"|…)` dithers the whole
+output (15 algorithms + `none`; see [`docs/dithering.md`](docs/dithering.md))
+and **any element** can carry its own `dither` bool/method to override it just
+for itself; `dlimg` also gained `circle`/`mask` (circular crop);
 `text_fit` fits text into a fixed box (shrink / ellipsis / wrap).
 
 ## Payload Specification & Element Reference
@@ -171,7 +172,8 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 
 ### Machine-readable type list
 
-`schema/elements.json` lists every registered element `type` (from `known_types()`).
+`schema/elements.json` lists every registered element `type` (from `known_types()`)
+and the dither method ids (`dither_methods`, from `DITHER_METHODS`).
 Regenerate with `python scripts/export_schema.py`. The web payload editors in
 [`eigger.github.io`](https://github.com/eigger/eigger.github.io) keep a subset in
 `schema/editor_types.json`; CI fails if either file drifts from the registry.
@@ -354,9 +356,27 @@ Regenerate with `python scripts/export_schema.py`. The web payload editors in
 
 ### Dithering
 
-`imagespec` supports Floyd–Steinberg dithering to trade spatial resolution for perceived color depth. This is crucial for rendering detailed gradients, shaded spheres, or photo elements on limited-palette screens (like 2-color black/white, 3-color BWR, or 7-color ACeP e-paper panels).
+`imagespec` can dither full-color content onto limited palettes (2-color B/W,
+3-color BWR, 7-color ACeP, …). Besides flat nearest-color mapping (`none`), it
+ships **15 e-ink-oriented dither algorithms** (Floyd–Steinberg, Atkinson,
+Jarvis, Stucki, Burkes, Sierra family, Stevenson–Arce, Bayer 2/4/8/16,
+clustered-dot 4/8).
 
-Without dithering, colors are mapped to the nearest palette entry (direct quantization), leading to severe color banding.
+- `dither=False` / `"none"` (default) → flat nearest color
+- `dither=True` / `"floyd"` → Floyd–Steinberg (backward compatible)
+- `dither="atkinson"` / `"bayer8"` / … → any name in `DITHER_METHODS`
+
+Per-element overrides accept the same bool or method string. Full gallery,
+API notes, and per-algorithm tiles: **[`docs/dithering.md`](docs/dithering.md)**.
+
+```bash
+python examples/generate_dither_methods.py   # all-method grids + tiles
+```
+
+![All dither methods on B/W](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_methods_bw.png)
+
+Without dithering, colors snap to the nearest palette entry and gradients band
+badly. Dithering trades spatial resolution for perceived depth.
 
 #### 1. Gradient & 3D Shading
 Dithering creates a natural halftone pattern that simulates smooth shading and eliminates color banding.
@@ -376,40 +396,39 @@ Every element is drawn in **full color**, and the whole image is mapped to
 `context.palette` **once at the end** of `render()`. The `dither` flag only picks
 *how* that single mapping happens:
 
-- `dither=True` → Floyd–Steinberg halftone: off-palette fills become
-  distinguishable dot patterns (an `orange`/`green`/`blue` pie on a 2-color panel
-  renders as three different textures instead of collapsing into one black blob).
-- `dither=False` (default) → flat nearest color.
+- `dither=True` / `"floyd"` → Floyd–Steinberg (or pass another method name)
+- `dither=False` / `"none"` (default) → flat nearest color
 
 Either way the output is **strictly on-palette**. Because mapping is deferred,
 in-palette colors (e.g. black text on white) stay crisp under dithering —
-Floyd–Steinberg diffuses no error when a pixel already equals a palette color —
+error diffusion spreads no error when a pixel already equals a palette color —
 while the text guidance above still applies to *off-palette* text you choose to
 dither.
 
 ```python
 ctx = RenderContext(palette="bw")
 img = render(payload, 296, 128, dither=True, context=ctx)
+img = render(payload, 296, 128, dither="atkinson", context=ctx)
 # orange/green/blue pie slices -> different dot patterns, not one black blob
 ```
 
 #### Per-element `dither` override
-Any element may carry its own `dither: true`/`false` to override the global flag
-just for itself — so you can dither only the parts that benefit (photos, charts)
-and keep the rest flat (labels, QR codes), in a single render:
+Any element may carry its own `dither: true`/`false`/method name to override the
+global flag just for itself — so you can dither only the parts that benefit
+(photos, charts) and keep the rest flat (labels, QR codes), in a single render:
 
 ```yaml
 - type: dlimg          # this photo -> halftone
   url: "https://…/photo.png"
   xsize: 100
   ysize: 100
-  dither: true
-- type: pie            # this chart -> halftone (segments stay distinguishable)
+  dither: atkinson
+- type: pie            # this chart -> ordered screen
   x: 60
   y: 60
   radius: 40
   values: "Gas,30,orange;Water,25,blue;Elec,45,red"
-  dither: true
+  dither: bayer8
 - type: text           # left flat regardless of the global flag
   x: 10
   y: 110
@@ -441,7 +460,7 @@ Regenerate them with:
 python examples/generate_dither_labels.py
 ```
 
-To run the dithering comparison generator yourself:
+Older Floyd-vs-none comparison boards:
 ```bash
 python examples/compare_dither.py
 ```

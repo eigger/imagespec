@@ -145,9 +145,11 @@ and fonts always stay on the element's own keys.
   the final image is **quantized to the palette**. On a 2-color panel `red`
   becomes black. **Design within the device's palette** — don't rely on colors it
   can't show.
-- `dither: true` (whole render, or per element) turns off-palette fills into
-  halftone dot patterns so e.g. pie/bar segments stay distinguishable. **Avoid
-  dithering text** — it makes edges noisy on small screens.
+- `dither: true` / `"floyd"` / `"atkinson"` / `"bayer8"` / … (whole render, or
+  per element) turns off-palette fills into a halftone or ordered screen so e.g.
+  pie/bar segments stay distinguishable. **Avoid dithering text** — it makes
+  edges noisy on small screens. Full method gallery:
+  [`dithering.md`](dithering.md).
 
 ---
 
