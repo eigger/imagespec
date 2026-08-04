@@ -54,7 +54,9 @@ img = render(payload, 296, 128, dither="atkinson", context=ctx)
 img = render(payload, 296, 128, dither="bayer8", context=ctx)
 ```
 
-Per-element override (bool or method name):
+Per-element override (bool or method name) — use on **photos and charts**
+(`dlimg`, `pie`, `diagram`, `plot`, `sparkline`, `progress_bar`, `gauge`) when
+they use off-palette colors. Leave text/QR/barcodes without `dither`:
 
 ```yaml
 - type: dlimg
@@ -65,16 +67,25 @@ Per-element override (bool or method name):
   url: https://example.com/photo.png
   dither: atkinson
 - type: pie
-  x: 60
+  x: 140
   y: 10
   radius: 40
-  # ...
+  values: "A,40,orange;B,60,blue"
   dither: bayer8
+- type: diagram
+  x: 240
+  y: 10
+  width: 120
+  height: 80
+  bars:
+    values: "Mon,10;Tue,25;Wed,15"
+    color: orange
+  dither: floyd
 - type: text
   x: 10
   y: 100
   value: Keep me sharp
-  # no dither key → follows global flag
+  # no dither key → follows global flag (prefer global none)
 ```
 
 ## Method gallery (B/W)
@@ -169,7 +180,7 @@ medium e-ink suitability.
 
 | Goal | Suggested methods |
 |------|-------------------|
-| Default / photos & charts | `floyd`, `atkinson`, `sierra` |
+| Default / photos & charts (`dlimg`, `pie`, `diagram`, `plot`, `sparkline`, `progress_bar`, `gauge`) | `floyd`, `atkinson`, `sierra` |
 | Softer gradients | `jarvis`, `stucki`, `burkes` |
 | Stable ordered pattern (partial refresh) | `bayer8`, `bayer4` |
 | Print-like dots | `clustered8` |
