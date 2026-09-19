@@ -164,10 +164,15 @@ def datamatrix(state: RenderState, element: dict) -> None:
     dm_image = Image.open(BytesIO(encoder.get_imagedata(cellsize=boxsize))).convert("RGBA")
 
     if color != "black" or bgcolor != "white":
-        target_color = state.context.color(color)
-        target_bg = state.context.color(bgcolor)
-        new_data = [target_color if px[0] < 128 else target_bg for px in dm_image.getdata()]
-        dm_image.putdata(new_data)
+        target_color = state.context.color(color) or (0, 0, 0, 0)
+        target_bg = state.context.color(bgcolor) or (0, 0, 0, 0)
+        # Dark modules (R < 128) -> color, everything else -> bgcolor. Done as a
+        # mask + paste instead of getdata()/putdata(): those are deprecated in
+        # Pillow 12.1 (removed in 14) and their replacement is unavailable on
+        # our >=10.4 floor.
+        dark = dm_image.getchannel("R").point(lambda v: 255 if v < 128 else 0)
+        dm_image = Image.new("RGBA", dm_image.size, target_bg)
+        dm_image.paste(target_color, mask=dark)
 
     dm_image = _fit_square_code(dm_image, element.get("width"), element.get("height"))
     state.img.paste(dm_image, (pos_x, pos_y), dm_image)
