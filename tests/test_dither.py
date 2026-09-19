@@ -170,7 +170,7 @@ def test_ordered_origin_phase_matches_full_canvas():
     crop = src.crop((ox, oy, ox + rw, oy + rh))
     partial = dither_to_palette(crop, PALETTE_BW, dither="bayer8", origin=(ox, oy))
     expect = full.crop((ox, oy, ox + rw, oy + rh))
-    assert list(partial.get_flattened_data()) == list(expect.get_flattened_data())
+    assert partial.mode == expect.mode and partial.tobytes() == expect.tobytes()
 
 
 def test_render_accepts_method_string():

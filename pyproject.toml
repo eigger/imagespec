@@ -22,7 +22,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "pillow>=10.0",
+    "pillow>=10.4",  # rounded_rectangle narrower than 2*radius raises before 10.4 (battery element)
     "qrcode[pil]>=7.4",
     "python-barcode>=0.15",
     "requests>=2.25",
@@ -32,7 +32,7 @@ dependencies = [
 # 'datamatrix' element requires pyStrich; keep optional so the base install stays light.
 datamatrix = ["pyStrich>=0.8"]
 # Convenience for loading payloads from YAML strings.
-yaml = ["PyYAML>=6.0"]
+yaml = ["PyYAML>=6.0.1"]  # 6.0 has no py3.12+ wheels and fails to build with Cython 3
 dev = ["pytest>=8.0", "ruff>=0.6", "build>=1.2"]
 
 [project.urls]

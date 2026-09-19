@@ -44,9 +44,31 @@ jobs:
         run: pytest -q
       - name: Schema export is up to date
         run: python scripts/export_schema.py --check
+
+  # Install the *lowest* version each floor in pyproject.toml allows and run the
+  # suite, so a floor that is too low (e.g. an API we use that only landed in a
+  # later release) fails here instead of in a downstream install. The regular
+  # `test` job always resolves to the newest releases and cannot catch that.
+  test-min-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: "3.11"
+      - name: Install at lowest allowed direct-dependency versions
+        run: |
+          uv venv
+          uv pip install --resolution lowest-direct -e ".[dev,datamatrix,yaml]"
+          uv pip list
+      - name: Run tests
+        run: uv run --no-sync pytest -q
+
   build:
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, test-min-deps]
     steps:
       - uses: actions/checkout@v7
         with:
