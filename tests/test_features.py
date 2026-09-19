@@ -272,3 +272,25 @@ def test_legend_fa_icon_item(bw_ctx):
     }
     img = render([el], 60, 20, background="white", context=bw_ctx)
     assert _has_dark_pixel(img)
+
+
+def test_datamatrix_recolor(ctx):
+    """color/bgcolor must recolor dark and light modules (and nothing else)."""
+    pytest.importorskip("pystrich")
+    base = {"type": "datamatrix", "x": 0, "y": 0, "data": "hi", "boxsize": 2}
+    plain = render([base], 40, 40, background="white", context=ctx)
+    tinted = render([{**base, "color": "red", "bgcolor": "yellow"}], 40, 40, background="white", context=ctx)
+    # Inside the symbol (bbox of its dark modules; the L-shaped finder border
+    # spans the whole symbol) every black module -> red and every white
+    # module -> yellow, pixel for pixel. Outside it the canvas stays white.
+    px_plain, px_tinted = plain.load(), tinted.load()
+    left, top, right, bottom = plain.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+    mapping = {(0, 0, 0): (255, 0, 0), (255, 255, 255): (255, 255, 0)}
+    seen = set()
+    for x in range(left, right):
+        for y in range(top, bottom):
+            src = px_plain[x, y][:3]
+            assert px_tinted[x, y][:3] == mapping[src], (x, y, src)
+            seen.add(src)
+    assert seen == set(mapping), "expected both dark and light modules inside the symbol"
+    assert px_tinted[plain.width - 1, plain.height - 1][:3] == (255, 255, 255)

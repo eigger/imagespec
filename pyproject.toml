@@ -42,6 +42,10 @@ Repository = "https://github.com/eigger/imagespec"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+# Fail on any Pillow API we use that is scheduled for removal, so a
+# deprecation shows up here (on the newest-Pillow matrix job) instead of as
+# a breakage after the removal.
+filterwarnings = ["error:.*will be removed in Pillow.*:DeprecationWarning"]
 
 [tool.ruff]
 line-length = 120
