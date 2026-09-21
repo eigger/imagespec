@@ -17,7 +17,7 @@ from PIL import Image
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import require
+from ..utils import int_xy, require
 
 _ERROR_CORRECTION = {
     "l": qrcode.constants.ERROR_CORRECT_L,
@@ -76,7 +76,7 @@ def qrcode_element(state: RenderState, element: dict) -> None:
     back = state.context.color(bgcolor)
     imgqr = qr.make_image(fill_color=fill, back_color=back).convert("RGBA")
     imgqr = _fit_square_code(imgqr, element.get("width"), element.get("height"))
-    state.img.paste(imgqr, (pos_x, pos_y), imgqr)
+    state.img.paste(imgqr, int_xy(pos_x, pos_y), imgqr)
 
 
 def _hex(rgba) -> str:
@@ -136,7 +136,7 @@ def barcode(state: RenderState, element: dict) -> None:
             new_size = (max(1, round(w0 * (int(target_h) / h0))), int(target_h))
         imagebc = imagebc.resize(new_size, Image.NEAREST)
 
-    state.img.paste(imagebc, (pos_x, pos_y), imagebc)
+    state.img.paste(imagebc, int_xy(pos_x, pos_y), imagebc)
 
 
 @element("datamatrix")
@@ -175,4 +175,4 @@ def datamatrix(state: RenderState, element: dict) -> None:
         dm_image.paste(target_color, mask=dark)
 
     dm_image = _fit_square_code(dm_image, element.get("width"), element.get("height"))
-    state.img.paste(dm_image, (pos_x, pos_y), dm_image)
+    state.img.paste(dm_image, int_xy(pos_x, pos_y), dm_image)

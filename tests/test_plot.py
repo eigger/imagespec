@@ -3,8 +3,42 @@
 from __future__ import annotations
 
 import pytest
+from PIL import ImageDraw
 
 from imagespec import RenderError, render
+
+
+def _ylegend_labels(monkeypatch, ctx, **extra):
+    """Render a plot with a y legend and return the strings it drew."""
+    drawn = []
+    orig = ImageDraw.ImageDraw.text
+
+    def spy(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return orig(self, xy, text, *args, **kwargs)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", spy)
+    el = {"type": "plot", "data": [{"entity": "sensor.temp"}], "ylegend": {}, **extra}
+    render([el], 200, 100, context=ctx)
+    return drawn
+
+
+def test_plot_low_zero_is_honoured(history_ctx, monkeypatch):
+    # Regression: `low: 0` was dropped by an `or` (0 is falsy), so the axis
+    # started at the data minimum (10) instead of 0.
+    assert "0" in _ylegend_labels(monkeypatch, history_ctx, low=0)
+
+
+def test_plot_high_zero_is_honoured(history_ctx, monkeypatch):
+    # data is all positive (10..15) so `high: 0` is exceeded and must not shrink
+    # the range — but it must also not crash or be treated as "unset".
+    labels = _ylegend_labels(monkeypatch, history_ctx, high=0)
+    assert "15" in labels and "10" in labels
+
+
+def test_plot_low_high_only_widen_range(history_ctx, monkeypatch):
+    labels = _ylegend_labels(monkeypatch, history_ctx, low=5, high=20)
+    assert "5" in labels and "20" in labels
 
 
 def test_plot_renders(history_ctx):

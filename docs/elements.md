@@ -13,7 +13,7 @@ python scripts/inject_element_previews.py   # only if headings changed
 For field definitions and defaults, see the [Element Reference](../README.md#elements-reference) in the README. For layout patterns and pitfalls, see [`authoring.md`](authoring.md).
 
 > [!TIP]
-> All elements support `visible: false` to hide them conditionally (default: `true`).
+> All elements support `visible: false` to hide them conditionally (default: `true`). String forms from templates (`"False"`, `"off"`, `"0"`, `""`) also hide the element.
 
 ```python
 from imagespec import render, RenderContext

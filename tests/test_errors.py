@@ -15,6 +15,7 @@ from imagespec import RenderContext, RenderError, render
         ({"type": "qrcode", "x": 0, "y": 0}, ["data"]),
         ({"type": "icon", "x": 0, "y": 0, "value": "mdi:home"}, ["size"]),
         ({"type": "gauge", "x": 0, "y": 0, "radius": 5}, ["progress"]),
+        ({"type": "multiline", "x": 0, "value": "a,b", "delimiter": ","}, ["offset_y"]),
     ],
 )
 def test_missing_required_args_named_in_error(ctx, element, missing):
@@ -45,6 +46,14 @@ def test_invalid_barcode_code_raises(ctx):
     el = {"type": "barcode", "x": 0, "y": 0, "data": "123", "code": "not-a-real-symbology"}
     with pytest.raises(RenderError):
         render([el], 40, 40, context=ctx)
+
+
+def test_progress_bar_bad_direction_raises(ctx):
+    # used to silently draw an empty bar
+    el = {"type": "progress_bar", "x_start": 0, "y_start": 0, "x_end": 19, "y_end": 9, "progress": 50}
+    el["direction"] = "up!"
+    with pytest.raises(RenderError, match="direction"):
+        render([el], 20, 20, context=ctx)
 
 
 def test_polygon_bad_points_raises(ctx):

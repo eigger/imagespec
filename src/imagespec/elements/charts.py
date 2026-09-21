@@ -157,8 +157,10 @@ def progress_bar(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     x_start, y_start = element["x_start"], element["y_start"]
     x_end, y_end = element["x_end"], element["y_end"]
-    progress = element["progress"]
+    progress = max(0.0, min(100.0, float(element["progress"])))
     direction = element.get("direction", "right")
+    if direction not in ("right", "left", "up", "down"):
+        raise RenderError(f"progress_bar: 'direction' must be right/left/up/down, got {direction!r}")
     bg_color = state.context.color(element.get("background", "white"))
     fill = state.context.color(element.get("fill", "red"))
     outline = state.context.color(element.get("outline", "black"))
@@ -188,7 +190,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
     if element.get("show_percentage", False):
         font_size = min(y_end - y_start - 4, x_end - x_start - 4, 20)
         font = state.context.font(element.get("font"), font_size)
-        text = f"{progress}%"
+        text = f"{progress:g}%"
         tb = draw.textbbox((0, 0), text, font=font)
         tx = (x_start + x_end - (tb[2] - tb[0])) / 2
         ty = (y_start + y_end - (tb[3] - tb[1])) / 2
@@ -265,8 +267,10 @@ def plot(state: RenderState, element: dict) -> None:
             (datetime.fromisoformat(s["last_changed"]), float(s["state"])) for s in normalized if is_decimal(s["state"])
         ]
         lo, hi = min_max([s[1] for s in states])
-        min_v = min(min_v or lo, lo)
-        max_v = max(max_v or hi, hi)
+        # `low`/`high` widen the range but never clip data; `is None` (not
+        # truthiness) so an explicit `low: 0` counts.
+        min_v = lo if min_v is None else min(min_v, lo)
+        max_v = hi if max_v is None else max(max_v, hi)
         raw_data.append(states)
 
     max_v = math.ceil(max_v)

@@ -27,7 +27,7 @@ from ..dispatch import render_element
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import require
+from ..utils import int_xy, require
 
 
 @element("group")
@@ -57,7 +57,7 @@ def group(state: RenderState, element: dict) -> None:
     if rotate in (90, 180, 270):
         result = result.rotate(-rotate, expand=True)
 
-    state.img.alpha_composite(result, (ox, oy))
+    state.img.alpha_composite(result, int_xy(ox, oy))
 
 
 # --------------------------------------------------------------------------- #

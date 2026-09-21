@@ -46,6 +46,54 @@ def test_group_clips_to_box(ctx):
     assert img.getpixel((20, 20)) == (255, 255, 255)  # clipped
 
 
+def test_progress_bar_clamps_out_of_range(bw_ctx):
+    # >100 used to paint the fill past the outline; <0 drew a negative box.
+    def fill_pixels(progress):
+        el = {"type": "progress_bar", "x_start": 0, "y_start": 0, "x_end": 39, "y_end": 9, "progress": progress}
+        img = render([el], 60, 10, context=bw_ctx)
+        return sum(1 for x in range(60) if img.getpixel((x, 5)) == (0, 0, 0))
+
+    assert fill_pixels(150) == fill_pixels(100)
+    assert fill_pixels(-20) == fill_pixels(0)
+    assert fill_pixels(100) <= 40  # nothing beyond x_end
+
+
+def test_progress_bar_percentage_label_has_no_trailing_zero(bw_ctx, monkeypatch):
+    from PIL import ImageDraw
+
+    drawn = []
+    orig = ImageDraw.ImageDraw.text
+
+    def spy(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return orig(self, xy, text, *args, **kwargs)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", spy)
+    el = {"type": "progress_bar", "x_start": 0, "y_start": 0, "x_end": 59, "y_end": 19, "progress": 50}
+    el["show_percentage"] = True
+    render([el], 60, 20, context=bw_ctx)
+    assert drawn == ["50%"]
+
+
+@pytest.mark.parametrize(
+    "el",
+    [
+        {"type": "text", "x": 5.5, "y": 3.2, "value": "hi", "rotation": 90},
+        {"type": "group", "x": 2.5, "y": 1.5, "width": 10, "height": 10, "elements": []},
+        {"type": "dlimg", "x": 1.4, "y": 2.6, "url": "DATA_URL", "xsize": 4, "ysize": 4},
+        {"type": "qrcode", "x": 0.5, "y": 0.5, "data": "x", "boxsize": 1},
+        {"type": "barcode", "x": 1.5, "y": 0.0, "data": "123", "module_height": 3, "font_size": 3},
+        {"type": "datamatrix", "x": 0.5, "y": 1.5, "data": "hi", "boxsize": 1},
+    ],
+)
+def test_float_coordinates_accepted_by_compositing_elements(ctx, red_data_url, el):
+    # Drawing primitives already accept floats; the elements that paste a
+    # sub-image used to fail with "'float' object cannot be interpreted as an integer".
+    if el.get("url") == "DATA_URL":
+        el = {**el, "url": red_data_url}
+    assert render([el], 60, 60, context=ctx).size == (60, 60)
+
+
 def test_pie_donut_hole_is_background(ctx):
     el = {
         "type": "pie",

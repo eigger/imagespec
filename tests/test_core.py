@@ -55,6 +55,20 @@ def test_invisible_element_is_skipped(ctx):
     assert render([el], 10, 10, background="white", context=ctx).getpixel((5, 5)) == (255, 255, 255)
 
 
+@pytest.mark.parametrize("value", ["False", "false", "off", "no", "0", "", 0, None])
+def test_visible_falsy_strings_hide(ctx, value):
+    # HA templates yield strings ("False"), which are truthy in Python; they
+    # must still hide the element.
+    el = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 9, "y_end": 9, "fill": "black", "visible": value}
+    assert render([el], 10, 10, background="white", context=ctx).getpixel((5, 5)) == (255, 255, 255)
+
+
+@pytest.mark.parametrize("value", ["True", "true", "on", "yes", "1", 1, True])
+def test_visible_truthy_strings_show(ctx, value):
+    el = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 9, "y_end": 9, "fill": "black", "visible": value}
+    assert render([el], 10, 10, background="white", context=ctx).getpixel((5, 5)) == (0, 0, 0)
+
+
 def test_non_dict_element_raises(ctx):
     with pytest.raises(RenderError):
         render(["not a dict"], 10, 10, context=ctx)
