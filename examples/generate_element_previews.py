@@ -11,7 +11,7 @@ import io
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageFont
 
 # Add src to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -26,6 +26,10 @@ RED_DATA_URL = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decod
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "elements")
 SIZE = (150, 80)  # every preview is rendered at this canvas size
+# Pinned so the PNGs are identical on every platform (Linux Pillow wheels ship
+# libraqm and would otherwise shape/kern text differently) — tests/test_golden.py
+# compares against these files exactly.
+LAYOUT_ENGINE = ImageFont.Layout.BASIC
 
 
 def get_history_context() -> RenderContext:
@@ -49,7 +53,7 @@ def get_history_context() -> RenderContext:
             result[eid] = [first] + rest
         return result
 
-    return RenderContext(palette=PALETTE_7, history_provider=mock_provider)
+    return RenderContext(palette=PALETTE_7, history_provider=mock_provider, layout_engine=LAYOUT_ENGINE)
 
 
 SAMPLES: dict[str, dict | list] = {
@@ -435,7 +439,10 @@ def render_sample(name: str, *, history_ctx: RenderContext | None = None) -> Ima
     """
     sample = SAMPLES[name]
     payload = sample if isinstance(sample, list) else [sample]
-    ctx = (history_ctx or get_history_context()) if name == "plot" else RenderContext(palette=PALETTE_7)
+    if name == "plot":
+        ctx = history_ctx or get_history_context()
+    else:
+        ctx = RenderContext(palette=PALETTE_7, layout_engine=LAYOUT_ENGINE)
     return render(payload, width=SIZE[0], height=SIZE[1], background="white", dither=False, context=ctx)
 
 

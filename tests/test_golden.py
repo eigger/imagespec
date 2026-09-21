@@ -15,9 +15,12 @@ When a change is intentional, regenerate with ``pytest --update-golden`` (or
 ``python examples/generate_element_previews.py`` for the previews alone) and
 commit the PNGs.
 
-Comparison is exact by default. ``IMAGESPEC_GOLDEN_TOLERANCE`` (fraction of
-pixels allowed to differ, e.g. ``0.01``) loosens it for environments whose
-FreeType/qrcode/barcode versions rasterise slightly differently.
+Text is laid out with ``ImageFont.Layout.BASIC`` so the same Pillow release
+produces identical pixels on every platform (Linux wheels bundle libraqm, whose
+HarfBuzz shaping kerns differently from the Windows/macOS default). Comparison
+is exact by default; ``IMAGESPEC_GOLDEN_TOLERANCE`` (fraction of pixels allowed
+to differ, e.g. ``0.05``) loosens it for a *different* Pillow/FreeType or
+python-barcode release, as in the min-deps CI job.
 """
 
 from __future__ import annotations
@@ -27,7 +30,7 @@ import os
 from pathlib import Path
 
 import pytest
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageFont
 
 from imagespec import PALETTE_BW, PALETTE_BWR, RenderContext, known_types, render
 from imagespec.dither import DITHER_METHODS, dither_to_palette
@@ -418,7 +421,7 @@ SCENES: dict[str, dict] = {
 @pytest.mark.parametrize("name", sorted(SCENES))
 def test_scene_golden(check_golden, name):
     scene = SCENES[name]
-    ctx = RenderContext(palette=scene.get("palette", "4"))
+    ctx = RenderContext(palette=scene.get("palette", "4"), layout_engine=ImageFont.Layout.BASIC)
     img = render(
         scene["payload"],
         150,

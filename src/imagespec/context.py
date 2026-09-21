@@ -51,6 +51,12 @@ class RenderContext:
     # Device color palette. Accepts a list of RGBA tuples, or a name/count
     # string ("2"/"bw", "4", "7"/"acep", ...). See colors.PALETTES.
     palette: Any = field(default_factory=lambda: DEFAULT_PALETTE)
+    # Pillow text layout engine (``ImageFont.Layout.BASIC`` / ``RAQM``). ``None``
+    # keeps Pillow's default: RAQM (HarfBuzz shaping, kerning, RTL/complex
+    # scripts) when libraqm is available, else BASIC. Linux wheels ship raqm,
+    # Windows wheels do not, so text advances differ between them; pin BASIC
+    # for pixel-identical output across platforms (the golden tests do this).
+    layout_engine: int | None = None
     # Cache keyed by (resolved path, size) so repeated text elements are cheap.
     _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = field(default_factory=dict, repr=False)
 
@@ -94,7 +100,7 @@ class RenderContext:
         key = (path, int(size))
         cached = self._font_cache.get(key)
         if cached is None:
-            cached = ImageFont.truetype(path, int(size))
+            cached = ImageFont.truetype(path, int(size), layout_engine=self.layout_engine)
             self._font_cache[key] = cached
         return cached
 

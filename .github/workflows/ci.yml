@@ -18,7 +18,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - run: pip install ruff
       - name: Ruff lint
         run: ruff check .
@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
         with:
@@ -57,14 +57,19 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@v10.1.0
         with:
-          python-version: "3.11"
+          python-version: "3.13"
       - name: Install at lowest allowed direct-dependency versions
         run: |
           uv venv
           uv pip install --resolution lowest-direct -e ".[dev,datamatrix,yaml]"
           uv pip list
+      # Pillow 10.4 bundles an older FreeType and python-barcode 0.15 lays
+      # bars out differently, so goldens cannot match this job exactly; the
+      # tolerance keeps it a floor-compatibility check, not a pixel check.
       - name: Run tests
         run: uv run --no-sync pytest -q
+        env:
+          IMAGESPEC_GOLDEN_TOLERANCE: "0.10"
 
   build:
     runs-on: ubuntu-latest
@@ -75,7 +80,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - run: pip install build twine
       - name: Build sdist + wheel
         run: python -m build

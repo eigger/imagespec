@@ -94,7 +94,7 @@ python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
 
 CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, the test
-suite on Python 3.11/3.12/3.13, and a build that asserts the bundled fonts/icons
+suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
 are present in the wheel. Pushing a `v*` tag triggers
 `.github/workflows/release.yml` to build and publish to PyPI (trusted publishing).
 
@@ -109,8 +109,10 @@ preview in `examples/elements/` is re-rendered from
 phase, rotation modes, less-common handler options). A rendering change that is
 intended is committed by running `pytest --update-golden` and checking in the
 PNGs; an unintended one fails CI with the pixel count and a diff image. Set
-`IMAGESPEC_GOLDEN_TOLERANCE=0.01` to allow 1 % of pixels to differ on a platform
-whose FreeType/barcode libraries rasterise slightly differently.
+Text in the goldens is laid out with Pillow's `BASIC` engine
+(`RenderContext(layout_engine=...)`) so the same Pillow release renders them
+identically on every OS; `IMAGESPEC_GOLDEN_TOLERANCE=0.05` allows 5 % of pixels
+to differ under a different Pillow/FreeType or python-barcode release.
 
 **Robustness built in:**
 
