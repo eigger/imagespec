@@ -7,7 +7,7 @@ name = "imagespec"
 version = "0.4.1"
 description = "Render images from a declarative YAML/dict spec — shapes, text, charts, QR/barcodes — for e-paper ESL tags and label printers."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = "MIT AND Apache-2.0"
 license-files = ["LICENSE", "LICENSE-APACHE-2.0", "NOTICE"]
 authors = [{ name = "eigger" }]
@@ -15,8 +15,6 @@ keywords = ["image", "render", "yaml", "spec", "e-paper", "esl", "label", "pillo
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Multimedia :: Graphics",
@@ -50,7 +48,7 @@ filterwarnings = ["error:.*will be removed in Pillow.*:DeprecationWarning"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py313"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
