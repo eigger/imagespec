@@ -197,13 +197,13 @@ def _resize_image(imgdl, xsize, ysize, mode):
     src_ratio = src_w / src_h if src_h else 1
 
     if mode == "stretch" or mode is None:
-        return imgdl.resize((xsize, ysize), Image.LANCZOS)
+        return imgdl.resize((xsize, ysize), Image.Resampling.LANCZOS)
     if mode in ("fit", "contain"):
         if src_ratio > target_ratio:
             new_w, new_h = xsize, round(xsize / src_ratio)
         else:
             new_h, new_w = ysize, round(ysize * src_ratio)
-        imgdl = imgdl.resize((new_w, new_h), Image.LANCZOS)
+        imgdl = imgdl.resize((new_w, new_h), Image.Resampling.LANCZOS)
         canvas = Image.new("RGBA", (xsize, ysize), (255, 255, 255, 0))
         canvas.paste(imgdl.convert("RGBA"), ((xsize - new_w) // 2, (ysize - new_h) // 2))
         return canvas
@@ -212,10 +212,10 @@ def _resize_image(imgdl, xsize, ysize, mode):
             new_h, new_w = ysize, round(ysize * src_ratio)
         else:
             new_w, new_h = xsize, round(xsize / src_ratio)
-        imgdl = imgdl.resize((new_w, new_h), Image.LANCZOS)
+        imgdl = imgdl.resize((new_w, new_h), Image.Resampling.LANCZOS)
         left, top = (new_w - xsize) // 2, (new_h - ysize) // 2
         return imgdl.crop((left, top, left + xsize, top + ysize))
-    return imgdl.resize((xsize, ysize), Image.LANCZOS)
+    return imgdl.resize((xsize, ysize), Image.Resampling.LANCZOS)
 
 
 @element("dlimg")
@@ -227,6 +227,7 @@ def dlimg(state: RenderState, element: dict) -> None:
     rotate2 = element.get("rotate", 0)
     fit_mode = element.get("mode", "stretch")
 
+    imgdl: Image.Image
     if url.startswith(("http://", "https://")):
         try:
             data = state.context.fetch_image(url, timeout=element.get("timeout", 30))

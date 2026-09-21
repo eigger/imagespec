@@ -247,9 +247,11 @@ def plot(state: RenderState, element: dict) -> None:
         xlegend_ticks = int(xlegend.get("ticks", 3))
         xlegend_height = xlegend_size + 4
 
-    min_v = element.get("low", None)
-    max_v = element.get("high", None)
+    min_v: float | None = element.get("low", None)
+    max_v: float | None = element.get("high", None)
     entity_ids = [p["entity"] for p in element["data"]]
+    if not entity_ids:
+        raise RenderError("plot: 'data' must list at least one entity")
     all_states = state.context.history(entity_ids, start, end)
 
     raw_data = []
@@ -275,6 +277,7 @@ def plot(state: RenderState, element: dict) -> None:
         max_v = hi if max_v is None else max(max_v, hi)
         raw_data.append(states)
 
+    assert min_v is not None and max_v is not None  # every series contributed a lo/hi
     max_v = math.ceil(max_v)
     min_v = math.floor(min_v)
     if max_v == min_v:
@@ -301,8 +304,8 @@ def plot(state: RenderState, element: dict) -> None:
         )
 
     if yaxis is not None and yaxis_grid is not None:
-        grid_points = []
-        curr = min_v
+        grid_points: list[tuple[int, int]] = []
+        curr: float = min_v
         while curr <= max_v:
             curr_y = round(diag_y + (1 - ((curr - min_v) / spread)) * (diag_height - 1))
             grid_points.extend((x, curr_y) for x in range(diag_x, diag_x + diag_width, yaxis_grid))
@@ -317,18 +320,17 @@ def plot(state: RenderState, element: dict) -> None:
             xy_raw.append(
                 (round(diag_x + rel_time * (diag_width - 1)), round(diag_y + (1 - rel_value) * (diag_height - 1)))
             )
-        xy = []
-        last_x = None
-        ys = []
+        # Collapse samples that land on the same pixel column to their mean y.
+        xy: list[tuple[int, int]] = []
+        ys: list[int] = []
+        last_x = xy_raw[0][0]
         for x, y in xy_raw:
             if x != last_x:
-                if ys:
-                    xy.append((last_x, round(sum(ys) / len(ys))))
-                    ys = []
+                xy.append((last_x, round(sum(ys) / len(ys))))
+                ys = []
                 last_x = x
             ys.append(y)
-        if ys:
-            xy.append((last_x, round(sum(ys) / len(ys))))
+        xy.append((last_x, round(sum(ys) / len(ys))))
 
         area_fill = p.get("area_fill", None)
         if area_fill and len(xy) >= 2:
@@ -355,7 +357,7 @@ def plot(state: RenderState, element: dict) -> None:
             [(diag_x, diag_y), (diag_x + yaxis_width - 1, diag_y + diag_height - 1)], width=0, fill=yaxis_color
         )
         if yaxis_tick_width > 0:
-            curr = min_v
+            curr = float(min_v)
             while curr <= max_v:
                 curr_y = round(diag_y + (1 - ((curr - min_v) / spread)) * (diag_height - 1))
                 draw.rectangle(

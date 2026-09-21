@@ -73,10 +73,12 @@ class RenderContext:
     # scripts) when libraqm is available, else BASIC. Linux wheels ship raqm,
     # Windows wheels do not, so text advances differ between them; pin BASIC
     # for pixel-identical output across platforms (the golden tests do this).
-    layout_engine: int | None = None
+    layout_engine: ImageFont.Layout | None = None
     # Cache keyed by (resolved path, size, layout engine) so repeated text
     # elements are cheap and a later change of `layout_engine` is honoured.
-    _font_cache: dict[tuple[str, int, int | None], ImageFont.FreeTypeFont] = field(default_factory=dict, repr=False)
+    _font_cache: dict[tuple[str, int, ImageFont.Layout | None], ImageFont.FreeTypeFont] = field(
+        default_factory=dict, repr=False
+    )
     # url -> (monotonic fetch time, bytes); bounded, oldest entry evicted.
     _image_cache: dict[str, tuple[float, bytes]] = field(default_factory=dict, repr=False)
 

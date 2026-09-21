@@ -12,6 +12,7 @@ import barcode as barcode_lib
 import qrcode
 from barcode.writer import ImageWriter
 from PIL import Image
+from qrcode.image.pil import PilImage
 
 from ..exceptions import RenderError
 from ..registry import element
@@ -41,8 +42,8 @@ def _fit_square_code(img: Image.Image, width, height) -> Image.Image:
         return img
     if target > side:
         scale = target // side  # integer upscale -> uniform modules, fits the box
-        return img.resize((side * scale, side * scale), Image.NEAREST)
-    return img.resize((target, target), Image.NEAREST)  # shrink to fit
+        return img.resize((side * scale, side * scale), Image.Resampling.NEAREST)
+    return img.resize((target, target), Image.Resampling.NEAREST)  # shrink to fit
 
 
 @element("qrcode")
@@ -73,7 +74,7 @@ def qrcode_element(state: RenderState, element: dict) -> None:
     # Quantize to the device palette so a QR stays legible on limited-color panels.
     fill = state.context.color(color)
     back = state.context.color(bgcolor)
-    imgqr = qr.make_image(fill_color=fill, back_color=back).convert("RGBA")
+    imgqr = qr.make_image(image_factory=PilImage, fill_color=fill, back_color=back).get_image().convert("RGBA")
     imgqr = _fit_square_code(imgqr, element.get("width"), element.get("height"))
     state.img.paste(imgqr, int_xy(pos_x, pos_y), imgqr)
 
@@ -125,15 +126,17 @@ def barcode(state: RenderState, element: dict) -> None:
     # keeps bars pure black/white — no gray edges to dither into noise).
     target_w = element.get("width")
     target_h = element.get("height")
-    if target_w is not None or target_h is not None:
-        w0, h0 = imagebc.size
-        if target_w is not None and target_h is not None:
-            new_size = (int(target_w), int(target_h))
-        elif target_w is not None:
-            new_size = (int(target_w), max(1, round(h0 * (int(target_w) / w0))))
-        else:
-            new_size = (max(1, round(w0 * (int(target_h) / h0))), int(target_h))
-        imagebc = imagebc.resize(new_size, Image.NEAREST)
+    w0, h0 = imagebc.size
+    if target_w is not None and target_h is not None:
+        new_size = (int(target_w), int(target_h))
+    elif target_w is not None:
+        new_size = (int(target_w), max(1, round(h0 * (int(target_w) / w0))))
+    elif target_h is not None:
+        new_size = (max(1, round(w0 * (int(target_h) / h0))), int(target_h))
+    else:
+        new_size = (w0, h0)
+    if new_size != (w0, h0):
+        imagebc = imagebc.resize(new_size, Image.Resampling.NEAREST)
 
     state.img.paste(imagebc, int_xy(pos_x, pos_y), imagebc)
 

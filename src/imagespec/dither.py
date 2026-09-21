@@ -17,11 +17,18 @@ order — and the test-suite asserts that.
 
 from __future__ import annotations
 
+from types import ModuleType
+
 from PIL import Image
 
+# Optional accelerator. Typed as a plain module so both branches type-check and
+# the tests can monkeypatch it to None to exercise the pure-Python path.
+np: ModuleType | None
 try:
-    import numpy as np
-except ImportError:  # pragma: no cover - exercised by the pure-Python tests via monkeypatch
+    import numpy as _numpy
+
+    np = _numpy
+except ImportError:  # pragma: no cover - the pure-Python path is tested via monkeypatch
     np = None
 
 # ── Public method names ────────────────────────────────────────────────────
@@ -251,7 +258,7 @@ def resolve_dither_method(dither: bool | str | int | None) -> str:
 
 
 def _palette_rgbs(palette) -> list[tuple[int, int, int]]:
-    return [tuple(c[:3]) for c in palette]  # type: ignore[misc]
+    return [(int(c[0]), int(c[1]), int(c[2])) for c in palette]
 
 
 def _palette_image(palette) -> Image.Image:
@@ -386,6 +393,7 @@ def _split_kernel(kernel, divisor):
 
 
 def _error_diffuse_np(img, palette, kernel, divisor, *, serpentine=True):
+    assert np is not None
     src = img.convert("RGB")
     w, h = src.size
     data = src.tobytes()
@@ -476,16 +484,16 @@ def _ordered_dither(
         dist = d[..., 0] * d[..., 0] + d[..., 1] * d[..., 1] + d[..., 2] * d[..., 2]
         idx = np.argmin(dist, axis=-1)  # first minimum, like the strict `<` search
         return Image.fromarray(np.asarray(palette, dtype=np.uint8)[idx], "RGB")
-    px = src.load()
-    out = Image.new("RGB", (w, h))
-    dest = out.load()
+    data = src.tobytes()
+    out = bytearray(len(data))
     for y in range(h):
         row = matrix[(y + oy) % n]
+        base = y * w * 3
         for x in range(w):
             bias = ((row[(x + ox) % n] + 0.5) / levels - 0.5) * 255.0
-            r, g, b = px[x, y]
-            dest[x, y] = _nearest(r + bias, g + bias, b + bias, palette)
-    return out
+            i = base + x * 3
+            out[i], out[i + 1], out[i + 2] = _nearest(data[i] + bias, data[i + 1] + bias, data[i + 2] + bias, palette)
+    return Image.frombytes("RGB", (w, h), bytes(out))
 
 
 def dither_to_palette(
