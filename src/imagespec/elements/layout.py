@@ -26,11 +26,24 @@ from ..classutil import parse_class
 from ..dispatch import render_element
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import LAYOUT_FIELDS, elements, enum, num
 from ..state import RenderState
 from ..utils import coerce_element, int_xy, require
 
 
-@element("group")
+@element(
+    "group",
+    doc="Container: children use coordinates relative to the group's top-left, are clipped to "
+    "`width` x `height`, and the whole block can be rotated.",
+    fields=[
+        elements(),
+        num("x", 0),
+        num("y", 0),
+        num("width", doc="Defaults to the canvas width"),
+        num("height", doc="Defaults to the canvas height"),
+        num("rotate", 0, doc="0/90/180/270, clockwise"),
+    ],
+)
 def group(state: RenderState, element: dict) -> None:
     require(element, ["elements"], "group")
     ox = element.get("x", 0)
@@ -119,7 +132,7 @@ def _child_layout(child: dict) -> dict:
     cls = parse_class(child.get("class"))
     lay = child.get("layout")
     # Read from the raw child (before its own dispatch coerces it), so coerce here.
-    lay = coerce_element(lay) if isinstance(lay, dict) else {}
+    lay = coerce_element(lay, LAYOUT_FIELDS) if isinstance(lay, dict) else {}
 
     grow = lay.get("grow")
     if grow is None:
@@ -194,7 +207,35 @@ def _blit(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
     canvas.alpha_composite(part, (x + sx, y + sy))
 
 
-@element("stack", "row", "column")
+@element(
+    "stack",
+    "row",
+    "column",
+    doc="Flexbox-style auto-layout: children need no coordinates; they are measured and packed along "
+    "the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. "
+    "Each child may carry `class` / `layout` hints.",
+    fields=[
+        elements(positioned=False, doc="Child elements; their `x`/`y` are ignored (the stack positions them)"),
+        enum("direction", ("horizontal", "vertical"), doc="Defaults to horizontal for `row`, vertical otherwise"),
+        num("gap", 0),
+        enum("justify", ("start", "end", "center", "between", "around", "evenly"), "start"),
+        enum("justify_content", ("start", "end", "center", "between", "around", "evenly"), doc="Alias of `justify`"),
+        enum("align", ("start", "end", "center", "stretch"), "start", doc="Cross-axis alignment of children"),
+        enum("align_items", ("start", "end", "center", "stretch"), doc="Alias of `align`"),
+        num("x", 0),
+        num("y", 0),
+        num("width", doc="Defaults to the canvas width"),
+        num("height", doc="Defaults to the canvas height"),
+        num("rotate", 0, doc="0/90/180/270, clockwise"),
+        num("padding", doc="All sides"),
+        num("padding_x"),
+        num("padding_y"),
+        num("padding_left"),
+        num("padding_top"),
+        num("padding_right"),
+        num("padding_bottom"),
+    ],
+)
 def stack(state: RenderState, element: dict) -> None:
     require(element, ["elements"], "stack")
     cls = parse_class(element.get("class"))

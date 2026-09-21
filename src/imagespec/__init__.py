@@ -27,7 +27,7 @@ from .context import RenderContext
 from .core import ROTATE_MODE_CANVAS, ROTATE_MODE_IMAGE, render
 from .dither import DITHER_METHODS, resolve_dither_method
 from .exceptions import RenderError
-from .registry import known_types
+from .registry import get_spec, known_types, specs
 from .resolvers import (
     GOOGLE_FONTS_SOURCES,
     caching_resolver,
@@ -35,6 +35,7 @@ from .resolvers import (
     directory_resolver,
     google_fonts_resolver,
 )
+from .schema import build_json_schema, build_reference_md
 
 __all__ = [
     "render",
@@ -53,6 +54,10 @@ __all__ = [
     "quantize_color",
     "get_index_color",
     "known_types",
+    "get_spec",
+    "specs",
+    "build_json_schema",
+    "build_reference_md",
     "caching_resolver",
     "chain_resolvers",
     "directory_resolver",

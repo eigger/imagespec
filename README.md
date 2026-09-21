@@ -176,7 +176,7 @@ pixels to differ under a different Pillow/FreeType or python-barcode release.
 + `none`; see [`docs/dithering.md`](docs/dithering.md)) and **any element** can
 carry its own `dither` bool/method to override it just for itself.
 
-## Payload Specification & Element Reference
+## Payload specification
 
 Payloads are specified as a list (sequence) of dictionary elements, which can be easily authored in YAML or JSON. Each element requires a `type` string and varying geometric/styling attributes.
 
@@ -190,189 +190,30 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 > pitfalls (e.g. the YAML "one key per line" trap), device canvas sizes, and full
 > worked examples — every example verified by actually rendering it.
 
-### Machine-readable type list
+### Element reference & JSON Schema
 
-`schema/elements.json` lists every registered element `type` (from `known_types()`)
-and the dither method ids (`dither_methods`, from `DITHER_METHODS`).
-Regenerate with `python scripts/export_schema.py`. The web payload editors in
-[`eigger.github.io`](https://github.com/eigger/eigger.github.io) keep a subset in
-`schema/editor_types.json`; CI fails if either file drifts from the registry.
+Every element's keys, types and defaults are declared once, next to its handler
+(`@element("circle", fields=[num("x", required=True), ...])`), and everything
+else is generated from those declarations:
 
-### Common Attributes
-- **Colors**: Supported color specifications include names (e.g., `"black"`, `"white"`, `"red"`, `"green"`, `"blue"`, `"orange"`, `"yellow"`) or HEX strings (e.g., `"#FF0000"`). Colors are automatically quantized to the host device's palette.
-- **Coordinates**: Standard 2D cartesian coordinate system starting at `(0, 0)` at the top-left corner.
+- [`docs/reference.md`](docs/reference.md) — the full key reference
+- [`schema/elements.json`](schema/elements.json) — JSON Schema (draft 2020-12)
+  for a whole payload; use it in an editor or validator to catch typos, missing
+  required keys and bad enum values before rendering
+- template-string coercion (`"42"` → `42`, `"False"` → `False`) — driven by the
+  declared key types
 
-### Elements Reference
+`python scripts/export_schema.py` regenerates the two files; CI fails if they
+drift from the declarations, and a guard test fails if a handler reads a key it
+did not declare. The web payload editor in
+[`eigger.github.io`](https://github.com/eigger/eigger.github.io) keeps its
+supported subset in `schema/editor_types.json`.
 
-#### Shapes & Vector Elements
-- **`line`**: Draws a line path.
-  - `x_start`, `y_start`, `x_end`, `y_end` (int, required)
-  - `fill` (color, default: `"black"`)
-  - `width` (int, default: `1`)
-  - `dash` (list of integers, e.g. `[4, 4]`, optional)
-- **`rectangle`**: Draws a square or rectangle.
-  - `x_start`, `y_start`, `x_end`, `y_end` (int, required)
-  - `fill` (color, optional)
-  - `outline` (color, default: `"black"`)
-  - `width` (int, default: `1`)
-  - `radius` (int, rounded corner radius, default: `0`)
-- **`circle`**: Draws a circle.
-  - `x`, `y` (int center, required), `radius` (int, required)
-  - `fill`, `outline`, `width` (optional)
-- **`ellipse`**: Draws an ellipse.
-  - `x_start`, `y_start`, `x_end`, `y_end` (int, required)
-  - `fill`, `outline`, `width` (optional)
-- **`polygon`**: Draws a custom polygon path.
-  - `points` (string, list of coordinates separated by semicolons: `"x1,y1;x2,y2;x3,y3"`, required)
-  - `fill`, `outline`, `width` (optional)
-- **`arc`**: Draws a curved arc path.
-  - `x_start`, `y_start`, `x_end`, `y_end` (int bounding box, required)
-  - `start_angle`, `end_angle` (int degrees, e.g., `0` to `180` for bottom semi-circle, required)
-  - `outline`, `width` (optional)
-- **`rectangle_pattern`**: Fills a grid area with a repeating pixel dot-matrix pattern.
-  - `x_start`, `y_start` (int, required)
-  - `x_size`, `y_size` (int module size, required)
-  - `x_repeat`, `y_repeat` (int repetitions, required)
-  - `x_offset`, `y_offset` (int spacing between modules, required)
-  - `fill` (color, required)
-
-#### Text & Typography
-- **`text`**: Standard single-line text layer.
-  - `x`, `y` (int anchor position, required)
-  - `value` (string to print, required)
-  - `color` (default: `"black"`), `size` (default: `12`), `font` (string name, optional)
-  - `anchor` (string PIL anchor alignment, e.g. `"lt"`, `"mm"`, `"ma"`, optional)
-- **`text_fit`**: Fits text dynamically inside a fixed box by wrapping and shrinking.
-  - `x`, `y`, `width`, `height` (int box boundaries, required)
-  - `value` (string text, required)
-  - `size` (int start size, default: `20`)
-  - `min_size` (int minimum shrink size, default: `8`)
-  - `max_lines` (int max lines, default: `1`)
-  - `fit` (string shrink behavior: `"shrink"`, `"ellipsis"`, `"shrink_ellipsis"`, default: `"shrink"`)
-  - `padding` (int, default: `0`), `background`, `outline`, `radius` (optional)
-- **`rich_text`**: Draws a single line of text with mixed formatting (text, icons, colors, sizes) side-by-side.
-  - `x`, `y` (int, required)
-  - `spans` (list of span dicts: `[{"text": "Temp: "}, {"icon": "mdi:fire", "color": "orange"}]`, required)
-    — `icon` accepts the same `mdi:`/`fa:`/`fas:`/`far:`/`fab:` names as the `icon` element
-  - `size` (default: `12`), `align` (left/right/center, default: `"left"`)
-- **`table`**: Renders a simple structured table.
-  - `x`, `y` (int top-left, required)
-  - `columns` (list of column width integers, required)
-  - `rows` (list of lists of strings, required)
-  - `font_size` (default: `9`), `header_fill`, `header_color`, `cell_color`, `align`, `row_height`
-
-#### Gauges & Charts
-- **`gauge`**: Renders a circular gauge indicator.
-  - `x`, `y` (int center, required), `radius` (int, required)
-  - `progress` (int `0`-`100` percentage value, required)
-  - `fill` (progress color), `outline` (background track color), `width` (optional)
-- **`progress_bar`**: Renders a linear progress bar.
-  - `x_start`, `y_start`, `x_end`, `y_end` (int bounding box, required)
-  - `progress` (int `0`-`100` percentage value, required)
-  - `direction` (`"right"`, `"left"`, `"up"`, `"down"`, default: `"right"`)
-  - `fill`, `background`, `outline`, `width`, `radius`, `show_percentage` (bool, optional)
-- **`sparkline`**: Renders a compact axis-less line chart.
-  - `x`, `y` (int top-left, required), `width`, `height` (int, required)
-  - `values` (list of floats, required)
-  - `color` (line color), `fill` (area color below line), `width_line`, `dot_last` (bool, optional)
-- **`pie`**: Renders a pie or donut chart segment.
-  - `x`, `y` (int center, required), `radius` (int, required)
-  - `values` (string semicolon-separated: `"Gas,30,orange;Water,25,blue"`, required)
-  - `inner_radius` (int inner donut hole radius, optional)
-- **`diagram`**: Renders a bar chart.
-  - `x`, `y` (int top-left, required), `width`, `height` (int, required)
-  - `bars` (dict: `{"values": "Jan,45;Feb,75", "color": "blue"}`, required)
-  - `margin` (int chart padding, default: `20`)
-
-#### Machine-Readable Codes & Media
-- **`qrcode`**: Generates a QR Code.
-  - `x`, `y` (int top-left, required)
-  - `data` (string, required)
-  - `boxsize` (int pixels per module, default: `2`), **or** `width`/`height` (int px
-    box — the code is scaled square & crisp to fit it, for predictable layout)
-  - `color`, `bgcolor`, `border`, `eclevel` (`"l"`, `"m"`, `"q"`, `"h"`, optional)
-- **`barcode`**: Generates a standard linear barcode.
-  - `x`, `y` (int top-left, required)
-  - `data` (string, required)
-  - `code` (string format, e.g. `"code128"`, `"ean13"`, default: `"code128"`)
-  - **Sizing (easy, pixel-based):** `width` and/or `height` (int px) — scales the
-    barcode to fit that box at `(x, y)`, like `dlimg`/`icon`. Give one to scale
-    proportionally, or both for an exact box. This is the recommended way to place
-    a barcode predictably.
-  - **Sizing (physical, advanced):** when `width`/`height` are omitted it uses
-    python-barcode's millimetre options — `module_width` (float mm, default `0.2`),
-    `module_height` (float mm, default `7.0`), `quiet_zone` (float mm, default `6.5`)
-    rendered at `dpi` (int, default `300`). Pixel size then depends on the DPI.
-  - `color`, `bgcolor` (quantized to the palette), `font_size`, `text_distance`,
-    `write_text` (bool, default `true`) — optional.
-- **`datamatrix`**: Generates a DataMatrix 2D code (needs the `datamatrix` extra).
-  - `x`, `y`, `data` (required)
-  - `boxsize` (int pixels per cell, default: `2`), **or** `width`/`height` (int px box
-    — scaled square & crisp to fit, like `qrcode`)
-  - `color`, `bgcolor` (optional)
-- **`icon`**: Renders a vector icon from Material Design Icons or Font Awesome Free.
-  - `x`, `y` (int top-left, required)
-  - `value` (string slug, required) — `"mdi:home"` (or a bare name, e.g. `"home"`,
-    for backward compatibility) for **Material Design Icons**; `"fa:home"` /
-    `"fas:home"` (solid) / `"far:star"` (regular) / `"fab:github"` (brands) for
-    **Font Awesome Free**. Plain `"fa:"` auto-picks solid > regular > brands.
-  - `size` (int, default: `24`), `color` (optional)
-- **`dlimg`**: Downloads and renders an external image (with fit and dithering).
-  - `x`, `y`, `xsize`, `ysize` (int box, required)
-  - `url` (http/https or base64 data: url, required; local paths need `RenderContext(allow_local_images=True)`)
-  - `mode` (`"stretch"`, `"fit"`, `"fill"`, `"contain"`, default: `"stretch"`)
-  - `rotate` (int degrees, optional), `timeout` (seconds, default: `30`)
-  - `dither` (bool, optional), `mask` (`"circle"`, optional; or `circle: true`)
-
-#### Layout / Auto-layout
-- **`group`**: Container that renders children at an offset, clipped to its box, optionally rotated.
-  - `x`, `y` (int offset, default `0`), `width`, `height` (int clip box, default: canvas), `rotate` (`90`/`180`/`270`, optional)
-  - `elements` (list of child element dicts, required) — children use coordinates **relative to the group**.
-- **`stack`** (aliases **`row`** = horizontal, **`column`** = vertical): *Auto-layout* container that **packs** its children along an axis so they need no explicit coordinates — the stack measures each child's drawn size and positions it. Purely additive: children are still drawn by their normal handlers, so **any element** can be a child, and absolute-coordinate payloads outside a stack are unaffected.
-  - `elements` (list of child element dicts, required)
-  - `direction` (`"vertical"` / `"horizontal"`, default: `"vertical"`; `row`/`column` set this)
-  - `gap` (int px between children, default: `0`)
-  - `padding` (int, all sides) or `padding_x`/`padding_y`/`padding_top`/`padding_right`/`padding_bottom`/`padding_left`
-  - `justify` (main-axis distribution: `"start"`, `"end"`, `"center"`, `"between"`, `"around"`, `"evenly"`, default: `"start"`)
-  - `align` (cross-axis item alignment: `"start"`, `"end"`, `"center"`, default: `"start"`)
-  - `x`, `y` (int offset of the whole stack, default `0`), `width`, `height` (int box, default: canvas), `rotate` (optional)
-  - **Per-child layout** via the child's own `class` string or a `layout: {...}` sub-dict (kept separate from the child's drawing keys so e.g. a `diagram`'s own `margin` is never confused for a layout margin): `grow` (int, share of leftover main-axis space), `self` (`"start"`/`"end"`/`"center"` cross-axis override), `margin`/`margin_x`/`margin_y`/`margin_<side>` (int px).
-  - **`class` shorthand** (optional, Tailwind-like — desugars to the keys above; explicit keys win). Only the **layout** subset is recognized; styling/colour classes are ignored (those stay on each element's own keys).
-    - container: `flex-row` / `flex-col`, `gap-N`, `p-N` / `px-N` / `py-N` / `pt-N` / `pr-N` / `pb-N` / `pl-N`, `justify-start|end|center|between|around|evenly`, `items-start|end|center`
-    - child: `grow` / `flex-1` / `grow-N`, `self-start|end|center`, `m-N` / `mx-N` / `my-N` / `mt-N` / `mr-N` / `mb-N` / `ml-N`
-    - **Spacing scale = real Tailwind**, not raw pixels: a unit is `N × 4px` (`gap-2` → 8px, `p-4` → 16px, `mt-0.5` → 2px). For exact pixels use the *arbitrary value* form `gap-[10]` / `p-[3px]`. Margins may be **negative** (`-mt-2` → -8px, `-ml-[3]` → -3px) for fine nudges; padding/gap cannot.
-
-  ```yaml
-  - type: row                     # horizontal auto-layout
-    x: 8
-    y: 8
-    class: "gap-2 items-center"    # gap-2 = 8px, vertically centered
-    elements:
-      - { type: icon, value: "mdi:thermometer", size: 18, color: red }
-      - { type: text, value: "24°C", size: 16 }       # no x/y needed
-      - { type: battery, width: 30, height: 14, level: 72, class: "ml-2" }
-  ```
-
-#### Widgets
-- **`legend`**: Draws color-swatch ↔ label rows (companion to `pie`/`plot`).
-  - `x`, `y` (int top-left, required)
-  - `items` (required) — list of `{"label": ..., "color": ..., "icon": ...}` dicts (icon
-    accepts `mdi:`/`fa:`/`fas:`/`far:`/`fab:` names, same as `icon`), or a
-    `"label,color;label,color"` string
-  - `orientation` (`"vertical"` / `"horizontal"`, default: `"vertical"`)
-  - `shape` (`"square"` / `"circle"` / `"line"`, default: `"square"`)
-  - `size` (font size, default: `12`), `swatch_size`, `gap`, `spacing` (optional)
-- **`star_rating`**: Renders a star rating.
-  - `x`, `y` (int top-left, required)
-  - `rating` (float, required), `max` (int stars, default: `5`)
-  - `size` (int, default: `16`), `color` (filled, default: `"orange"`), `empty_color`, `spacing`
-  - `half` (bool half-stars, default: `true`)
-- **`battery`**: Vector battery gauge with a proportional fill.
-  - `x`, `y`, `width`, `height` (int box, required)
-  - `level` (int/float `0`-`100`, required)
-  - `fill`, `background`, `outline`, `radius`, `padding` (optional)
-  - `low_threshold` (int, default: `20`), `low_color` (swap fill at/below threshold, optional)
-  - `show_percentage` (bool, optional), `text_color` (optional)
+### Common attributes
+- **Colors**: names (`black`, `white`, `red`, `green`, `blue`, `orange`, `yellow`, any CSS name) or HEX (`#FF0000`, `#f00`); quantized to the device palette at the end of `render()`.
+- **Coordinates**: pixels from the top-left corner `(0, 0)`.
+- **Numbers and booleans** also accept the string forms Home Assistant templates produce.
+- **`visible`**, **`dither`**, **`class`** / **`layout`** are accepted by every element (see the reference).
 
 ### Dithering
 

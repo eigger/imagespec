@@ -15,11 +15,25 @@ from PIL import ImageDraw
 from ..colors import white
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import any_, array, boolean, color, enum, num, obj, string
 from ..state import RenderState
 from ..utils import is_decimal, mono_draw, require
 
 
-@element("pie")
+@element(
+    "pie",
+    doc="Pie or donut chart. Segment colours cycle through the device palette unless given.",
+    fields=[
+        num("x", required=True, doc="Centre x"),
+        num("y", required=True, doc="Centre y"),
+        num("radius", required=True),
+        string("values", required=True, doc='`"label,value[,color];..."`'),
+        num("inner_radius", 0, doc="> 0 makes a donut"),
+        num("start_angle", -90, doc="Degrees; -90 starts at 12 o'clock"),
+        color("outline", "black"),
+        color("background", "white", doc="Donut hole colour"),
+    ],
+)
 def pie(state: RenderState, element: dict) -> None:
     """Pie or donut chart from ``"label,value[,color]; ..."`` segments."""
     require(element, ["x", "y", "radius", "values"], "pie")
@@ -42,9 +56,9 @@ def pie(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     bbox = [(cx - r, cy - r), (cx + r, cy + r)]
     angle = start
-    for i, (_label, value, color) in enumerate(segments):
+    for i, (_label, value, seg_color) in enumerate(segments):
         sweep = value / total * 360
-        col = state.context.color(color) if color else cycle[i % len(cycle)]
+        col = state.context.color(seg_color) if seg_color else cycle[i % len(cycle)]
         draw.pieslice(bbox, angle, angle + sweep, fill=col, outline=outline)
         angle += sweep
 
@@ -53,7 +67,26 @@ def pie(state: RenderState, element: dict) -> None:
         draw.ellipse([(cx - inner, cy - inner), (cx + inner, cy + inner)], fill=bg, outline=outline)
 
 
-@element("sparkline")
+@element(
+    "sparkline",
+    doc="Compact axis-less line chart from inline values.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        num("width", required=True),
+        num("height", required=True),
+        any_("values", required=True, doc='List of numbers, or a `"1,3,2"` string'),
+        num("min", doc="Y range floor; defaults to the data minimum"),
+        num("max", doc="Y range ceiling; defaults to the data maximum"),
+        color("color", "black", doc="Line colour"),
+        color("fill", doc="Area colour below the line"),
+        num("width_line", 1),
+        string("joint", doc="Pillow line joint, e.g. `curve`"),
+        boolean("dot_last", doc="Mark the last value with a dot"),
+        num("dot_radius", 2),
+        color("dot_color", doc="Defaults to `color`"),
+    ],
+)
 def sparkline(state: RenderState, element: dict) -> None:
     """Compact axis-less line chart from inline values (no history)."""
     require(element, ["x", "y", "width", "height", "values"], "sparkline")
@@ -96,7 +129,29 @@ def sparkline(state: RenderState, element: dict) -> None:
         draw.ellipse([(lx - rd, ly - rd), (lx + rd, ly + rd)], fill=dot)
 
 
-@element("diagram")
+@element(
+    "diagram",
+    doc="Bar chart with x/y axes.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        num("height", required=True),
+        num("width", doc="Defaults to the canvas width"),
+        num("margin", 20, doc="Space reserved for the axes/labels"),
+        string("font"),
+        obj(
+            "bars",
+            doc="Bar series",
+            fields=[
+                string("values", required=True, doc='`"label,value;label,value"`'),
+                color("color", required=True),
+                num("margin", 10, doc="Gap between bars"),
+                num("legend_size", 10, doc="Label font size"),
+                color("legend_color", "black"),
+            ],
+        ),
+    ],
+)
 def diagram(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "height"], "diagram")
     draw = mono_draw(state.img)
@@ -149,7 +204,25 @@ def diagram(state: RenderState, element: dict) -> None:
             )
 
 
-@element("progress_bar")
+@element(
+    "progress_bar",
+    doc="Linear progress bar. `progress` is clamped to 0-100.",
+    fields=[
+        num("x_start", required=True),
+        num("y_start", required=True),
+        num("x_end", required=True),
+        num("y_end", required=True),
+        num("progress", required=True, doc="Percent, 0-100"),
+        enum("direction", ("right", "left", "up", "down"), "right", doc="Case-insensitive"),
+        color("background", "white"),
+        color("fill", "red"),
+        color("outline", "black"),
+        num("width", 1, doc="Outline width"),
+        num("radius", 0),
+        boolean("show_percentage", False, doc="Draw `NN%` in the middle"),
+        string("font"),
+    ],
+)
 def progress_bar(state: RenderState, element: dict) -> None:
     require(element, ["x_start", "x_end", "y_start", "y_end", "progress"], "progress_bar")
     draw = ImageDraw.Draw(state.img)
@@ -196,7 +269,70 @@ def progress_bar(state: RenderState, element: dict) -> None:
         draw.text((tx, ty), text, font=font, fill=text_color, anchor="lt")
 
 
-@element("plot")
+@element(
+    "plot",
+    doc="Time-series line chart over the last `duration` seconds, fed by the host's "
+    "`history_provider`. `low`/`high` widen the y range but never clip data.",
+    fields=[
+        array(
+            "data",
+            "object",
+            required=True,
+            doc="One series per entry",
+            fields=[
+                string("entity", required=True, doc="Entity id passed to the history provider"),
+                color("color", "black"),
+                num("width", 1, doc="Line width"),
+                string("joint", doc="Pillow line joint"),
+                color("area_fill", doc="Fill below the line"),
+            ],
+        ),
+        num("x_start", 0),
+        num("y_start", 0),
+        num("x_end", doc="Defaults to the canvas right edge"),
+        num("y_end", doc="Defaults to the canvas bottom edge"),
+        num("duration", 86400, doc="Window in seconds ending now"),
+        num("size", 10, doc="Default legend font size"),
+        string("font"),
+        num("low", doc="Y axis floor (widens only)"),
+        num("high", doc="Y axis ceiling (widens only)"),
+        boolean("debug", False, doc="Outline the plot and data areas"),
+        obj(
+            "ylegend",
+            doc="Min/max labels; `null` disables",
+            fields=[
+                num("width", -1, doc="Reserved width; -1 = measure the labels"),
+                color("color", "black"),
+                enum("position", ("left", "right"), "left"),
+                string("font"),
+                num("size", doc="Defaults to the element `size`"),
+            ],
+        ),
+        obj(
+            "yaxis",
+            doc="Axis line, ticks and grid; `null` disables",
+            fields=[
+                num("width", 1, doc="Axis line width"),
+                color("color", "black"),
+                num("tick_width", 2),
+                num("tick_every", 1, doc="Value step between ticks"),
+                num("grid", 5, doc="Dotted grid spacing in px; `null` disables"),
+                color("grid_color", "black"),
+            ],
+        ),
+        obj(
+            "xlegend",
+            doc="Time labels along the bottom",
+            fields=[
+                color("color", "black"),
+                num("size", doc="Defaults to the element `size`"),
+                string("font"),
+                string("format", "%H:%M", doc="`strftime` format"),
+                num("ticks", 3, doc="Number of labels"),
+            ],
+        ),
+    ],
+)
 def plot(state: RenderState, element: dict) -> None:
     require(element, ["data"], "plot")
     draw = mono_draw(state.img)

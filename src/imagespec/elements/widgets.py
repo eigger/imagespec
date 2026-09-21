@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import array, boolean, color, enum, num, string
 from ..state import RenderState
 from ..utils import mono_draw, require
 from .media import mdi_char, mdi_font, resolve_icon
@@ -40,7 +41,34 @@ def _parse_legend_items(items):
     return out
 
 
-@element("legend")
+@element(
+    "legend",
+    doc="Colour-swatch legend rows (companion to `pie` / `plot`).",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        array(
+            "items",
+            "object",
+            required=True,
+            doc='List of `{label, color, icon?}` dicts, or a `"label,color;label,color"` string',
+            alt="string",
+            fields=[
+                string("label"),
+                color("color", "black"),
+                string("icon", doc="Icon name to use instead of a swatch"),
+            ],
+        ),
+        num("size", 12, doc="Label font size"),
+        num("swatch_size", doc="Defaults to `size`"),
+        num("gap", 6, doc="Swatch to label"),
+        num("spacing", 4, doc="Between items"),
+        enum("orientation", ("vertical", "horizontal"), "vertical"),
+        enum("shape", ("square", "circle", "line"), "square"),
+        color("color", "black", doc="Label colour"),
+        string("font"),
+    ],
+)
 def legend(state: RenderState, element: dict) -> None:
     """Draw a color-swatch legend (vertical or horizontal)."""
     require(element, ["x", "y", "items"], "legend")
@@ -58,9 +86,9 @@ def legend(state: RenderState, element: dict) -> None:
     d = mono_draw(state.img)
     line_h = max(swatch, size)
     cursor_x, cursor_y = x, y
-    for label, color, icon in items:
+    for label, item_color, icon in items:
         cy = cursor_y + line_h / 2
-        col = state.context.color(color)
+        col = state.context.color(item_color)
         if icon is not None:
             glyph, icon_font = resolve_icon(icon, state.context.icons_dir, swatch)
             d.text((cursor_x, cy), glyph, font=icon_font, fill=col, anchor="lm")
@@ -78,7 +106,21 @@ def legend(state: RenderState, element: dict) -> None:
             cursor_y += line_h + spacing
 
 
-@element("star_rating")
+@element(
+    "star_rating",
+    doc="Row of full / half / empty stars.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        num("rating", required=True),
+        num("max", 5, doc="Number of stars"),
+        num("size", 16),
+        num("spacing", 2),
+        boolean("half", True, doc="Allow half stars"),
+        color("color", "orange", doc="Filled stars"),
+        color("empty_color", doc="Empty stars; defaults to `color`"),
+    ],
+)
 def star_rating(state: RenderState, element: dict) -> None:
     """Render ``rating`` of ``max`` stars (full / optional half / empty)."""
     require(element, ["x", "y", "rating"], "star_rating")
@@ -107,7 +149,31 @@ def star_rating(state: RenderState, element: dict) -> None:
         x += size + spacing
 
 
-@element("battery")
+@element(
+    "battery",
+    doc="Battery outline with a proportional fill and terminal nub.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        num("width", required=True),
+        num("height", required=True),
+        num("level", required=True, doc="Percent, clamped to 0-100"),
+        color("outline", "black"),
+        color("background", "white"),
+        color("fill", "black"),
+        num("width_outline", 1),
+        num("radius", 2),
+        num("padding", 2, doc="Inset of the fill"),
+        num("low_threshold", 20),
+        color("low_color", doc="Fill colour at or below `low_threshold`"),
+        num("nub_width", doc="Defaults to `width / 12`"),
+        num("nub_height", doc="Defaults to `height / 2`"),
+        boolean("show_percentage", False),
+        string("font"),
+        num("size", doc="Percentage font size; defaults to fit the height"),
+        color("text_color", "white"),
+    ],
+)
 def battery(state: RenderState, element: dict) -> None:
     """Vector battery gauge with a proportional fill and terminal nub."""
     require(element, ["x", "y", "width", "height", "level"], "battery")

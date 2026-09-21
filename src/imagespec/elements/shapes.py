@@ -12,6 +12,7 @@ from PIL import ImageDraw
 
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import array, boolean, color, num, string
 from ..state import RenderState
 from ..utils import mono_draw, require, rounded_corners
 
@@ -55,7 +56,21 @@ def _draw_dashed_line(draw, x0, y0, x1, y1, dash, fill, width):
         drawing = not drawing
 
 
-@element("line")
+@element(
+    "line",
+    doc="Straight line. Without `y_start` it is drawn at the current flow cursor (after the previous "
+    "text/line) plus `y_padding`, and the cursor is left on the line.",
+    fields=[
+        num("x_start", required=True),
+        num("x_end", required=True),
+        num("y_start", doc="Omit to place the line at the flow cursor"),
+        num("y_end", doc="Defaults to `y_start` (horizontal line)"),
+        num("y_padding", 0, doc="Gap below the flow cursor when `y_start` is omitted"),
+        color("fill", "black"),
+        num("width", 1),
+        array("dash", "number", doc="`[on, off]` lengths in px for a dashed line, e.g. `[4, 3]`"),
+    ],
+)
 def line(state: RenderState, element: dict) -> None:
     require(element, ["x_start", "x_end"], "line")
     draw = ImageDraw.Draw(state.img)
@@ -77,7 +92,21 @@ def line(state: RenderState, element: dict) -> None:
     state.pos_y = y_start
 
 
-@element("rectangle")
+@element(
+    "rectangle",
+    doc="Axis-aligned rectangle, optionally with rounded corners.",
+    fields=[
+        num("x_start", required=True),
+        num("y_start", required=True),
+        num("x_end", required=True),
+        num("y_end", required=True),
+        color("fill", doc="Interior colour; omitted = hollow"),
+        color("outline", "black"),
+        num("width", 1, doc="Outline width"),
+        num("radius", doc="Corner radius; default 0, or 10 when `corners` is given"),
+        string("corners", doc='`"all"` or a comma list of `top_left`, `top_right`, `bottom_right`, `bottom_left`'),
+    ],
+)
 def rectangle(state: RenderState, element: dict) -> None:
     require(element, ["x_start", "x_end", "y_start", "y_end"], "rectangle")
     draw = ImageDraw.Draw(state.img)
@@ -95,7 +124,25 @@ def rectangle(state: RenderState, element: dict) -> None:
     )
 
 
-@element("rectangle_pattern")
+@element(
+    "rectangle_pattern",
+    doc="Grid of identical rectangles (dot-matrix / tile pattern).",
+    fields=[
+        num("x_start", required=True),
+        num("y_start", required=True),
+        num("x_size", required=True, doc="Width of one tile"),
+        num("y_size", required=True, doc="Height of one tile"),
+        num("x_repeat", required=True, doc="Tiles per row"),
+        num("y_repeat", required=True, doc="Tiles per column"),
+        num("x_offset", required=True, doc="Horizontal gap between tiles"),
+        num("y_offset", required=True, doc="Vertical gap between tiles"),
+        color("fill"),
+        color("outline", "black"),
+        num("width", 1),
+        num("radius", doc="Corner radius; default 0, or 10 when `corners` is given"),
+        string("corners", doc="As for `rectangle`"),
+    ],
+)
 def rectangle_pattern(state: RenderState, element: dict) -> None:
     require(
         element,
@@ -121,7 +168,18 @@ def rectangle_pattern(state: RenderState, element: dict) -> None:
             )
 
 
-@element("circle")
+@element(
+    "circle",
+    doc="Circle from a centre point and radius.",
+    fields=[
+        num("x", required=True, doc="Centre x"),
+        num("y", required=True, doc="Centre y"),
+        num("radius", required=True),
+        color("fill"),
+        color("outline", "black"),
+        num("width", 1),
+    ],
+)
 def circle(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "radius"], "circle")
     draw = ImageDraw.Draw(state.img)
@@ -131,7 +189,19 @@ def circle(state: RenderState, element: dict) -> None:
     draw.circle((element["x"], element["y"]), element["radius"], fill=fill, outline=outline, width=width)
 
 
-@element("ellipse")
+@element(
+    "ellipse",
+    doc="Ellipse inscribed in a bounding box.",
+    fields=[
+        num("x_start", required=True),
+        num("y_start", required=True),
+        num("x_end", required=True),
+        num("y_end", required=True),
+        color("fill"),
+        color("outline", "black"),
+        num("width", 1),
+    ],
+)
 def ellipse(state: RenderState, element: dict) -> None:
     require(element, ["x_start", "x_end", "y_start", "y_end"], "ellipse")
     draw = ImageDraw.Draw(state.img)
@@ -146,7 +216,22 @@ def ellipse(state: RenderState, element: dict) -> None:
     )
 
 
-@element("arc")
+@element(
+    "arc",
+    doc="Arc (or pie slice) of the ellipse inscribed in a bounding box. Angles in degrees, clockwise from 3 o'clock.",
+    fields=[
+        num("x_start", required=True),
+        num("y_start", required=True),
+        num("x_end", required=True),
+        num("y_end", required=True),
+        num("start_angle", required=True),
+        num("end_angle", required=True),
+        color("fill", doc="Slice interior when `pie` is true"),
+        color("outline", "black", doc="Arc / slice outline colour"),
+        num("width", 1),
+        boolean("pie", False, doc="Draw a filled pie slice instead of an open arc"),
+    ],
+)
 def arc(state: RenderState, element: dict) -> None:
     require(element, ["x_start", "y_start", "x_end", "y_end", "start_angle", "end_angle"], "arc")
     draw = ImageDraw.Draw(state.img)
@@ -162,7 +247,16 @@ def arc(state: RenderState, element: dict) -> None:
         draw.arc(bbox, start=element["start_angle"], end=element["end_angle"], fill=outline, width=width)
 
 
-@element("polygon")
+@element(
+    "polygon",
+    doc="Closed polygon from a point list.",
+    fields=[
+        string("points", required=True, doc='`"x1,y1;x2,y2;x3,y3"`'),
+        color("fill"),
+        color("outline", "black"),
+        num("width", 1),
+    ],
+)
 def polygon(state: RenderState, element: dict) -> None:
     require(element, ["points"], "polygon")
     draw = ImageDraw.Draw(state.img)
@@ -179,7 +273,26 @@ def polygon(state: RenderState, element: dict) -> None:
         raise RenderError(f"polygon: invalid points format '{element['points']}' — expected 'x1,y1;x2,y2;...'") from e
 
 
-@element("gauge")
+@element(
+    "gauge",
+    doc="270-degree radial gauge with an optional centred value label.",
+    fields=[
+        num("x", required=True, doc="Centre x"),
+        num("y", required=True, doc="Centre y"),
+        num("radius", required=True),
+        num("progress", required=True, doc="Value to show, between `min_value` and `max_value`"),
+        num("min_value", 0),
+        num("max_value", 100),
+        num("width", 8, doc="Arc thickness"),
+        color("fill", "black", doc="Filled part of the arc"),
+        color("background", "white", doc="Unfilled part of the arc"),
+        color("outline", "black"),
+        boolean("show_value", False, doc="Draw `progress` in the centre"),
+        string("font"),
+        num("size", 16, doc="Value label font size"),
+        color("color", "black", doc="Value label colour"),
+    ],
+)
 def gauge(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "radius", "progress"], "gauge")
     draw = ImageDraw.Draw(state.img)

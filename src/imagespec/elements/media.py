@@ -14,6 +14,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import boolean, color, enum, num, string
 from ..state import RenderState
 from ..utils import int_xy, mono_draw, require
 
@@ -165,7 +166,22 @@ def resolve_icon(value: str, icons_dir: str, size):
     return mdi_char(value, icons_dir), mdi_font(icons_dir, size)
 
 
-@element("icon")
+@element(
+    "icon",
+    doc="Single icon glyph: Material Design Icons (`mdi:home` or bare `home`) or Font Awesome Free "
+    "(`fa:` auto style, `fas:`/`far:`/`fab:` forced).",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        string("value", required=True, doc="Icon name with optional prefix"),
+        num("size", required=True, doc="Glyph size in px"),
+        color("color", "black"),
+        color("fill", doc="Alias of `color`"),
+        string("anchor", "la"),
+        num("stroke_width", 0),
+        color("stroke_fill", "white"),
+    ],
+)
 def icon(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "value", "size"], "icon")
     d = mono_draw(state.img)
@@ -218,7 +234,23 @@ def _resize_image(imgdl, xsize, ysize, mode):
     return imgdl.resize((xsize, ysize), Image.Resampling.LANCZOS)
 
 
-@element("dlimg")
+@element(
+    "dlimg",
+    doc="Image from an `http(s)` URL, a `data:` URL or (if the host allows) a local path, resized to "
+    "`xsize` x `ysize`.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        string("url", required=True),
+        num("xsize", required=True, doc="Target width"),
+        num("ysize", required=True, doc="Target height"),
+        num("rotate", 0, doc="Degrees clockwise, applied before resizing"),
+        enum("mode", ("stretch", "fit", "contain", "fill"), "stretch", doc="`fit`/`contain` letterbox, `fill` crops"),
+        num("timeout", 30, doc="HTTP timeout in seconds"),
+        enum("mask", ("circle",), doc="`circle` clips the image to a circle"),
+        boolean("circle", doc="Alias of `mask: circle`"),
+    ],
+)
 def dlimg(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "url", "xsize", "ysize"], "dlimg")
     url = element["url"]

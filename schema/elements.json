@@ -1,5 +1,9 @@
 {
-  "schema_version": 1,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/eigger/imagespec/main/schema/elements.json",
+  "title": "imagespec payload",
+  "description": "A list of elements rendered in order. Numeric and boolean keys also accept the string forms Home Assistant templates produce at render time; this schema describes the authored types.",
+  "schema_version": 2,
   "package": "imagespec",
   "types": [
     "arc",
@@ -52,5 +56,7435 @@
     "bayer16",
     "clustered4",
     "clustered8"
-  ]
+  ],
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/element"
+  },
+  "$defs": {
+    "element": {
+      "description": "Any element placed by its own coordinates (top level or inside `group`).",
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/pie"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/sparkline"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/diagram"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/progress_bar"
+        },
+        {
+          "$ref": "#/$defs/plot"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/qrcode"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/barcode"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/datamatrix"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/group"
+        },
+        {
+          "$ref": "#/$defs/stack"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/icon"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dlimg"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/line"
+        },
+        {
+          "$ref": "#/$defs/rectangle"
+        },
+        {
+          "$ref": "#/$defs/rectangle_pattern"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/circle"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/ellipse"
+        },
+        {
+          "$ref": "#/$defs/arc"
+        },
+        {
+          "$ref": "#/$defs/polygon"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/gauge"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/text"
+            },
+            {
+              "required": [
+                "x"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/text_box"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/multiline"
+            },
+            {
+              "required": [
+                "x"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/new_multiline"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/table"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rich_text"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/text_fit"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/legend"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/star_rating"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/battery"
+            },
+            {
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "stack_child": {
+      "description": "Any element inside a stack/row/column, which positions it (`x`/`y` optional).",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/pie"
+        },
+        {
+          "$ref": "#/$defs/sparkline"
+        },
+        {
+          "$ref": "#/$defs/diagram"
+        },
+        {
+          "$ref": "#/$defs/progress_bar"
+        },
+        {
+          "$ref": "#/$defs/plot"
+        },
+        {
+          "$ref": "#/$defs/qrcode"
+        },
+        {
+          "$ref": "#/$defs/barcode"
+        },
+        {
+          "$ref": "#/$defs/datamatrix"
+        },
+        {
+          "$ref": "#/$defs/group"
+        },
+        {
+          "$ref": "#/$defs/stack"
+        },
+        {
+          "$ref": "#/$defs/icon"
+        },
+        {
+          "$ref": "#/$defs/dlimg"
+        },
+        {
+          "$ref": "#/$defs/line"
+        },
+        {
+          "$ref": "#/$defs/rectangle"
+        },
+        {
+          "$ref": "#/$defs/rectangle_pattern"
+        },
+        {
+          "$ref": "#/$defs/circle"
+        },
+        {
+          "$ref": "#/$defs/ellipse"
+        },
+        {
+          "$ref": "#/$defs/arc"
+        },
+        {
+          "$ref": "#/$defs/polygon"
+        },
+        {
+          "$ref": "#/$defs/gauge"
+        },
+        {
+          "$ref": "#/$defs/text"
+        },
+        {
+          "$ref": "#/$defs/text_box"
+        },
+        {
+          "$ref": "#/$defs/multiline"
+        },
+        {
+          "$ref": "#/$defs/new_multiline"
+        },
+        {
+          "$ref": "#/$defs/table"
+        },
+        {
+          "$ref": "#/$defs/rich_text"
+        },
+        {
+          "$ref": "#/$defs/text_fit"
+        },
+        {
+          "$ref": "#/$defs/legend"
+        },
+        {
+          "$ref": "#/$defs/star_rating"
+        },
+        {
+          "$ref": "#/$defs/battery"
+        }
+      ]
+    },
+    "pie": {
+      "type": "object",
+      "description": "Pie or donut chart. Segment colours cycle through the device palette unless given.",
+      "properties": {
+        "type": {
+          "const": "pie"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number",
+          "description": "Centre x"
+        },
+        "y": {
+          "type": "number",
+          "description": "Centre y"
+        },
+        "radius": {
+          "type": "number"
+        },
+        "values": {
+          "type": "string",
+          "description": "`\"label,value[,color];...\"`"
+        },
+        "inner_radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "> 0 makes a donut",
+          "default": 0
+        },
+        "start_angle": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Degrees; -90 starts at 12 o'clock",
+          "default": -90
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Donut hole colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        }
+      },
+      "required": [
+        "type",
+        "radius",
+        "values"
+      ],
+      "additionalProperties": false
+    },
+    "sparkline": {
+      "type": "object",
+      "description": "Compact axis-less line chart from inline values.",
+      "properties": {
+        "type": {
+          "const": "sparkline"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "values": {
+          "description": "List of numbers, or a `\"1,3,2\"` string"
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Y range floor; defaults to the data minimum"
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Y range ceiling; defaults to the data maximum"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Line colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Area colour below the line (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "width_line": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "joint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Pillow line joint, e.g. `curve`"
+        },
+        "dot_last": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Mark the last value with a dot"
+        },
+        "dot_radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 2
+        },
+        "dot_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Defaults to `color` (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        }
+      },
+      "required": [
+        "type",
+        "width",
+        "height",
+        "values"
+      ],
+      "additionalProperties": false
+    },
+    "diagram": {
+      "type": "object",
+      "description": "Bar chart with x/y axes.",
+      "properties": {
+        "type": {
+          "const": "diagram"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas width"
+        },
+        "margin": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Space reserved for the axes/labels",
+          "default": 20
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bars": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "values": {
+              "type": "string",
+              "description": "`\"label,value;label,value\"`"
+            },
+            "color": {
+              "type": "string",
+              "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Gap between bars",
+              "default": 10
+            },
+            "legend_size": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Label font size",
+              "default": 10
+            },
+            "legend_color": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+              "default": "black"
+            }
+          },
+          "required": [
+            "values",
+            "color"
+          ],
+          "additionalProperties": false,
+          "description": "Bar series"
+        }
+      },
+      "required": [
+        "type",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "progress_bar": {
+      "type": "object",
+      "description": "Linear progress bar. `progress` is clamped to 0-100.",
+      "properties": {
+        "type": {
+          "const": "progress_bar"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x_start": {
+          "type": "number"
+        },
+        "y_start": {
+          "type": "number"
+        },
+        "x_end": {
+          "type": "number"
+        },
+        "y_end": {
+          "type": "number"
+        },
+        "progress": {
+          "type": "number",
+          "description": "Percent, 0-100"
+        },
+        "direction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "right",
+            "left",
+            "up",
+            "down",
+            null
+          ],
+          "description": "Case-insensitive",
+          "default": "right"
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "red"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Outline width",
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "show_percentage": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Draw `NN%` in the middle",
+          "default": false
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "x_start",
+        "y_start",
+        "x_end",
+        "y_end",
+        "progress"
+      ],
+      "additionalProperties": false
+    },
+    "plot": {
+      "type": "object",
+      "description": "Time-series line chart over the last `duration` seconds, fed by the host's `history_provider`. `low`/`high` widen the y range but never clip data.",
+      "properties": {
+        "type": {
+          "const": "plot"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity": {
+                "type": "string",
+                "description": "Entity id passed to the history provider"
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+                "default": "black"
+              },
+              "width": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Line width",
+                "default": 1
+              },
+              "joint": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Pillow line joint"
+              },
+              "area_fill": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Fill below the line (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+              }
+            },
+            "required": [
+              "entity"
+            ],
+            "additionalProperties": false
+          },
+          "description": "One series per entry"
+        },
+        "x_start": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "y_start": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "x_end": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas right edge"
+        },
+        "y_end": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas bottom edge"
+        },
+        "duration": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Window in seconds ending now",
+          "default": 86400
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Default legend font size",
+          "default": 10
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "low": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Y axis floor (widens only)"
+        },
+        "high": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Y axis ceiling (widens only)"
+        },
+        "debug": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Outline the plot and data areas",
+          "default": false
+        },
+        "ylegend": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "width": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Reserved width; -1 = measure the labels",
+              "default": -1
+            },
+            "color": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+              "default": "black"
+            },
+            "position": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "left",
+                "right",
+                null
+              ],
+              "default": "left"
+            },
+            "font": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "size": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Defaults to the element `size`"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Min/max labels; `null` disables"
+        },
+        "yaxis": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "width": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Axis line width",
+              "default": 1
+            },
+            "color": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+              "default": "black"
+            },
+            "tick_width": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": 2
+            },
+            "tick_every": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Value step between ticks",
+              "default": 1
+            },
+            "grid": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Dotted grid spacing in px; `null` disables",
+              "default": 5
+            },
+            "grid_color": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+              "default": "black"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Axis line, ticks and grid; `null` disables"
+        },
+        "xlegend": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "color": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+              "default": "black"
+            },
+            "size": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Defaults to the element `size`"
+            },
+            "font": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "format": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "`strftime` format",
+              "default": "%H:%M"
+            },
+            "ticks": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Number of labels",
+              "default": 3
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Time labels along the bottom"
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "qrcode": {
+      "type": "object",
+      "description": "QR code. Size it with `boxsize` (px per module) or, for a predictable layout, a pixel `width`/`height` box the code is scaled into (square, crisp).",
+      "properties": {
+        "type": {
+          "const": "qrcode"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "data": {
+          "description": "Content to encode"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "bgcolor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "border": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Quiet zone in modules",
+          "default": 1
+        },
+        "boxsize": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Pixels per module",
+          "default": 2
+        },
+        "eclevel": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "l",
+            "m",
+            "q",
+            "h",
+            null
+          ],
+          "description": "Error-correction level",
+          "default": "h"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Fit into this width (px)"
+        },
+        "height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Fit into this height (px)"
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "barcode": {
+      "type": "object",
+      "description": "Linear barcode (python-barcode). Give `width`/`height` for pixel-exact sizing; otherwise the millimetre options at `dpi` decide the size.",
+      "properties": {
+        "type": {
+          "const": "barcode"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "data": {
+          "description": "Content to encode"
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Symbology: `code128`, `ean13`, `code39`, ...",
+          "default": "code128"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Scale to this width (px)"
+        },
+        "height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Scale to this height (px)"
+        },
+        "module_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "mm per module",
+          "default": 0.2
+        },
+        "module_height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Bar height in mm",
+          "default": 7
+        },
+        "quiet_zone": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "mm",
+          "default": 6.5
+        },
+        "font_size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "pt, for the human-readable text",
+          "default": 5
+        },
+        "text_distance": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "mm between bars and text",
+          "default": 5.0
+        },
+        "bgcolor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "write_text": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Print the value under the bars",
+          "default": true
+        },
+        "dpi": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 300
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "datamatrix": {
+      "type": "object",
+      "description": "DataMatrix 2D code (needs `imagespec[datamatrix]`). Size like `qrcode`.",
+      "properties": {
+        "type": {
+          "const": "datamatrix"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "data": {},
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "bgcolor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "boxsize": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Pixels per cell",
+          "default": 2
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Fit into this width (px)"
+        },
+        "height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Fit into this height (px)"
+        }
+      },
+      "required": [
+        "type",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "group": {
+      "type": "object",
+      "description": "Container: children use coordinates relative to the group's top-left, are clipped to `width` x `height`, and the whole block can be rotated.",
+      "properties": {
+        "type": {
+          "const": "group"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/element"
+          },
+          "description": "Child elements, rendered in order."
+        },
+        "x": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "y": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas width"
+        },
+        "height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas height"
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "0/90/180/270, clockwise",
+          "default": 0
+        }
+      },
+      "required": [
+        "type",
+        "elements"
+      ],
+      "additionalProperties": false
+    },
+    "stack": {
+      "type": "object",
+      "description": "Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints.",
+      "properties": {
+        "type": {
+          "enum": [
+            "stack",
+            "row",
+            "column"
+          ]
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stack_child"
+          },
+          "description": "Child elements; their `x`/`y` are ignored (the stack positions them)"
+        },
+        "direction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "horizontal",
+            "vertical",
+            null
+          ],
+          "description": "Defaults to horizontal for `row`, vertical otherwise"
+        },
+        "gap": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "justify": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "start",
+            "end",
+            "center",
+            "between",
+            "around",
+            "evenly",
+            null
+          ],
+          "default": "start"
+        },
+        "justify_content": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "start",
+            "end",
+            "center",
+            "between",
+            "around",
+            "evenly",
+            null
+          ],
+          "description": "Alias of `justify`"
+        },
+        "align": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "start",
+            "end",
+            "center",
+            "stretch",
+            null
+          ],
+          "description": "Cross-axis alignment of children",
+          "default": "start"
+        },
+        "align_items": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "start",
+            "end",
+            "center",
+            "stretch",
+            null
+          ],
+          "description": "Alias of `align`"
+        },
+        "x": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "y": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas width"
+        },
+        "height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to the canvas height"
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "0/90/180/270, clockwise",
+          "default": 0
+        },
+        "padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "All sides"
+        },
+        "padding_x": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "padding_y": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "padding_left": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "padding_top": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "padding_right": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "padding_bottom": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "elements"
+      ],
+      "additionalProperties": false
+    },
+    "icon": {
+      "type": "object",
+      "description": "Single icon glyph: Material Design Icons (`mdi:home` or bare `home`) or Font Awesome Free (`fa:` auto style, `fas:`/`far:`/`fab:` forced).",
+      "properties": {
+        "type": {
+          "const": "icon"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "value": {
+          "type": "string",
+          "description": "Icon name with optional prefix"
+        },
+        "size": {
+          "type": "number",
+          "description": "Glyph size in px"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Alias of `color` (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "anchor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": "la"
+        },
+        "stroke_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "stroke_fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        }
+      },
+      "required": [
+        "type",
+        "value",
+        "size"
+      ],
+      "additionalProperties": false
+    },
+    "dlimg": {
+      "type": "object",
+      "description": "Image from an `http(s)` URL, a `data:` URL or (if the host allows) a local path, resized to `xsize` x `ysize`.",
+      "properties": {
+        "type": {
+          "const": "dlimg"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "url": {
+          "type": "string"
+        },
+        "xsize": {
+          "type": "number",
+          "description": "Target width"
+        },
+        "ysize": {
+          "type": "number",
+          "description": "Target height"
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Degrees clockwise, applied before resizing",
+          "default": 0
+        },
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "stretch",
+            "fit",
+            "contain",
+            "fill",
+            null
+          ],
+          "description": "`fit`/`contain` letterbox, `fill` crops",
+          "default": "stretch"
+        },
+        "timeout": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "HTTP timeout in seconds",
+          "default": 30
+        },
+        "mask": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "circle",
+            null
+          ],
+          "description": "`circle` clips the image to a circle"
+        },
+        "circle": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Alias of `mask: circle`"
+        }
+      },
+      "required": [
+        "type",
+        "url",
+        "xsize",
+        "ysize"
+      ],
+      "additionalProperties": false
+    },
+    "line": {
+      "type": "object",
+      "description": "Straight line. Without `y_start` it is drawn at the current flow cursor (after the previous text/line) plus `y_padding`, and the cursor is left on the line.",
+      "properties": {
+        "type": {
+          "const": "line"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x_start": {
+          "type": "number"
+        },
+        "x_end": {
+          "type": "number"
+        },
+        "y_start": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Omit to place the line at the flow cursor"
+        },
+        "y_end": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to `y_start` (horizontal line)"
+        },
+        "y_padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Gap below the flow cursor when `y_start` is omitted",
+          "default": 0
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "dash": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "description": "`[on, off]` lengths in px for a dashed line, e.g. `[4, 3]`"
+        }
+      },
+      "required": [
+        "type",
+        "x_start",
+        "x_end"
+      ],
+      "additionalProperties": false
+    },
+    "rectangle": {
+      "type": "object",
+      "description": "Axis-aligned rectangle, optionally with rounded corners.",
+      "properties": {
+        "type": {
+          "const": "rectangle"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x_start": {
+          "type": "number"
+        },
+        "y_start": {
+          "type": "number"
+        },
+        "x_end": {
+          "type": "number"
+        },
+        "y_end": {
+          "type": "number"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Interior colour; omitted = hollow (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Outline width",
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Corner radius; default 0, or 10 when `corners` is given"
+        },
+        "corners": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "`\"all\"` or a comma list of `top_left`, `top_right`, `bottom_right`, `bottom_left`"
+        }
+      },
+      "required": [
+        "type",
+        "x_start",
+        "y_start",
+        "x_end",
+        "y_end"
+      ],
+      "additionalProperties": false
+    },
+    "rectangle_pattern": {
+      "type": "object",
+      "description": "Grid of identical rectangles (dot-matrix / tile pattern).",
+      "properties": {
+        "type": {
+          "const": "rectangle_pattern"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x_start": {
+          "type": "number"
+        },
+        "y_start": {
+          "type": "number"
+        },
+        "x_size": {
+          "type": "number",
+          "description": "Width of one tile"
+        },
+        "y_size": {
+          "type": "number",
+          "description": "Height of one tile"
+        },
+        "x_repeat": {
+          "type": "number",
+          "description": "Tiles per row"
+        },
+        "y_repeat": {
+          "type": "number",
+          "description": "Tiles per column"
+        },
+        "x_offset": {
+          "type": "number",
+          "description": "Horizontal gap between tiles"
+        },
+        "y_offset": {
+          "type": "number",
+          "description": "Vertical gap between tiles"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Corner radius; default 0, or 10 when `corners` is given"
+        },
+        "corners": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "As for `rectangle`"
+        }
+      },
+      "required": [
+        "type",
+        "x_start",
+        "y_start",
+        "x_size",
+        "y_size",
+        "x_repeat",
+        "y_repeat",
+        "x_offset",
+        "y_offset"
+      ],
+      "additionalProperties": false
+    },
+    "circle": {
+      "type": "object",
+      "description": "Circle from a centre point and radius.",
+      "properties": {
+        "type": {
+          "const": "circle"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number",
+          "description": "Centre x"
+        },
+        "y": {
+          "type": "number",
+          "description": "Centre y"
+        },
+        "radius": {
+          "type": "number"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        }
+      },
+      "required": [
+        "type",
+        "radius"
+      ],
+      "additionalProperties": false
+    },
+    "ellipse": {
+      "type": "object",
+      "description": "Ellipse inscribed in a bounding box.",
+      "properties": {
+        "type": {
+          "const": "ellipse"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x_start": {
+          "type": "number"
+        },
+        "y_start": {
+          "type": "number"
+        },
+        "x_end": {
+          "type": "number"
+        },
+        "y_end": {
+          "type": "number"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        }
+      },
+      "required": [
+        "type",
+        "x_start",
+        "y_start",
+        "x_end",
+        "y_end"
+      ],
+      "additionalProperties": false
+    },
+    "arc": {
+      "type": "object",
+      "description": "Arc (or pie slice) of the ellipse inscribed in a bounding box. Angles in degrees, clockwise from 3 o'clock.",
+      "properties": {
+        "type": {
+          "const": "arc"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x_start": {
+          "type": "number"
+        },
+        "y_start": {
+          "type": "number"
+        },
+        "x_end": {
+          "type": "number"
+        },
+        "y_end": {
+          "type": "number"
+        },
+        "start_angle": {
+          "type": "number"
+        },
+        "end_angle": {
+          "type": "number"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Slice interior when `pie` is true (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Arc / slice outline colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "pie": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Draw a filled pie slice instead of an open arc",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "x_start",
+        "y_start",
+        "x_end",
+        "y_end",
+        "start_angle",
+        "end_angle"
+      ],
+      "additionalProperties": false
+    },
+    "polygon": {
+      "type": "object",
+      "description": "Closed polygon from a point list.",
+      "properties": {
+        "type": {
+          "const": "polygon"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "points": {
+          "type": "string",
+          "description": "`\"x1,y1;x2,y2;x3,y3\"`"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        }
+      },
+      "required": [
+        "type",
+        "points"
+      ],
+      "additionalProperties": false
+    },
+    "gauge": {
+      "type": "object",
+      "description": "270-degree radial gauge with an optional centred value label.",
+      "properties": {
+        "type": {
+          "const": "gauge"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number",
+          "description": "Centre x"
+        },
+        "y": {
+          "type": "number",
+          "description": "Centre y"
+        },
+        "radius": {
+          "type": "number"
+        },
+        "progress": {
+          "type": "number",
+          "description": "Value to show, between `min_value` and `max_value`"
+        },
+        "min_value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "max_value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 100
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Arc thickness",
+          "default": 8
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Filled part of the arc (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Unfilled part of the arc (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "show_value": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Draw `progress` in the centre",
+          "default": false
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Value label font size",
+          "default": 16
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Value label colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        }
+      },
+      "required": [
+        "type",
+        "radius",
+        "progress"
+      ],
+      "additionalProperties": false
+    },
+    "text": {
+      "type": "object",
+      "description": "Text. Without `y` it flows below the previous text/line (`y_padding` gap) and advances the cursor. `\\n` in `value` starts a new line; `max_width` word-wraps instead.",
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "value": {
+          "description": "Text to draw (converted with `str()`)"
+        },
+        "y": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Omit to place at the flow cursor"
+        },
+        "y_padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Gap below the flow cursor when `y` is omitted",
+          "default": 10
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Font size in px",
+          "default": 20
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Font file name; resolved by the host, else the bundled default"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "anchor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`",
+          "default": "lt"
+        },
+        "align": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "left",
+            "center",
+            "right",
+            null
+          ],
+          "description": "Line alignment for multi-line text",
+          "default": "left"
+        },
+        "spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Extra px between lines",
+          "default": 5
+        },
+        "stroke_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "stroke_fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "rotation": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Degrees counter-clockwise; rotated text is composited at `(x, y)`",
+          "default": 0
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Fill a box behind the text (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "background_padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Padding of the background box",
+          "default": 2
+        },
+        "max_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Word-wrap to this width in px"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "text_box": {
+      "type": "object",
+      "description": "Single-line text on a rounded, filled box sized to the text.",
+      "properties": {
+        "type": {
+          "const": "text_box"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "value": {},
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 20
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 5
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Box colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Text colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Box outline colour (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Outline width",
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Box corner radius",
+          "default": 5
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "multiline": {
+      "type": "object",
+      "description": "Splits `value` on `delimiter` and draws one line per part, `offset_y` apart. Without `start_y` it flows below the previous text/line.",
+      "properties": {
+        "type": {
+          "const": "multiline"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "value": {},
+        "delimiter": {
+          "type": "string",
+          "description": "Separator between lines, e.g. `\"|\"`"
+        },
+        "offset_y": {
+          "type": "number",
+          "description": "Line pitch in px"
+        },
+        "start_y": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Omit to place at the flow cursor"
+        },
+        "y_padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Gap below the flow cursor when `start_y` is omitted",
+          "default": 10
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 20
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "anchor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": "lm"
+        },
+        "stroke_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "stroke_fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        }
+      },
+      "required": [
+        "type",
+        "value",
+        "delimiter",
+        "offset_y"
+      ],
+      "additionalProperties": false
+    },
+    "new_multiline": {
+      "type": "object",
+      "description": "Multi-line text (`\\n`-separated) that can shrink its font to fit a `width` and/or `height`.",
+      "properties": {
+        "type": {
+          "const": "new_multiline"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "value": {},
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Starting font size",
+          "default": 20
+        },
+        "spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Line spacing in px; defaults to `size`"
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "anchor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": "la"
+        },
+        "align": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "left",
+            "center",
+            "right",
+            null
+          ],
+          "default": "left"
+        },
+        "stroke_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "stroke_fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "fit": {
+          "description": "`\"width\"`, `\"height\"` or `true` (both)"
+        },
+        "fit_width": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Shrink until the text is no wider than `width`"
+        },
+        "fit_height": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Shrink until the text is no taller than `height`"
+        },
+        "width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Target width (required when fitting width)"
+        },
+        "height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Target height (required when fitting height)"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "table": {
+      "type": "object",
+      "description": "Simple grid: the first row is the header unless `header` is false.",
+      "properties": {
+        "type": {
+          "const": "table"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Column widths in px"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array"
+          },
+          "description": "Rows of cell values (each converted with `str()`)"
+        },
+        "font_size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 14
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "row_height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to `font_size + 8`"
+        },
+        "padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Horizontal cell padding",
+          "default": 4
+        },
+        "header_fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "header_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "cell_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "cell_fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Body cell background (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "border_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "border_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "align": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "left",
+            "center",
+            "right",
+            null
+          ],
+          "default": "left"
+        },
+        "header": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Treat the first row as a header",
+          "default": true
+        }
+      },
+      "required": [
+        "type",
+        "columns",
+        "rows"
+      ],
+      "additionalProperties": false
+    },
+    "rich_text": {
+      "type": "object",
+      "description": "One line of mixed spans (text and icons) with per-span size/colour/font, laid out left to right and vertically centred on `y`.",
+      "properties": {
+        "type": {
+          "const": "rich_text"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number",
+          "description": "Vertical centre of the line"
+        },
+        "spans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "description": "Text for a text span"
+              },
+              "icon": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "`mdi:name` / `fa:name` for an icon span"
+              },
+              "size": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Defaults to the element `size`"
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Defaults to the element `color` (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+              },
+              "font": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Defaults to the element `font`"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "description": "Each span is text (`text`) or an icon (`icon`)"
+        },
+        "spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Gap between spans",
+          "default": 0
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 20
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "align": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "left",
+            "center",
+            "right",
+            null
+          ],
+          "description": "Position of the whole line relative to `x`",
+          "default": "left"
+        }
+      },
+      "required": [
+        "type",
+        "spans"
+      ],
+      "additionalProperties": false
+    },
+    "text_fit": {
+      "type": "object",
+      "description": "Fits text into a fixed `width` x `height` box: shrink the font, truncate with an ellipsis, or both, with word-wrap up to `max_lines`.",
+      "properties": {
+        "type": {
+          "const": "text_fit"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "value": {},
+        "fit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "shrink",
+            "ellipsis",
+            "shrink_ellipsis",
+            null
+          ],
+          "default": "shrink"
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Starting font size",
+          "default": 20
+        },
+        "min_size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Smallest size `shrink` may reach",
+          "default": 8
+        },
+        "max_lines": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "line_spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 2
+        },
+        "ellipsis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": "…"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "align": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "left",
+            "center",
+            "right",
+            null
+          ],
+          "default": "left"
+        },
+        "valign": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "top",
+            "middle",
+            "bottom",
+            null
+          ],
+          "default": "top"
+        },
+        "padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 0
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Box fill (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Box outline (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "width_outline": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Box corner radius",
+          "default": 0
+        }
+      },
+      "required": [
+        "type",
+        "width",
+        "height",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "legend": {
+      "type": "object",
+      "description": "Colour-swatch legend rows (companion to `pie` / `plot`).",
+      "properties": {
+        "type": {
+          "const": "legend"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "items": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "color": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+                    "default": "black"
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Icon name to use instead of a swatch"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "List of `{label, color, icon?}` dicts, or a `\"label,color;label,color\"` string"
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Label font size",
+          "default": 12
+        },
+        "swatch_size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to `size`"
+        },
+        "gap": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Swatch to label",
+          "default": 6
+        },
+        "spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Between items",
+          "default": 4
+        },
+        "orientation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "vertical",
+            "horizontal",
+            null
+          ],
+          "default": "vertical"
+        },
+        "shape": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "square",
+            "circle",
+            "line",
+            null
+          ],
+          "default": "square"
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Label colour (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "star_rating": {
+      "type": "object",
+      "description": "Row of full / half / empty stars.",
+      "properties": {
+        "type": {
+          "const": "star_rating"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Number of stars",
+          "default": 5
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 16
+        },
+        "spacing": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 2
+        },
+        "half": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Allow half stars",
+          "default": true
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Filled stars (colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "orange"
+        },
+        "empty_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Empty stars; defaults to `color` (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        }
+      },
+      "required": [
+        "type",
+        "rating"
+      ],
+      "additionalProperties": false
+    },
+    "battery": {
+      "type": "object",
+      "description": "Battery outline with a proportional fill and terminal nub.",
+      "properties": {
+        "type": {
+          "const": "battery"
+        },
+        "visible": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "default": true
+        },
+        "dither": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none",
+                "floyd",
+                "atkinson",
+                "jarvis",
+                "stucki",
+                "burkes",
+                "sierra",
+                "sierra2",
+                "sierra-lite",
+                "stevenson-arce",
+                "bayer2",
+                "bayer4",
+                "bayer8",
+                "bayer16",
+                "clustered4",
+                "clustered8"
+              ]
+            }
+          ],
+          "description": "Per-element palette mapping: `true`/`false` or a dither method name; overrides the render-wide setting for this element only"
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column"
+        },
+        "layout": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "grow": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Share of leftover main-axis space this child takes (flex-grow)",
+              "default": 0
+            },
+            "align": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Cross-axis alignment for this child only"
+            },
+            "self": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "start",
+                "end",
+                "center",
+                "stretch",
+                null
+              ],
+              "description": "Alias of `align`"
+            },
+            "margin": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "All four margins (px)"
+            },
+            "margin_x": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Left and right margin"
+            },
+            "margin_y": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Top and bottom margin"
+            },
+            "margin_left": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_top": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_right": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "margin_bottom": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "level": {
+          "type": "number",
+          "description": "Percent, clamped to 0-100"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        },
+        "fill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "black"
+        },
+        "width_outline": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 2
+        },
+        "padding": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Inset of the fill",
+          "default": 2
+        },
+        "low_threshold": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": 20
+        },
+        "low_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Fill colour at or below `low_threshold` (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "nub_width": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to `width / 12`"
+        },
+        "nub_height": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Defaults to `height / 2`"
+        },
+        "show_percentage": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": false
+        },
+        "font": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "size": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Percentage font size; defaults to fit the height"
+        },
+        "text_color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)",
+          "default": "white"
+        }
+      },
+      "required": [
+        "type",
+        "width",
+        "height",
+        "level"
+      ],
+      "additionalProperties": false
+    }
+  }
 }

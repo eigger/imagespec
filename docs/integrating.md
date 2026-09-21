@@ -151,6 +151,6 @@ degrades instead of failing. Translate `RenderError` once, at the adapter.
 
 ## See also
 
-- [Element reference](elements.md) — every element with a copy-paste example
+- [Element reference](reference.md) — every key, type and default; [`elements.md`](elements.md) has a rendered YAML example per element
 - [Authoring guide](authoring.md) — layout model, palette, pitfalls
 - [Dithering](dithering.md) — methods, per-element override, performance
