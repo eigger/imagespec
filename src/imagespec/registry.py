@@ -8,9 +8,12 @@ payload ``type`` strings and has the signature ``handler(state, element)``.
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-# Forward ref only; importing RenderState here would be circular at module load.
-Handler = Callable[["RenderState", dict], None]  # noqa: F821
+if TYPE_CHECKING:  # importing RenderState at runtime would be circular
+    from .state import RenderState
+
+Handler = Callable[["RenderState", dict], None]
 
 _HANDLERS: dict[str, Handler] = {}
 

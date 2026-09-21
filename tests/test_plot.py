@@ -84,3 +84,9 @@ def test_plot_missing_entity_data_raises(history_ctx):
     el = {"type": "plot", "data": [{"entity": "sensor.missing"}]}
     with pytest.raises(RenderError):
         render([el], 200, 100, context=history_ctx)
+
+
+def test_plot_empty_data_is_a_payload_error(history_ctx):
+    # used to reach math.ceil(None) and surface as a TypeError
+    with pytest.raises(RenderError, match="at least one entity"):
+        render([{"type": "plot", "data": []}], 200, 100, context=history_ctx)

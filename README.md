@@ -89,10 +89,11 @@ pip install -e ".[dev,datamatrix]"   # dev pulls in numpy, so both dither paths 
 pytest                 # unit + golden-image tests: every element, palettes, rotation, dither, errors
 pytest --update-golden # rewrite the golden PNGs after an intentional rendering change
 ruff check . && ruff format --check .   # lint + format
+mypy                   # type-check src/ (the package ships py.typed)
 python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
 
-CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, the test
+CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, mypy, the test
 suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
 are present in the wheel. Pushing a `v*` tag triggers
 `.github/workflows/release.yml` to build and publish to PyPI (trusted publishing).

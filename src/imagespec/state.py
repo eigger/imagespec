@@ -29,4 +29,4 @@ class RenderState:
     canvas_width: int
     canvas_height: int
     context: RenderContext
-    pos_y: int = 0
+    pos_y: float = 0

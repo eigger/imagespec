@@ -19,11 +19,13 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
-      - run: pip install ruff
+      - run: pip install -e ".[dev,datamatrix,fast]"
       - name: Ruff lint
         run: ruff check .
       - name: Ruff format check
         run: ruff format --check .
+      - name: mypy
+        run: mypy
 
   test:
     runs-on: ubuntu-latest
@@ -93,6 +95,7 @@ jobs:
           wheel = glob.glob("dist/*.whl")[0]
           names = zipfile.ZipFile(wheel).namelist()
           required = [
+              "imagespec/py.typed",
               "imagespec/fonts/NotoSansKR-Regular.ttf",
               "imagespec/fonts/OFL.txt",
               "imagespec/icons/materialdesignicons-webfont.ttf",
