@@ -228,7 +228,7 @@ def dlimg(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "url", "xsize", "ysize"], "dlimg")
     url = element["url"]
     pos_x, pos_y = element["x"], element["y"]
-    xsize, ysize = element["xsize"], element["ysize"]
+    xsize, ysize = round(element["xsize"]), round(element["ysize"])
     rotate2 = element.get("rotate", 0)
     fit_mode = element.get("mode", "stretch")
 

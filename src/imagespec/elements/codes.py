@@ -59,8 +59,8 @@ def qrcode_element(state: RenderState, element: dict) -> None:
     pos_y = element["y"]
     color = element.get("color", "black")
     bgcolor = element.get("bgcolor", "white")
-    border = element.get("border", 1)
-    boxsize = element.get("boxsize", 2)
+    border = int(element.get("border", 1))
+    boxsize = int(element.get("boxsize", 2))
     eclevel = str(element.get("eclevel", "h")).lower()
 
     qr = qrcode.QRCode(
@@ -158,7 +158,7 @@ def datamatrix(state: RenderState, element: dict) -> None:
     pos_x, pos_y = element["x"], element["y"]
     color = element.get("color", "black")
     bgcolor = element.get("bgcolor", "white")
-    boxsize = element.get("boxsize", 2)
+    boxsize = int(element.get("boxsize", 2))
 
     encoder = DataMatrixEncoder(data)
     dm_image = Image.open(BytesIO(encoder.get_imagedata(cellsize=boxsize))).convert("RGBA")

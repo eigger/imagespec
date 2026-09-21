@@ -107,8 +107,8 @@ def rectangle_pattern(state: RenderState, element: dict) -> None:
         if "radius" in element
         else (False, False, False, False)
     )
-    for x in range(element["x_repeat"]):
-        for y in range(element["y_repeat"]):
+    for x in range(int(element["x_repeat"])):
+        for y in range(int(element["y_repeat"])):
             x0 = element["x_start"] + x * (element["x_offset"] + element["x_size"])
             y0 = element["y_start"] + y * (element["y_offset"] + element["y_size"])
             draw.rounded_rectangle(
