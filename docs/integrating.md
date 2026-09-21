@@ -149,6 +149,16 @@ inside a handler is wrapped with the element index and type
 logged and skipped, not raised, so a payload written for a newer imagespec
 degrades instead of failing. Translate `RenderError` once, at the adapter.
 
+Unknown *keys* (a typo such as `fil: red`) are ignored by `render()`. To catch
+them — and missing required keys, wrong kinds, bad enum values — before
+rendering, call `imagespec.validate(payload)`; it returns a list of
+`Issue(path, message)` (empty when valid) with paths like
+`[0].elements[2].fill`, and accepts template strings and `null` exactly as the
+renderer does. `render(..., strict=True)` does the same and raises
+`RenderError` with every issue joined, which suits a "lint before publish"
+mode; leave it off for the production path so a stale key never blanks a
+device.
+
 ## See also
 
 - [Element reference](reference.md) — every key, type and default; [`elements.md`](elements.md) has a rendered YAML example per element

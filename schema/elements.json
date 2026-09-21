@@ -462,7 +462,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -502,7 +502,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -670,7 +670,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -710,7 +710,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -911,7 +911,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -951,7 +951,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -1147,7 +1147,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -1187,7 +1187,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -1395,7 +1395,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -1435,7 +1435,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -1832,7 +1832,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -1872,7 +1872,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -2062,7 +2062,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -2102,7 +2102,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -2324,7 +2324,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -2364,7 +2364,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -2529,7 +2529,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -2569,7 +2569,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -2736,7 +2736,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -2776,7 +2776,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -3062,7 +3062,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -3102,7 +3102,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -3274,7 +3274,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -3314,7 +3314,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -3502,7 +3502,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -3542,7 +3542,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -3716,7 +3716,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -3756,7 +3756,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -3928,7 +3928,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -3968,7 +3968,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -4161,7 +4161,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -4201,7 +4201,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -4354,7 +4354,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -4394,7 +4394,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -4551,7 +4551,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -4591,7 +4591,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -4764,7 +4764,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -4804,7 +4804,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -4950,7 +4950,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -4990,7 +4990,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -5202,7 +5202,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -5242,7 +5242,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -5481,7 +5481,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -5521,7 +5521,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -5707,7 +5707,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -5747,7 +5747,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -5939,7 +5939,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -5979,7 +5979,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -6200,7 +6200,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -6240,7 +6240,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -6476,7 +6476,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -6516,7 +6516,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -6728,7 +6728,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -6768,7 +6768,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -7029,7 +7029,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -7069,7 +7069,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -7304,7 +7304,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -7344,7 +7344,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [
@@ -7518,7 +7518,7 @@
             "boolean",
             "null"
           ],
-          "description": "`false` (or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
+          "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
         "dither": {
@@ -7558,7 +7558,7 @@
               "type": "null"
             }
           ],
-          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only"
+          "description": "Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `\"False\"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override"
         },
         "class": {
           "type": [

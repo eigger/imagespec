@@ -14,7 +14,8 @@ Each handler declares its keys once, next to the code that reads them::
 From these declarations the package derives:
 
 * **coercion** — which keys are numbers/booleans, so template strings
-  (``"42"``, ``"False"``) are converted before the handler runs
+  (``"42"``, ``"False"``) are converted before the handler runs, and which
+  keys an explicit ``null`` is dropped from (= omitted) rather than passed on
   (:func:`imagespec.utils.coerce_element`);
 * **JSON Schema** — ``schema/elements.json``, for editors and validators
   (``scripts/export_schema.py``);
@@ -28,6 +29,13 @@ Kinds: ``number`` (int or float), ``integer``, ``boolean``, ``string``,
 gives the item kind; ``object`` items carry ``fields``), ``elements`` (a list of
 child elements, e.g. ``group``/``stack``) and ``dither`` (bool, ``0``/``1`` or a
 method name).
+
+``null``: every optional key accepts an explicit ``null`` (templates produce it
+freely). For ``color`` keys it means "none" (no fill/outline); for ``dither``
+"no override"; for a field declared ``nullable=True`` the handler gives it a
+meaning of its own (``ylegend: null`` disables the legend). Everywhere else
+``null`` is the same as omitting the key — it is dropped before dispatch, so
+handlers never see ``None`` for a plain number/string/object.
 """
 
 from __future__ import annotations
@@ -65,6 +73,13 @@ class Field:
     alt: str | None = None
     # elements only: False when the container supplies x/y itself (stack children)
     positioned: bool = True
+    # an explicit null is meaningful to the handler (see the module docstring)
+    nullable: bool = False
+
+    @property
+    def accepts_null(self) -> bool:
+        """``None`` is passed through to the handler instead of being dropped."""
+        return self.nullable or self.kind in ("color", "any", "dither")
 
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
@@ -77,16 +92,16 @@ def _f(kind: str, name: str, default: Any = UNSET, *, required: bool = False, do
     return Field(name, kind, required=required, default=default, doc=doc, **kw)
 
 
-def num(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:
-    return _f("number", name, default, required=required, doc=doc)
+def num(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "", nullable: bool = False) -> Field:
+    return _f("number", name, default, required=required, doc=doc, nullable=nullable)
 
 
 def integer(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:
     return _f("integer", name, default, required=required, doc=doc)
 
 
-def boolean(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:
-    return _f("boolean", name, default, required=required, doc=doc)
+def boolean(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "", nullable: bool = False) -> Field:
+    return _f("boolean", name, default, required=required, doc=doc, nullable=nullable)
 
 
 def string(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:
@@ -105,8 +120,8 @@ def enum(name: str, values: Iterable[Any], default: Any = UNSET, *, required: bo
     return _f("string", name, default, required=required, doc=doc, enum=tuple(values))
 
 
-def obj(name: str, fields: Iterable[Field], *, required: bool = False, doc: str = "") -> Field:
-    return _f("object", name, required=required, doc=doc, fields=tuple(fields))
+def obj(name: str, fields: Iterable[Field], *, required: bool = False, doc: str = "", nullable: bool = False) -> Field:
+    return _f("object", name, required=required, doc=doc, fields=tuple(fields), nullable=nullable)
 
 
 def array(
@@ -156,13 +171,15 @@ COMMON_FIELDS: tuple[Field, ...] = (
     boolean(
         "visible",
         True,
-        doc='`false` (or a template string such as `"False"`, `"off"`, `"0"`) skips the element',
+        nullable=True,
+        doc='`false` (or `null`, or a template string such as `"False"`, `"off"`, `"0"`) skips the element',
     ),
     _f(
         "dither",
         "dither",
         doc="Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as "
-        '`"False"`) or a dither method name; overrides the render-wide setting for this element only',
+        '`"False"`) or a dither method name; overrides the render-wide setting for this element only. '
+        "`null` = no override",
     ),
     string(
         "class",

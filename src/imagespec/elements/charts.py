@@ -299,6 +299,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
         boolean("debug", False, doc="Outline the plot and data areas"),
         obj(
             "ylegend",
+            nullable=True,
             doc="Min/max labels; `null` disables",
             fields=[
                 num("width", -1, doc="Reserved width; -1 = measure the labels"),
@@ -310,13 +311,14 @@ def progress_bar(state: RenderState, element: dict) -> None:
         ),
         obj(
             "yaxis",
+            nullable=True,
             doc="Axis line, ticks and grid; `null` disables",
             fields=[
                 num("width", 1, doc="Axis line width"),
                 color("color", "black"),
                 num("tick_width", 2),
                 num("tick_every", 1, doc="Value step between ticks"),
-                num("grid", 5, doc="Dotted grid spacing in px; `null` disables"),
+                num("grid", 5, nullable=True, doc="Dotted grid spacing in px; `null` disables"),
                 color("grid_color", "black"),
             ],
         ),

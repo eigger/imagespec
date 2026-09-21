@@ -10,7 +10,9 @@ elements, rendered in order. `schema/elements.json` is the same information as J
   **boolean** keys accept `"true"`/`"false"`/`"on"`/`"off"`/`"0"`/`"1"`.
 - **color** is a name (`black`, `red`, `#ff0000`, `#f00`, any CSS colour name) and is quantized
   to the device palette when the image is finished.
-- Omitting an optional key uses the default; an explicit `null` means "none" (e.g. no fill).
+- Omitting an optional key uses the default. An explicit `null` is the same as omitting it,
+  except for **color** keys (`null` = no fill/outline), `dither` (`null` = no override) and
+  the keys whose description says what `null` does (e.g. `ylegend: null` disables the legend).
 
 See [`elements.md`](elements.md) for a rendered YAML example of every element and
 [`authoring.md`](authoring.md) for the layout model.
@@ -20,8 +22,8 @@ See [`elements.md`](elements.md) for a rendered YAML example of every element an
 | key | type | default | description |
 |---|---|---|---|
 | `type` | string | **required** | Element type |
-| `visible` | boolean | `true` | `false` (or a template string such as `"False"`, `"off"`, `"0"`) skips the element |
-| `dither` | bool \| 0/1 \| method name |  | Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `"False"`) or a dither method name; overrides the render-wide setting for this element only |
+| `visible` | boolean | `true` | `false` (or `null`, or a template string such as `"False"`, `"off"`, `"0"`) skips the element |
+| `dither` | bool \| 0/1 \| method name |  | Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `"False"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override |
 | `class` | string |  | Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column |
 | `layout` | object |  | Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand) |
 | `layout.grow` | number | `0` | Share of leftover main-axis space this child takes (flex-grow) |
