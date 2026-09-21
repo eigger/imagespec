@@ -87,3 +87,15 @@ def test_context_layout_engine_is_passed_to_fonts():
     assert basic.layout_engine == ImageFont.Layout.BASIC
     default = RenderContext().font(None, 12)  # Pillow's own default (RAQM if available)
     assert default.layout_engine in (ImageFont.Layout.BASIC, ImageFont.Layout.RAQM)
+
+
+def test_font_cache_honours_layout_engine_change():
+    from PIL import ImageFont
+
+    from imagespec import RenderContext
+
+    ctx = RenderContext(layout_engine=ImageFont.Layout.BASIC)
+    basic = ctx.font(None, 12)
+    assert ctx.font(None, 12) is basic  # same engine -> cache hit
+    ctx.layout_engine = None  # Pillow default (RAQM where available)
+    assert ctx.font(None, 12) is not basic  # engine is part of the cache key

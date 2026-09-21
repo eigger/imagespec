@@ -108,11 +108,11 @@ preview in `examples/elements/` is re-rendered from
 `tests/golden/` holds targeted scenes (every dither method, per-element dither
 phase, rotation modes, less-common handler options). A rendering change that is
 intended is committed by running `pytest --update-golden` and checking in the
-PNGs; an unintended one fails CI with the pixel count and a diff image. Set
+PNGs; an unintended one fails CI with the pixel count and a diff image.
 Text in the goldens is laid out with Pillow's `BASIC` engine
 (`RenderContext(layout_engine=...)`) so the same Pillow release renders them
-identically on every OS; `IMAGESPEC_GOLDEN_TOLERANCE=0.05` allows 5 % of pixels
-to differ under a different Pillow/FreeType or python-barcode release.
+identically on every OS; set `IMAGESPEC_GOLDEN_TOLERANCE=0.05` to allow 5 % of
+pixels to differ under a different Pillow/FreeType or python-barcode release.
 
 **Robustness built in:**
 

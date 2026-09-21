@@ -57,8 +57,9 @@ class RenderContext:
     # Windows wheels do not, so text advances differ between them; pin BASIC
     # for pixel-identical output across platforms (the golden tests do this).
     layout_engine: int | None = None
-    # Cache keyed by (resolved path, size) so repeated text elements are cheap.
-    _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = field(default_factory=dict, repr=False)
+    # Cache keyed by (resolved path, size, layout engine) so repeated text
+    # elements are cheap and a later change of `layout_engine` is honoured.
+    _font_cache: dict[tuple[str, int, int | None], ImageFont.FreeTypeFont] = field(default_factory=dict, repr=False)
 
     def __post_init__(self):
         # Allow palette to be given as a friendly name ("7", "bw", ...).
@@ -97,7 +98,7 @@ class RenderContext:
     def font(self, name: str | None, size) -> ImageFont.FreeTypeFont:
         """Return a (cached) truetype font for ``name`` at ``size``."""
         path = self.resolve_font_path(name)
-        key = (path, int(size))
+        key = (path, int(size), self.layout_engine)
         cached = self._font_cache.get(key)
         if cached is None:
             cached = ImageFont.truetype(path, int(size), layout_engine=self.layout_engine)
