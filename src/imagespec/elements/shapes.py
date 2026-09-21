@@ -1,8 +1,7 @@
 """Geometric primitives: line, rectangle(+pattern), circle, ellipse, arc,
 polygon, gauge.
 
-Ported from the gicisky renderer (the superset for shapes: dashed lines, arc,
-polygon and gauge were not present in the niimbot version).
+Lines may be dashed; rectangles accept per-corner rounding.
 """
 
 from __future__ import annotations

@@ -1,9 +1,8 @@
 """Data-driven elements: diagram (bar chart), plot (history line chart),
 progress_bar.
 
-Ported from gicisky (superset: area_fill + xlegend on plot, rounded
-progress_bar). ``plot`` pulls history through ``RenderContext.history_provider``
-instead of touching the HA recorder directly.
+``plot`` pulls history through ``RenderContext.history_provider`` so the core
+never touches a host's recorder directly.
 """
 
 from __future__ import annotations

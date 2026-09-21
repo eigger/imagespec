@@ -18,8 +18,8 @@ from .state import RenderState
 _LOGGER = logging.getLogger(__name__)
 
 # Rotation strategies — device-dependent (see docstring below).
-ROTATE_MODE_CANVAS = "canvas"  # gicisky / fixed-resolution e-ink panels
-ROTATE_MODE_IMAGE = "image"  # niimbot / variable-size label printers
+ROTATE_MODE_CANVAS = "canvas"  # fixed-resolution e-ink panels (ESL tags)
+ROTATE_MODE_IMAGE = "image"  # variable-size label printers
 _ROTATE_MODES = (ROTATE_MODE_CANVAS, ROTATE_MODE_IMAGE)
 
 
@@ -49,11 +49,11 @@ def render(
     rotate_mode:
         How 90/270 rotation is handled — this differs by device:
 
-        * ``"canvas"`` (default, gicisky): the **background/canvas rotates**. The
+        * ``"canvas"`` (default; e-ink panels): the **background/canvas rotates**. The
           working canvas is pre-swapped to ``(height, width)``, drawn on, then
           rotated back, so the **output stays exactly ``width × height``** — the
           right behaviour for a fixed-resolution e-ink panel.
-        * ``"image"`` (niimbot): the **drawing rotates**. The canvas is created
+        * ``"image"`` (label printers): the **drawing rotates**. The canvas is created
           at ``width × height``, drawn on, then the whole image is rotated, so
           the **output dimensions swap** — fine for a variable-size label printer.
 
