@@ -119,7 +119,8 @@ pixels to differ under a different Pillow/FreeType or python-barcode release.
 - Each handler error is wrapped with element context — you get
   `error rendering element #3 (type 'text'): ...`, not a raw PIL traceback.
 - `render()` validates `rotate`/`rotate_mode`/size and rejects non-dict elements;
-  unknown element types are warned-and-skipped.
+  unknown element types are warned-and-skipped. Unknown *keys* are ignored
+  unless you pass `strict=True` (or call `imagespec.validate()` yourself).
 - `dlimg` only allows `http(s)`/`data:` URLs by default; local paths require
   `RenderContext(allow_local_images=True)`. Network failures become `RenderError`.
   Downloads are streamed and abort past `max_image_bytes` (20 MB default);
@@ -202,6 +203,11 @@ else is generated from those declarations:
   required keys and bad enum values before rendering
 - template-string coercion (`"42"` → `42`, `"False"` → `False`) — driven by the
   declared key types
+- `imagespec.validate(payload)` — the same checks at runtime, without a JSON
+  Schema library: returns `[Issue(path, message), ...]` such as
+  `[2].fill: unknown key for 'circle'`, tolerating template strings and `null`
+  exactly as `render()` does. `render(..., strict=True)` runs it first and
+  raises `RenderError` listing every issue.
 
 `python scripts/export_schema.py` regenerates the two files; CI fails if they
 drift from the declarations, and a guard test fails if a handler reads a key it

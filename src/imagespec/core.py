@@ -14,6 +14,7 @@ from .dispatch import render_element
 from .dither import dither_to_palette
 from .exceptions import RenderError
 from .state import RenderState
+from .validate import validate
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ def render(
     rotate_mode: str = ROTATE_MODE_CANVAS,
     background="white",
     dither: bool | str | int | None = False,
+    strict: bool = False,
     context: RenderContext,
 ) -> Image.Image:
     """Render ``payload`` to an ``RGB`` :class:`PIL.Image.Image`.
@@ -73,6 +75,11 @@ def render(
         Off-palette fills become distinguishable dot patterns — better for
         photos/charts on limited-color panels. Either way the output is
         strictly on-palette.
+    strict:
+        Run :func:`imagespec.validate` first and raise :class:`RenderError`
+        listing every unknown key / missing key / wrong-kind value. Off by
+        default: unknown keys are ignored and only problems a handler hits
+        are reported.
     context:
         Host-supplied :class:`RenderContext` (fonts, history, ...).
     """
@@ -83,6 +90,10 @@ def render(
         raise ValueError(f"rotate_mode must be one of {_ROTATE_MODES}, got {rotate_mode!r}")
     if width <= 0 or height <= 0:
         raise ValueError(f"width and height must be positive, got {width}x{height}")
+    if strict:
+        issues = validate(payload)
+        if issues:
+            raise RenderError("invalid payload: " + "; ".join(map(str, issues)))
     bg = context.color(background)
 
     if rotate in (90, 270) and rotate_mode == ROTATE_MODE_CANVAS:

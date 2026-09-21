@@ -75,7 +75,9 @@ def render_element(state, element: dict) -> None:
         return
     spec = get_spec(etype)
     element = coerce_element(element, (*COMMON_FIELDS, *(spec.fields if spec else ())))
-    if "dither" in element:
+    # `dither: null` means "no per-element override" (inherit the render-wide
+    # setting), the same as omitting the key — not "flat" for this element.
+    if element.get("dither") is not None:
         _draw_isolated(state, element, handler, element["dither"])
     else:
         handler(state, element)

@@ -87,37 +87,37 @@ def test_golden_scene_payloads_validate(validator):
         assert validator.is_valid(scene["payload"]), name
 
 
-@pytest.mark.parametrize(
-    "label, payload",
-    [
-        ("unknown key (typo)", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "fil": "red"}]),
-        ("missing required x at top level", [{"type": "text", "value": "a"}]),
-        ("missing required x inside group", [{"type": "group", "elements": [{"type": "text", "value": "a"}]}]),
-        ("enum violation", [{"type": "dlimg", "x": 0, "y": 0, "url": "u", "xsize": 1, "ysize": 1, "mode": "zoom"}]),
-        ("unknown element type", [{"type": "sprite", "x": 0, "y": 0}]),
-        ("wrong scalar type", [{"type": "circle", "x": "left", "y": 1, "radius": 3}]),
-        ("dither integer other than 0/1", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": 2}]),
-    ],
-)
+# Shared with tests/test_validate.py: imagespec.validate must agree with the schema here.
+REJECTS = [
+    ("unknown key (typo)", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "fil": "red"}]),
+    ("missing required x at top level", [{"type": "text", "value": "a"}]),
+    ("missing required x inside group", [{"type": "group", "elements": [{"type": "text", "value": "a"}]}]),
+    ("enum violation", [{"type": "dlimg", "x": 0, "y": 0, "url": "u", "xsize": 1, "ysize": 1, "mode": "zoom"}]),
+    ("unknown element type", [{"type": "sprite", "x": 0, "y": 0}]),
+    ("wrong scalar type", [{"type": "circle", "x": "left", "y": 1, "radius": 3}]),
+    ("dither integer other than 0/1", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": 2}]),
+]
+
+ACCEPTS = [
+    ("stack child without x/y", [{"type": "row", "elements": [{"type": "text", "value": "a"}]}]),
+    ("legend items as string", [{"type": "legend", "x": 0, "y": 0, "items": "a,red;b,blue"}]),
+    ("explicit null for an optional key", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "fill": None}]),
+    ("plot ylegend: null disables it", [{"type": "plot", "data": [{"entity": "s.a"}], "ylegend": None}]),
+    ("per-element dither by name", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": "bayer8"}]),
+    *(
+        (f"per-element dither as JSON {v!r}", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": v}])
+        for v in (1, 0, None)
+    ),
+    ("aliases row/column", [{"type": "column", "elements": []}, {"type": "stack", "elements": []}]),
+]
+
+
+@pytest.mark.parametrize("label, payload", REJECTS)
 def test_schema_rejects(validator, label, payload):
     assert not validator.is_valid(payload), label
 
 
-@pytest.mark.parametrize(
-    "label, payload",
-    [
-        ("stack child without x/y", [{"type": "row", "elements": [{"type": "text", "value": "a"}]}]),
-        ("legend items as string", [{"type": "legend", "x": 0, "y": 0, "items": "a,red;b,blue"}]),
-        ("explicit null for an optional key", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "fill": None}]),
-        ("plot ylegend: null disables it", [{"type": "plot", "data": [{"entity": "s.a"}], "ylegend": None}]),
-        ("per-element dither by name", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": "bayer8"}]),
-        *(
-            (f"per-element dither as JSON {v!r}", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": v}])
-            for v in (1, 0, None)
-        ),
-        ("aliases row/column", [{"type": "column", "elements": []}, {"type": "stack", "elements": []}]),
-    ],
-)
+@pytest.mark.parametrize("label, payload", ACCEPTS)
 def test_schema_accepts(validator, label, payload):
     errors = [f"{list(e.absolute_path)}: {e.message}" for e in validator.iter_errors(payload)]
     assert not errors, (label, errors[:3])

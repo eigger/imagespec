@@ -162,7 +162,8 @@ COMMON_FIELDS: tuple[Field, ...] = (
         "dither",
         "dither",
         doc="Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as "
-        '`"False"`) or a dither method name; overrides the render-wide setting for this element only',
+        '`"False"`) or a dither method name; overrides the render-wide setting for this element only. '
+        "`null` = no override",
     ),
     string(
         "class",

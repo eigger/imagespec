@@ -36,6 +36,7 @@ from .resolvers import (
     google_fonts_resolver,
 )
 from .schema import build_json_schema, build_reference_md
+from .validate import Issue, validate
 
 __all__ = [
     "render",
@@ -58,6 +59,8 @@ __all__ = [
     "specs",
     "build_json_schema",
     "build_reference_md",
+    "validate",
+    "Issue",
     "caching_resolver",
     "chain_resolvers",
     "directory_resolver",
