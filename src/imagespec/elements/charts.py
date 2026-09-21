@@ -17,7 +17,7 @@ from ..colors import white
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import is_decimal, min_max, require
+from ..utils import is_decimal, mono_draw, require
 
 
 @element("pie")
@@ -100,8 +100,7 @@ def sparkline(state: RenderState, element: dict) -> None:
 @element("diagram")
 def diagram(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "height"], "diagram")
-    draw = ImageDraw.Draw(state.img)
-    draw.fontmode = "1"
+    draw = mono_draw(state.img)
     pos_x, pos_y = element["x"], element["y"]
     width = element.get("width", state.canvas_width)
     height = element["height"]
@@ -201,8 +200,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
 @element("plot")
 def plot(state: RenderState, element: dict) -> None:
     require(element, ["data"], "plot")
-    draw = ImageDraw.Draw(state.img)
-    draw.fontmode = "1"
+    draw = mono_draw(state.img)
     x_start = element.get("x_start", 0)
     y_start = element.get("y_start", 0)
     x_end = element.get("x_end", state.canvas_width - 1 - x_start)
@@ -268,7 +266,10 @@ def plot(state: RenderState, element: dict) -> None:
         states = [
             (datetime.fromisoformat(s["last_changed"]), float(s["state"])) for s in normalized if is_decimal(s["state"])
         ]
-        lo, hi = min_max([s[1] for s in states])
+        if not states:
+            raise RenderError(f"plot: no numeric samples for {p['entity']} in the requested window")
+        values = [v for _, v in states]
+        lo, hi = min(values), max(values)
         # `low`/`high` widen the range but never clip data; `is None` (not
         # truthiness) so an explicit `low: 0` counts.
         min_v = lo if min_v is None else min(min_v, lo)

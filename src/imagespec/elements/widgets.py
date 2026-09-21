@@ -12,12 +12,11 @@ All are built from existing primitives/icons — no new dependencies.
 
 from __future__ import annotations
 
-from PIL import ImageDraw
-
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import require
+from ..utils import mono_draw, require
+from .media import mdi_char, mdi_font, resolve_icon
 
 
 def _parse_legend_items(items):
@@ -56,16 +55,13 @@ def legend(state: RenderState, element: dict) -> None:
     text_color = state.context.color(element.get("color", "black"))
     font = state.context.font(element.get("font"), size)
 
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     line_h = max(swatch, size)
     cursor_x, cursor_y = x, y
     for label, color, icon in items:
         cy = cursor_y + line_h / 2
         col = state.context.color(color)
         if icon is not None:
-            from .media import resolve_icon
-
             glyph, icon_font = resolve_icon(icon, state.context.icons_dir, swatch)
             d.text((cursor_x, cy), glyph, font=icon_font, fill=col, anchor="lm")
         elif shape == "circle":
@@ -86,7 +82,6 @@ def legend(state: RenderState, element: dict) -> None:
 def star_rating(state: RenderState, element: dict) -> None:
     """Render ``rating`` of ``max`` stars (full / optional half / empty)."""
     require(element, ["x", "y", "rating"], "star_rating")
-    from .media import mdi_char, mdi_font
 
     rating = float(element["rating"])
     max_stars = int(element.get("max", 5))
@@ -97,8 +92,7 @@ def star_rating(state: RenderState, element: dict) -> None:
     empty_fill = state.context.color(element.get("empty_color", element.get("color", "orange")))
 
     font = mdi_font(state.context.icons_dir, size)
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     x, y = element["x"], element["y"]
     for i in range(max_stars):
         threshold = i + 1
@@ -135,7 +129,7 @@ def battery(state: RenderState, element: dict) -> None:
     nub_h = element.get("nub_height", max(2, h // 2))
     body_w = w - nub_w
 
-    d = ImageDraw.Draw(state.img)
+    d = mono_draw(state.img)
     d.rounded_rectangle([(x, y), (x + body_w, y + h)], fill=bg, outline=outline, width=border, radius=radius)
     d.rectangle([(x + body_w, y + (h - nub_h) // 2), (x + w, y + (h + nub_h) // 2)], fill=outline)
 
@@ -145,7 +139,6 @@ def battery(state: RenderState, element: dict) -> None:
         d.rounded_rectangle([(x + pad, y + pad), (x + pad + fill_w, y + h - pad)], fill=fill, radius=max(0, radius - 1))
 
     if element.get("show_percentage", False):
-        d.fontmode = "1"
         font = state.context.font(element.get("font"), element.get("size", max(6, h - 2 * pad - 2)))
         text = f"{int(round(level))}%"
         tb = d.textbbox((0, 0), text, font=font)

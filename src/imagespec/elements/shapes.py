@@ -14,7 +14,22 @@ from PIL import ImageDraw
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import require, rounded_corners
+from ..utils import mono_draw, require, rounded_corners
+
+
+def _rounding(element: dict) -> tuple[int, tuple[bool, bool, bool, bool]]:
+    """``(radius, corners)`` for ``rounded_rectangle`` from ``radius``/``corners`` keys.
+
+    ``corners`` alone implies a 10px radius; ``radius`` alone rounds all corners.
+    """
+    radius = element.get("radius", 10 if "corners" in element else 0)
+    if "corners" in element:
+        corners = rounded_corners(element["corners"])
+    elif "radius" in element:
+        corners = rounded_corners("all")
+    else:
+        corners = (False, False, False, False)
+    return radius, corners
 
 
 def _draw_dashed_line(draw, x0, y0, x1, y1, dash, fill, width):
@@ -70,14 +85,7 @@ def rectangle(state: RenderState, element: dict) -> None:
     fill = state.context.color(element["fill"]) if "fill" in element else None
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
     width = element.get("width", 1)
-    radius = element.get("radius", 10 if "corners" in element else 0)
-    corners = (
-        rounded_corners(element["corners"])
-        if "corners" in element
-        else rounded_corners("all")
-        if "radius" in element
-        else (False, False, False, False)
-    )
+    radius, corners = _rounding(element)
     draw.rounded_rectangle(
         [(element["x_start"], element["y_start"]), (element["x_end"], element["y_end"])],
         fill=fill,
@@ -99,14 +107,7 @@ def rectangle_pattern(state: RenderState, element: dict) -> None:
     fill = state.context.color(element["fill"]) if "fill" in element else None
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
     width = element.get("width", 1)
-    radius = element.get("radius", 10 if "corners" in element else 0)
-    corners = (
-        rounded_corners(element["corners"])
-        if "corners" in element
-        else rounded_corners("all")
-        if "radius" in element
-        else (False, False, False, False)
-    )
+    radius, corners = _rounding(element)
     for x in range(int(element["x_repeat"])):
         for y in range(int(element["y_repeat"])):
             x0 = element["x_start"] + x * (element["x_offset"] + element["x_size"])
@@ -212,8 +213,7 @@ def gauge(state: RenderState, element: dict) -> None:
 
     if element.get("show_value", False):
         font = state.context.font(element.get("font"), element.get("size", 16))
-        d = ImageDraw.Draw(state.img)
-        d.fontmode = "1"
+        d = mono_draw(state.img)
         value_color = state.context.color(element.get("color", "black"))
         display_val = f"{int(progress)}" if progress == int(progress) else f"{progress:.1f}"
         d.text((cx, cy), display_val, fill=value_color, font=font, anchor="mm")

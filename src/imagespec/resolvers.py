@@ -12,11 +12,10 @@ first use.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
 
 import requests
 
-FontResolver = Callable[[str], str | None]
+from .context import FontResolver
 
 
 def chain_resolvers(*resolvers: FontResolver | None) -> FontResolver:

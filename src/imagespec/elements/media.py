@@ -10,12 +10,12 @@ import os
 import urllib.parse
 
 import requests
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import int_xy, require
+from ..utils import int_xy, mono_draw, require
 
 # MDI metadata is large (~3MB); load+cache once per file path.
 _mdi_meta_cache: dict[str, list] = {}
@@ -65,8 +65,6 @@ def mdi_char(value: str, icons_dir: str) -> str:
 
 def mdi_font(icons_dir: str, size):
     """Load the bundled MDI webfont at ``size``."""
-    from PIL import ImageFont
-
     font_file = os.path.join(icons_dir, "materialdesignicons-webfont.ttf")
     if not os.path.exists(font_file):
         raise RenderError(f"icon: MDI webfont not found at {font_file}.")
@@ -116,8 +114,6 @@ def _fa_lookup(name: str, icons_dir: str) -> dict:
 
 def fa_font(icons_dir: str, size, style: str):
     """Load one of the bundled Font Awesome Free webfonts at ``size``."""
-    from PIL import ImageFont
-
     filename = _FA_STYLE_FILES.get(style)
     if filename is None:
         raise RenderError(f"icon: unknown Font Awesome style {style!r} (expected solid/regular/brands)")
@@ -172,8 +168,7 @@ def resolve_icon(value: str, icons_dir: str, size):
 @element("icon")
 def icon(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "value", "size"], "icon")
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     glyph, font = resolve_icon(element["value"], state.context.icons_dir, element["size"])
     anchor = element.get("anchor", "la")
     stroke_width = element.get("stroke_width", 0)
@@ -273,8 +268,6 @@ def dlimg(state: RenderState, element: dict) -> None:
 
     # Optional circular crop (avatar style).
     if element.get("mask") == "circle" or element.get("circle"):
-        from PIL import ImageChops
-
         circle = Image.new("L", (xsize, ysize), 0)
         ImageDraw.Draw(circle).ellipse([(0, 0), (xsize - 1, ysize - 1)], fill=255)
         imgdl.putalpha(ImageChops.multiply(imgdl.split()[-1], circle))

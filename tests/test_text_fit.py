@@ -97,3 +97,24 @@ def test_text_fit_shrink_keeps_within_box(ctx):
     }
     # mainly a smoke assertion that shrink path completes and renders
     assert render([el], 60, 50, context=ctx).size == (60, 50)
+
+
+def test_wrap_words_overlong_first_word_has_no_empty_leading_line(ctx):
+    # The old `text` wrapper started from [""] and pushed an over-wide first word
+    # onto a *second* line, leaving a blank first line (and a blank row of pixels).
+    from imagespec.utils import wrap_words
+
+    font = ctx.font(None, 12)
+    assert wrap_words("Supercalifragilistic word", font, 30) == ["Supercalifragilistic", "word"]
+    assert wrap_words("", font, 30) == []
+
+
+def test_text_max_width_overlong_first_word_starts_at_top(bw_ctx):
+    from imagespec import render
+
+    wide = {"type": "text", "x": 0, "y": 0, "value": "Supercalifragilistic", "size": 12, "max_width": 30}
+    # max_width switches the anchor to Pillow's default ("la"); match it explicitly
+    plain = {"type": "text", "x": 0, "y": 0, "value": "Supercalifragilistic", "size": 12, "anchor": "la"}
+    a = render([wide], 150, 40, context=bw_ctx)
+    b = render([plain], 150, 40, context=bw_ctx)
+    assert a.tobytes() == b.tobytes()  # no phantom empty first line shifting the text down
