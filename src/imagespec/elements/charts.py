@@ -236,6 +236,8 @@ def plot(state: RenderState, element: dict) -> None:
         yaxis_tick_width = yaxis.get("tick_width", 2)
         yaxis_tick_every = float(yaxis.get("tick_every", 1))
         yaxis_grid = yaxis.get("grid", 5)
+        if yaxis_grid is not None:
+            yaxis_grid = max(1, round(yaxis_grid))  # range() step
         yaxis_grid_color = state.context.color(yaxis.get("grid_color", "black"))
 
     xlegend = element.get("xlegend", None)

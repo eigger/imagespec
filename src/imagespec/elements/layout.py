@@ -208,8 +208,8 @@ def stack(state: RenderState, element: dict) -> None:
 
     ox = int(element.get("x", 0) or 0)
     oy = int(element.get("y", 0) or 0)
-    cw = int(_first(element.get("width"), state.canvas_width))
-    ch = int(_first(element.get("height"), state.canvas_height))
+    cw = round(_first(element.get("width"), state.canvas_width))  # round, like `group`
+    ch = round(_first(element.get("height"), state.canvas_height))
     rotate = int(element.get("rotate", 0) or 0)
 
     pl, pt, pr, pb = _resolve_padding(element, cls)

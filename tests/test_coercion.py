@@ -151,6 +151,24 @@ def test_stack_padding_and_child_layout_strings(bw_ctx):
     assert img(str).tobytes() == img(int).tobytes()
 
 
+def test_group_and_stack_round_fractional_size_alike(bw_ctx):
+    # both containers size their canvas the same way (round, not truncate)
+    def extent(kind):
+        el = {"type": kind, "x": 0, "y": 0, "width": 10.6, "height": 10.6}
+        el["elements"] = [{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 30, "y_end": 30, "fill": "black"}]
+        img = render([el], 20, 20, context=bw_ctx)
+        return sum(1 for x in range(20) if img.getpixel((x, 0)) == (0, 0, 0))
+
+    assert extent("group") == extent("stack") == 11
+
+
+def test_plot_fractional_grid_does_not_raise(history_ctx):
+    el = {"type": "plot", "data": [{"entity": "sensor.temp"}], "yaxis": {"grid": 5.5, "tick_every": 1.5}}
+    assert render([el], 200, 100, context=history_ctx).size == (200, 100)
+    el["yaxis"]["grid"] = "5.5"
+    assert render([el], 200, 100, context=history_ctx).size == (200, 100)
+
+
 def test_plot_string_options(history_ctx):
     el = {
         "type": "plot",
