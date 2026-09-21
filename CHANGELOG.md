@@ -9,8 +9,6 @@ old and new behaviour.
 `schema_version` in `schema/elements.json` is bumped whenever the payload
 contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
-## [Unreleased]
-
 ## [0.5.0] — 2026-09-21
 
 The payload becomes a checkable contract: every element declares its keys once,
@@ -123,7 +121,6 @@ Multi-algorithm palette dithering ([#6]), element schema export with CI sync
 guards, rendered element previews, and the initial port of the rendering core.
 See the git history.
 
-[Unreleased]: https://github.com/eigger/imagespec/compare/v0.5.0...HEAD
 [0.5.0]: https://github.com/eigger/imagespec/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/eigger/imagespec/compare/v0.4.0...v0.4.1
 [#6]: https://github.com/eigger/imagespec/pull/6
