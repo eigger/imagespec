@@ -111,7 +111,7 @@ def _check_field(
 
 def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: str) -> None:
     kind = f.kind
-    if f.alt is not None and _matches_scalar(value, f.alt):
+    if _matches_alt(value, f):
         return
     alt = f" or {_SCALAR_LABELS.get(f.alt, f.alt)}" if f.alt else ""
     if kind in ("number", "integer"):
@@ -203,3 +203,14 @@ def _matches_scalar(value: Any, kind: str) -> bool:
     if kind == "boolean":
         return isinstance(value, bool)
     return isinstance(value, str)
+
+
+def _matches_alt(value: Any, f: Field) -> bool:
+    """``value`` satisfies ``f.alt``. The string form of a numeric array is a
+    ``,``/``;``-separated list of numbers (what the handlers parse)."""
+    if f.alt is None or not _matches_scalar(value, f.alt):
+        return False
+    if f.kind == "array" and f.alt == "string" and f.items in ("number", "integer"):
+        parts = [p for p in value.replace(";", ",").split(",") if p.strip()]
+        return all(_is_numberish(p, f.items) for p in parts)
+    return True

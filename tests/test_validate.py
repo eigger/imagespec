@@ -101,6 +101,11 @@ def test_alt_kinds():
     assert validate([{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": [1, "3", 2.5]}]) == []
     issue = validate([{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": 7}])[0]
     assert issue.path == "[0].values" and issue.message.startswith("must be an array or a string")
+    # the string form must be a numeric list — "oops" used to pass and die in float()
+    spark = {"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9}
+    assert validate([{**spark, "values": "1; 3,2.5"}]) == []
+    assert _paths([{**spark, "values": "oops"}]) == ["[0].values"]
+    assert _paths([{**spark, "values": "1,x,3"}]) == ["[0].values"]
     base = {"type": "new_multiline", "x": 0, "y": 0, "value": "a", "width": 1, "height": 1}
     assert validate([{**base, "fit": True}]) == []
     assert validate([{**base, "fit": "width"}]) == []

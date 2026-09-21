@@ -97,6 +97,10 @@ REJECTS = [
     ("wrong scalar type", [{"type": "circle", "x": "left", "y": 1, "radius": 3}]),
     ("dither integer other than 0/1", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": 2}]),
     ("fit_width without width", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": True}]),
+    (
+        "fit_width with width: null",
+        [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": True, "width": None}],
+    ),
     ("fit: true without height", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit": True, "width": 1}]),
     ("fit outside enum/boolean", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit": "both"}]),
     (

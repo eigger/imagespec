@@ -6247,7 +6247,14 @@
           "then": {
             "required": [
               "width"
-            ]
+            ],
+            "properties": {
+              "width": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
           }
         },
         {
@@ -6283,7 +6290,14 @@
           "then": {
             "required": [
               "height"
-            ]
+            ],
+            "properties": {
+              "height": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            }
           }
         }
       ]

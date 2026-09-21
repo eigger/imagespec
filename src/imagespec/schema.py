@@ -127,9 +127,16 @@ def _element_schema(spec: ElementSpec) -> dict[str, Any]:
 
 
 def _required_when_schema(f: Field) -> dict[str, Any]:
-    """``if`` any trigger key holds one of its values ``then`` the field is required."""
+    """``if`` any trigger key holds one of its values ``then`` the field is required.
+
+    ``then`` also forbids ``null`` for the key: an explicit null is dropped
+    before dispatch (= omitted), so it must not satisfy a requirement.
+    """
     triggers = [{"properties": {key: {"enum": list(values)}}, "required": [key]} for key, values in f.required_when]
-    return {"if": {"anyOf": triggers}, "then": {"required": [f.name]}}
+    return {
+        "if": {"anyOf": triggers},
+        "then": {"required": [f.name], "properties": {f.name: {"not": {"type": "null"}}}},
+    }
 
 
 def _positioned_ref(spec: ElementSpec) -> dict[str, Any]:
