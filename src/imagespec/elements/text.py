@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import get_wrapped_text, require
+from ..utils import get_wrapped_text, int_xy, require
 
 
 def _ellipsize_line(font, line: str, max_width: float, ellipsis: str) -> str:
@@ -112,7 +112,7 @@ def text(state: RenderState, element: dict) -> None:
         )
         tmp = tmp.rotate(text_rotation, expand=True)
         canvas = Image.new("RGBA", state.img.size, (255, 255, 255, 0))
-        canvas.paste(tmp, (element["x"], akt_pos_y))
+        canvas.paste(tmp, int_xy(element["x"], akt_pos_y))
         state.img = Image.alpha_composite(state.img, canvas)
     else:
         if bg_color is not None:
@@ -178,7 +178,7 @@ def text_box(state: RenderState, element: dict) -> None:
 
 @element("multiline")
 def multiline(state: RenderState, element: dict) -> None:
-    require(element, ["x", "value", "delimiter"], "multiline")
+    require(element, ["x", "value", "delimiter", "offset_y"], "multiline")
     d = ImageDraw.Draw(state.img)
     d.fontmode = "1"
     size = element.get("size", 20)

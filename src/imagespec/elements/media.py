@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import require
+from ..utils import int_xy, require
 
 # MDI metadata is large (~3MB); load+cache once per file path.
 _mdi_meta_cache: dict[str, list] = {}
@@ -280,5 +280,5 @@ def dlimg(state: RenderState, element: dict) -> None:
         imgdl.putalpha(ImageChops.multiply(imgdl.split()[-1], circle))
 
     temp = Image.new("RGBA", state.img.size)
-    temp.paste(imgdl, (pos_x, pos_y), imgdl)
+    temp.paste(imgdl, int_xy(pos_x, pos_y), imgdl)
     state.img = Image.alpha_composite(state.img, temp)

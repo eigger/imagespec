@@ -12,8 +12,36 @@ def require(element: dict, keys, func_name: str) -> None:
         raise RenderError(f"Missing required argument(s) '{', '.join(missing)}' in '{func_name}'")
 
 
+_FALSY_STRINGS = frozenset({"false", "0", "no", "off", "none", ""})
+
+
 def should_show(element: dict) -> bool:
-    return element.get("visible", True)
+    """``visible`` flag, tolerant of the string forms HA templates produce.
+
+    ``"False"``/``"off"``/``"no"``/``"none"``/``""`` and any numeric string
+    equal to zero (``"0"``, ``"0.0"``) hide the element; any other value (or the
+    key being absent) shows it.
+    """
+    value = element.get("visible", True)
+    if isinstance(value, str):
+        s = value.strip().lower()
+        if s in _FALSY_STRINGS:
+            return False
+        try:
+            return float(s) != 0
+        except ValueError:
+            return True
+    return bool(value)
+
+
+def int_xy(x, y) -> tuple[int, int]:
+    """Round a coordinate pair to ints for PIL ``paste``/``alpha_composite``.
+
+    Drawing calls accept floats but paste offsets do not, so elements that
+    composite a sub-image (rotated text, ``group``, ``dlimg``, codes) would
+    otherwise fail on ``x: 5.5`` while the plain drawing path accepts it.
+    """
+    return int(round(float(x))), int(round(float(y)))
 
 
 def get_wrapped_text(text: str, font, line_length: int) -> str:
