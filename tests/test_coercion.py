@@ -8,7 +8,9 @@ import pytest
 from PIL import ImageDraw
 
 from imagespec import RenderError, render
-from imagespec.utils import BOOL_KEYS, NUMERIC_KEYS, coerce_element, to_bool, to_number
+from imagespec.registry import get_spec
+from imagespec.spec import COMMON_FIELDS
+from imagespec.utils import coerce_element, to_bool, to_dither, to_number
 from test_elements import _samples  # tests/ is on sys.path via conftest (prepend import mode)
 
 # ── unit: helpers ──────────────────────────────────────────────────────────
@@ -49,31 +51,79 @@ def test_to_bool_truthy(value):
     assert to_bool(value) is True
 
 
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("False", False),
+        ("0", False),
+        ("off", False),
+        ("", False),
+        ("True", True),
+        ("1", True),
+        ("on", True),
+        ("bayer8", "bayer8"),  # method names pass through
+        ("Floyd", "Floyd"),
+        (True, True),
+        (0, 0),
+        (None, None),
+    ],
+)
+def test_to_dither(value, expected):
+    assert to_dither(value) == expected and type(to_dither(value)) is type(expected)
+
+
+def _fields(etype):
+    return (*COMMON_FIELDS, *get_spec(etype).fields)
+
+
+@pytest.mark.parametrize("value", ["0", "1", "False", "True", "bayer8"])
+def test_dither_template_string_renders(ctx, value):
+    # A templated `dither` used to reach resolve_dither_method as an unknown method name.
+    el = {"type": "circle", "x": 10, "y": 10, "radius": 5, "fill": "red", "dither": value}
+    img = render([el], 20, 20, background="white", dither=False, context=ctx)
+    assert img.size == (20, 20)
+
+
 def test_coerce_element_top_level_and_nested():
     el = {
         "type": "plot",
         "x_start": "2",
         "size": "10.0",
-        "show_value": "False",
-        "columns": ["18", "18"],
+        "debug": "False",
+        "visible": "true",
         "ylegend": {"width": "20", "position": "left"},
-        "spans": [{"text": "a", "size": "14"}],
-        "value": "007",  # never numeric -> untouched
-        "elements": [{"type": "text", "x": "5"}],  # children coerced at their own dispatch
+        "data": [{"entity": "sensor.a", "width": "2"}],
+        "layout": {"grow": "1", "margin_x": "3"},
     }
-    out = coerce_element(el)
+    out = coerce_element(el, _fields("plot"))
     assert out["x_start"] == 2 and out["size"] == 10 and type(out["size"]) is int
-    assert out["show_value"] is False
-    assert out["columns"] == [18, 18]
+    assert out["debug"] is False and out["visible"] is True
     assert out["ylegend"] == {"width": 20, "position": "left"}
-    assert out["spans"] == [{"text": "a", "size": 14}]
-    assert out["value"] == "007"
-    assert out["elements"][0]["x"] == "5"
+    assert out["data"] == [{"entity": "sensor.a", "width": 2}]
+    assert out["layout"] == {"grow": 1, "margin_x": 3}
     assert el["x_start"] == "2"  # input not mutated
 
 
-def test_key_sets_are_disjoint():
-    assert not (NUMERIC_KEYS & BOOL_KEYS)
+def test_coerce_element_only_touches_declared_keys():
+    el = {"type": "text", "x": "5", "value": "007", "unknown_key": "42", "spans": [{"size": "9"}]}
+    out = coerce_element(el, _fields("text"))
+    assert out["x"] == 5
+    assert out["value"] == "007"  # `any` kind: never coerced
+    assert out["unknown_key"] == "42"  # undeclared: untouched
+    assert out["spans"] == [{"size": "9"}]  # not a `text` field
+
+
+def test_coerce_element_children_left_for_their_own_dispatch():
+    el = {"type": "group", "x": "1", "elements": [{"type": "text", "x": "5", "value": "a"}]}
+    out = coerce_element(el, _fields("group"))
+    assert out["x"] == 1 and out["elements"][0]["x"] == "5"
+
+
+def test_coerce_element_numeric_array_and_table_rows():
+    el = {"type": "table", "x": 0, "y": 0, "columns": ["18", "18.0"], "rows": [["1", "2"]]}
+    out = coerce_element(el, _fields("table"))
+    assert out["columns"] == [18, 18]
+    assert out["rows"] == [["1", "2"]]  # cells are strings by design
 
 
 # ── integration: every element, strings and fractional floats ──────────────

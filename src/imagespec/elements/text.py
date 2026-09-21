@@ -11,6 +11,7 @@ from PIL import Image
 
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import any_, array, boolean, color, enum, num, string
 from ..state import RenderState
 from ..utils import int_xy, mono_draw, require, wrap_words
 from .media import resolve_icon
@@ -45,7 +46,29 @@ def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
     return lines, fits
 
 
-@element("text")
+@element(
+    "text",
+    doc="Text. Without `y` it flows below the previous text/line (`y_padding` gap) and advances the "
+    "cursor. `\\n` in `value` starts a new line; `max_width` word-wraps instead.",
+    fields=[
+        num("x", required=True),
+        any_("value", required=True, doc="Text to draw (converted with `str()`)"),
+        num("y", doc="Omit to place at the flow cursor"),
+        num("y_padding", 10, doc="Gap below the flow cursor when `y` is omitted"),
+        num("size", 20, doc="Font size in px"),
+        string("font", doc="Font file name; resolved by the host, else the bundled default"),
+        color("color", "black"),
+        string("anchor", "lt", doc="Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`"),
+        enum("align", ("left", "center", "right"), "left", doc="Line alignment for multi-line text"),
+        num("spacing", 5, doc="Extra px between lines"),
+        num("stroke_width", 0),
+        color("stroke_fill", "white"),
+        num("rotation", 0, doc="Degrees counter-clockwise; rotated text is composited at `(x, y)`"),
+        color("background", doc="Fill a box behind the text"),
+        num("background_padding", 2, doc="Padding of the background box"),
+        num("max_width", doc="Word-wrap to this width in px"),
+    ],
+)
 def text(state: RenderState, element: dict) -> None:
     require(element, ["x", "value"], "text")
     d = mono_draw(state.img)
@@ -128,7 +151,23 @@ def text(state: RenderState, element: dict) -> None:
     state.pos_y = tbbox[3]
 
 
-@element("text_box")
+@element(
+    "text_box",
+    doc="Single-line text on a rounded, filled box sized to the text.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        any_("value", required=True),
+        num("size", 20),
+        string("font"),
+        num("padding", 5),
+        color("fill", "black", doc="Box colour"),
+        color("color", "white", doc="Text colour"),
+        color("outline", doc="Box outline colour"),
+        num("width", 1, doc="Outline width"),
+        num("radius", 5, doc="Box corner radius"),
+    ],
+)
 def text_box(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "value"], "text_box")
     d = mono_draw(state.img)
@@ -150,7 +189,25 @@ def text_box(state: RenderState, element: dict) -> None:
     d.text((element["x"] + padding, element["y"] + padding), value, fill=text_color, font=font, anchor="lt")
 
 
-@element("multiline")
+@element(
+    "multiline",
+    doc="Splits `value` on `delimiter` and draws one line per part, `offset_y` apart. Without "
+    "`start_y` it flows below the previous text/line.",
+    fields=[
+        num("x", required=True),
+        any_("value", required=True),
+        string("delimiter", required=True, doc='Separator between lines, e.g. `"|"`'),
+        num("offset_y", required=True, doc="Line pitch in px"),
+        num("start_y", doc="Omit to place at the flow cursor"),
+        num("y_padding", 10, doc="Gap below the flow cursor when `start_y` is omitted"),
+        num("size", 20),
+        string("font"),
+        color("color", "black"),
+        string("anchor", "lm"),
+        num("stroke_width", 0),
+        color("stroke_fill", "white"),
+    ],
+)
 def multiline(state: RenderState, element: dict) -> None:
     require(element, ["x", "value", "delimiter", "offset_y"], "multiline")
     d = mono_draw(state.img)
@@ -177,7 +234,28 @@ def multiline(state: RenderState, element: dict) -> None:
     state.pos_y = pos
 
 
-@element("new_multiline")
+@element(
+    "new_multiline",
+    doc="Multi-line text (`\\n`-separated) that can shrink its font to fit a `width` and/or `height`.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        any_("value", required=True),
+        num("size", 20, doc="Starting font size"),
+        num("spacing", doc="Line spacing in px; defaults to `size`"),
+        string("font"),
+        color("color", "black"),
+        string("anchor", "la"),
+        enum("align", ("left", "center", "right"), "left"),
+        num("stroke_width", 0),
+        color("stroke_fill"),
+        any_("fit", doc='`"width"`, `"height"` or `true` (both)'),
+        boolean("fit_width", doc="Shrink until the text is no wider than `width`"),
+        boolean("fit_height", doc="Shrink until the text is no taller than `height`"),
+        num("width", doc="Target width (required when fitting width)"),
+        num("height", doc="Target height (required when fitting height)"),
+    ],
+)
 def new_multiline(state: RenderState, element: dict) -> None:
     """Multiline text that can auto-shrink to fit a given width and/or height."""
     require(element, ["x", "y", "value"], "new_multiline")
@@ -246,7 +324,28 @@ def new_multiline(state: RenderState, element: dict) -> None:
     )
 
 
-@element("table")
+@element(
+    "table",
+    doc="Simple grid: the first row is the header unless `header` is false.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        array("columns", "number", required=True, doc="Column widths in px"),
+        array("rows", "array", required=True, doc="Rows of cell values (each converted with `str()`)"),
+        num("font_size", 14),
+        string("font"),
+        num("row_height", doc="Defaults to `font_size + 8`"),
+        num("padding", 4, doc="Horizontal cell padding"),
+        color("header_fill", "black"),
+        color("header_color", "white"),
+        color("cell_color", "black"),
+        color("cell_fill", doc="Body cell background"),
+        color("border_color", "black"),
+        num("border_width", 1),
+        enum("align", ("left", "center", "right"), "left"),
+        boolean("header", True, doc="Treat the first row as a header"),
+    ],
+)
 def table(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "columns", "rows"], "table")
     d = mono_draw(state.img)
@@ -289,7 +388,33 @@ def table(state: RenderState, element: dict) -> None:
     state.pos_y = cur_y
 
 
-@element("rich_text")
+@element(
+    "rich_text",
+    doc="One line of mixed spans (text and icons) with per-span size/colour/font, laid out left to "
+    "right and vertically centred on `y`.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True, doc="Vertical centre of the line"),
+        array(
+            "spans",
+            "object",
+            required=True,
+            doc="Each span is text (`text`) or an icon (`icon`)",
+            fields=[
+                any_("text", doc="Text for a text span"),
+                string("icon", doc="`mdi:name` / `fa:name` for an icon span"),
+                num("size", doc="Defaults to the element `size`"),
+                color("color", doc="Defaults to the element `color`"),
+                string("font", doc="Defaults to the element `font`"),
+            ],
+        ),
+        num("spacing", 0, doc="Gap between spans"),
+        num("size", 20),
+        color("color", "black"),
+        string("font"),
+        enum("align", ("left", "center", "right"), "left", doc="Position of the whole line relative to `x`"),
+    ],
+)
 def rich_text(state: RenderState, element: dict) -> None:
     """Draw inline spans (text and/or icons) left-to-right on one baseline.
 
@@ -332,7 +457,33 @@ def rich_text(state: RenderState, element: dict) -> None:
         cursor += w + spacing
 
 
-@element("text_fit")
+@element(
+    "text_fit",
+    doc="Fits text into a fixed `width` x `height` box: shrink the font, truncate with an ellipsis, "
+    "or both, with word-wrap up to `max_lines`.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        num("width", required=True),
+        num("height", required=True),
+        any_("value", required=True),
+        enum("fit", ("shrink", "ellipsis", "shrink_ellipsis"), "shrink"),
+        num("size", 20, doc="Starting font size"),
+        num("min_size", 8, doc="Smallest size `shrink` may reach"),
+        num("max_lines", 1),
+        num("line_spacing", 2),
+        string("ellipsis", "\u2026"),
+        color("color", "black"),
+        enum("align", ("left", "center", "right"), "left"),
+        enum("valign", ("top", "middle", "bottom"), "top"),
+        num("padding", 0),
+        string("font"),
+        color("background", doc="Box fill"),
+        color("outline", doc="Box outline"),
+        num("width_outline", 1),
+        num("radius", 0, doc="Box corner radius"),
+    ],
+)
 def text_fit(state: RenderState, element: dict) -> None:
     """Fit text into a fixed ``width × height`` box.
 

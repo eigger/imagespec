@@ -16,6 +16,7 @@ from qrcode.image.pil import PilImage
 
 from ..exceptions import RenderError
 from ..registry import element
+from ..spec import any_, boolean, color, enum, num, string
 from ..state import RenderState
 from ..utils import int_xy, require
 
@@ -46,7 +47,23 @@ def _fit_square_code(img: Image.Image, width, height) -> Image.Image:
     return img.resize((target, target), Image.Resampling.NEAREST)  # shrink to fit
 
 
-@element("qrcode")
+@element(
+    "qrcode",
+    doc="QR code. Size it with `boxsize` (px per module) or, for a predictable layout, a pixel "
+    "`width`/`height` box the code is scaled into (square, crisp).",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        any_("data", required=True, doc="Content to encode"),
+        color("color", "black"),
+        color("bgcolor", "white"),
+        num("border", 1, doc="Quiet zone in modules"),
+        num("boxsize", 2, doc="Pixels per module"),
+        enum("eclevel", ("l", "m", "q", "h"), "h", doc="Error-correction level"),
+        num("width", doc="Fit into this width (px)"),
+        num("height", doc="Fit into this height (px)"),
+    ],
+)
 def qrcode_element(state: RenderState, element: dict) -> None:
     """QR code.
 
@@ -85,7 +102,28 @@ def _hex(rgba) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
-@element("barcode")
+@element(
+    "barcode",
+    doc="Linear barcode (python-barcode). Give `width`/`height` for pixel-exact sizing; otherwise the "
+    "millimetre options at `dpi` decide the size.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        any_("data", required=True, doc="Content to encode"),
+        string("code", "code128", doc="Symbology: `code128`, `ean13`, `code39`, ..."),
+        num("width", doc="Scale to this width (px)"),
+        num("height", doc="Scale to this height (px)"),
+        num("module_width", 0.2, doc="mm per module"),
+        num("module_height", 7, doc="Bar height in mm"),
+        num("quiet_zone", 6.5, doc="mm"),
+        num("font_size", 5, doc="pt, for the human-readable text"),
+        num("text_distance", 5.0, doc="mm between bars and text"),
+        color("bgcolor", "white"),
+        color("color", "black"),
+        boolean("write_text", True, doc="Print the value under the bars"),
+        num("dpi", 300),
+    ],
+)
 def barcode(state: RenderState, element: dict) -> None:
     """Linear barcode.
 
@@ -141,7 +179,20 @@ def barcode(state: RenderState, element: dict) -> None:
     state.img.paste(imagebc, int_xy(pos_x, pos_y), imagebc)
 
 
-@element("datamatrix")
+@element(
+    "datamatrix",
+    doc="DataMatrix 2D code (needs `imagespec[datamatrix]`). Size like `qrcode`.",
+    fields=[
+        num("x", required=True),
+        num("y", required=True),
+        any_("data", required=True),
+        color("color", "black"),
+        color("bgcolor", "white"),
+        num("boxsize", 2, doc="Pixels per cell"),
+        num("width", doc="Fit into this width (px)"),
+        num("height", doc="Fit into this height (px)"),
+    ],
+)
 def datamatrix(state: RenderState, element: dict) -> None:
     """DataMatrix 2D code.
 

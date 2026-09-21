@@ -4,7 +4,7 @@ This document is **self-contained**: paste the whole file into an AI's context
 (system prompt) and it has everything needed to generate valid, well-composed
 `imagespec` payloads. It focuses on the **output contract**, the **layout
 model**, and **common pitfalls**. For the exhaustive per-element key list, see
-the *Element Reference* in [`../README.md`](../README.md); the most common
+[`reference.md`](reference.md); the most common
 elements are also cheat-sheeted at the bottom here.
 
 ---
@@ -266,7 +266,7 @@ row using `justify-evenly` with two centered icon+value columns.
 
 ## 8. Cheat-sheet — most-used elements
 
-Full list & all keys: *Element Reference* in [`README.md`](../README.md) and
+Full list & all keys: [`reference.md`](reference.md) and
 [`elements.md`](elements.md) (copy-paste examples per type).
 `(req)` = required.
 

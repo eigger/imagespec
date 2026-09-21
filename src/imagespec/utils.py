@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from PIL import Image, ImageDraw
 
 from .exceptions import RenderError
+from .spec import Field
 
 
 def require(element: dict, keys, func_name: str) -> None:
@@ -25,50 +28,6 @@ def should_show(element: dict) -> bool:
     key being absent) shows it.
     """
     return to_bool(element.get("visible", True))
-
-
-# Keys whose values are numbers in every element that uses them. Handlers read
-# them straight from the dict, so :func:`coerce_element` turns the string forms
-# HA templates produce ("42", "3.5") into real numbers up front, in one place.
-# A key that is a string/list/color in *any* element (`value`, `values`, `data`,
-# `points`, ...) must stay out of this set.
-NUMERIC_KEYS = frozenset(
-    {
-        # position / extent
-        "x", "y", "x_start", "x_end", "y_start", "y_end", "x_offset", "y_offset",
-        "x_size", "y_size", "x_repeat", "y_repeat", "xsize", "ysize", "width", "height",
-        "radius", "inner_radius", "start_angle", "end_angle", "rotate", "rotation",
-        # text
-        "size", "font_size", "spacing", "line_spacing", "offset_y", "start_y", "y_padding",
-        "max_width", "max_lines", "min_size", "stroke_width", "padding", "background_padding",
-        "row_height", "border_width", "width_outline", "width_line", "swatch_size", "gap",
-        "legend_size",
-        # stack / layout
-        "padding_left", "padding_top", "padding_right", "padding_bottom", "padding_x", "padding_y",
-        "margin_left", "margin_top", "margin_right", "margin_bottom", "margin_x", "margin_y",
-        # values
-        "progress", "level", "rating", "min", "max", "min_value", "max_value", "low", "high",
-        "low_threshold", "margin", "grow", "dot_radius", "nub_width", "nub_height",
-        # codes / media / plot
-        "boxsize", "border", "dpi", "module_width", "module_height", "quiet_zone",
-        "text_distance", "timeout", "duration", "grid", "tick_every", "tick_width", "ticks",
-    }
-)  # fmt: skip
-
-# Keys holding a list of numbers (``columns: ["18", "18"]``).
-NUMERIC_LIST_KEYS = frozenset({"columns", "dash"})
-
-# Boolean flags; ``"False"``/``"off"``/... from a template must not read as True.
-BOOL_KEYS = frozenset(
-    {
-        "show_percentage", "show_value", "dot_last", "half", "header", "write_text",
-        "debug", "pie", "circle", "fit_width", "fit_height",
-    }
-)  # fmt: skip
-
-# Nested dicts / lists of dicts that carry numeric keys of their own. Child
-# ``elements`` are *not* listed: they are coerced when they are dispatched.
-_NESTED_KEYS = frozenset({"bars", "ylegend", "yaxis", "xlegend", "layout", "spans", "items", "data"})
 
 
 def to_number(value, key: str = "value"):
@@ -104,27 +63,60 @@ def to_bool(value) -> bool:
     return bool(value)
 
 
-def coerce_element(element: dict) -> dict:
+_TRUTHY_STRINGS = frozenset({"true", "yes", "on"})
+
+
+def to_dither(value):
+    """Coerce a ``dither`` value: bool-like strings become bools, method names pass through.
+
+    ``"False"``/``"0"``/``"off"`` → ``False``, ``"True"``/``"1"``/``"on"`` →
+    ``True``; anything else (``"bayer8"``, ``True``, ``1``, ``None``) is returned
+    as-is for :func:`imagespec.dither.resolve_dither_method`.
+    """
+    if not isinstance(value, str):
+        return value
+    s = value.strip().lower()
+    if s in _FALSY_STRINGS:
+        return False
+    if s in _TRUTHY_STRINGS:
+        return True
+    try:
+        return float(s) != 0
+    except ValueError:
+        return value
+
+
+def coerce_element(element: dict, fields: Iterable[Field]) -> dict:
     """Return a copy of ``element`` with template strings turned into numbers/bools.
 
-    Applies :data:`NUMERIC_KEYS`, :data:`NUMERIC_LIST_KEYS` and :data:`BOOL_KEYS`
-    at the top level and inside the nested option dicts/lists handlers read
-    (``bars``, ``ylegend``, ``spans``, ...). Raises :class:`ValueError` for a
-    non-numeric string; the render loop wraps it with the element index/type.
+    Driven by the element's declared ``fields`` (:mod:`imagespec.spec`): number
+    and integer keys go through :func:`to_number`, booleans through
+    :func:`to_bool`, ``dither`` through :func:`to_dither`, and nested
+    ``object``/``array`` fields recurse into their own declarations. Undeclared
+    keys and child ``elements`` are left untouched (children are coerced when
+    they are dispatched). Raises :class:`ValueError`
+    for a non-numeric string; the render loop wraps it with the element
+    index/type.
     """
     out = dict(element)
-    for key, value in element.items():
-        if key in NUMERIC_KEYS:
-            out[key] = to_number(value, key)
-        elif key in NUMERIC_LIST_KEYS and isinstance(value, (list, tuple)):
-            out[key] = [to_number(v, key) for v in value]
-        elif key in BOOL_KEYS:
-            out[key] = to_bool(value)
-        elif key in _NESTED_KEYS:
+    for f in fields:
+        if f.name not in element:
+            continue
+        value = element[f.name]
+        if f.kind in ("number", "integer"):
+            out[f.name] = to_number(value, f.name)
+        elif f.kind == "boolean":
+            out[f.name] = to_bool(value)
+        elif f.kind == "dither":
+            out[f.name] = to_dither(value)
+        elif f.kind == "object":
             if isinstance(value, dict):
-                out[key] = coerce_element(value)
-            elif isinstance(value, (list, tuple)):
-                out[key] = [coerce_element(v) if isinstance(v, dict) else v for v in value]
+                out[f.name] = coerce_element(value, f.fields)
+        elif f.kind == "array" and isinstance(value, (list, tuple)):
+            if f.items in ("number", "integer"):
+                out[f.name] = [to_number(v, f.name) for v in value]
+            elif f.items == "object":
+                out[f.name] = [coerce_element(v, f.fields) if isinstance(v, dict) else v for v in value]
     return out
 
 

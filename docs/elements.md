@@ -10,7 +10,7 @@ python examples/generate_element_previews.py
 python scripts/inject_element_previews.py   # only if headings changed
 ```
 
-For field definitions and defaults, see the [Element Reference](../README.md#elements-reference) in the README. For layout patterns and pitfalls, see [`authoring.md`](authoring.md).
+For every key, type and default, see the [Element reference](reference.md). For layout patterns and pitfalls, see [`authoring.md`](authoring.md).
 
 > [!TIP]
 > All elements support `visible: false` to hide them conditionally (default: `true`). String forms from templates (`"False"`, `"off"`, `"no"`, `"none"`, `""`, and zero-valued numeric strings like `"0"`/`"0.0"`) also hide the element.
@@ -838,6 +838,7 @@ img.save("label.png")
 
 ## See also
 
-- [Element Reference](../README.md#elements-reference) — all keys and defaults
+- [Element reference](reference.md) — every key, type and default (generated from the element specs)
+- [`schema/elements.json`](../schema/elements.json) — the same as JSON Schema, for editors/validators
 - [Authoring guide](authoring.md) — layout model, palette, pitfalls
 - [Integration guide](integrating.md) — building a host adapter (Home Assistant example)

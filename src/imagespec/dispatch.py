@@ -11,7 +11,8 @@ import logging
 
 from PIL import Image
 
-from .registry import get_handler
+from .registry import get_handler, get_spec
+from .spec import COMMON_FIELDS
 from .utils import coerce_element, should_show
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,7 +73,8 @@ def render_element(state, element: dict) -> None:
     if handler is None:
         _LOGGER.warning("Unknown element type '%s' — skipping.", etype)
         return
-    element = coerce_element(element)
+    spec = get_spec(etype)
+    element = coerce_element(element, (*COMMON_FIELDS, *(spec.fields if spec else ())))
     if "dither" in element:
         _draw_isolated(state, element, handler, element["dither"])
     else:
