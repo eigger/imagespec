@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from PIL import Image, ImageDraw
+
 from .exceptions import RenderError
 
 
@@ -136,16 +138,35 @@ def int_xy(x, y) -> tuple[int, int]:
     return int(round(float(x))), int(round(float(y)))
 
 
-def get_wrapped_text(text: str, font, line_length: int) -> str:
-    """Word-wrap ``text`` so each line fits within ``line_length`` pixels."""
-    lines = [""]
+def mono_draw(img: Image.Image) -> ImageDraw.ImageDraw:
+    """``ImageDraw`` for ``img`` with 1-bit text rendering (no antialiasing).
+
+    Every text-drawing handler uses this: antialiased edges would just turn
+    into dither noise on a limited-palette panel.
+    """
+    d = ImageDraw.Draw(img)
+    d.fontmode = "1"
+    return d
+
+
+def wrap_words(text: str, font, max_width: float) -> list[str]:
+    """Greedy word-wrap to ``max_width`` pixels.
+
+    A single word wider than ``max_width`` stays on its own line (it is never
+    split), and the first line is never left empty.
+    """
+    lines: list[str] = []
+    cur = ""
     for word in text.split():
-        line = f"{lines[-1]} {word}".strip()
-        if font.getlength(line) <= line_length:
-            lines[-1] = line
+        trial = f"{cur} {word}".strip()
+        if cur and font.getlength(trial) > max_width:
+            lines.append(cur)
+            cur = word
         else:
-            lines.append(word)
-    return "\n".join(lines)
+            cur = trial
+    if cur:
+        lines.append(cur)
+    return lines
 
 
 def rounded_corners(corner_string: str):
@@ -167,13 +188,3 @@ def is_decimal(string: str) -> bool:
     if string.startswith("-"):
         string = string[1:]
     return len(string.split(".")) <= 2 and string.replace(".", "").isdecimal()
-
-
-def min_max(data):
-    if not data:
-        raise RenderError("data error, something is not in range of the recorder")
-    mi, ma = data[0], data[0]
-    for d in data[1:]:
-        mi = min(mi, d)
-        ma = max(ma, d)
-    return mi, ma

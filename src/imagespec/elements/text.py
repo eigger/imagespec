@@ -8,12 +8,13 @@ fixed box by shrinking the font and/or truncating with an ellipsis.
 
 from __future__ import annotations
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import get_wrapped_text, int_xy, require
+from ..utils import int_xy, mono_draw, require, wrap_words
+from .media import resolve_icon
 
 
 def _ellipsize_line(font, line: str, max_width: float, ellipsis: str) -> str:
@@ -26,29 +27,13 @@ def _ellipsize_line(font, line: str, max_width: float, ellipsis: str) -> str:
     return s + ellipsis
 
 
-def _wrap_all(text: str, font, max_width: float) -> list[str]:
-    """Greedy word-wrap to ``max_width`` (a single over-long word stays one line)."""
-    lines: list[str] = []
-    cur = ""
-    for word in text.split():
-        trial = f"{cur} {word}".strip()
-        if cur and font.getlength(trial) > max_width:
-            lines.append(cur)
-            cur = word
-        else:
-            cur = trial
-    if cur:
-        lines.append(cur)
-    return lines
-
-
 def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
     """Wrap ``text`` to ``max_width`` within ``max_lines``.
 
     Returns ``(lines, fits)`` where ``fits`` is False if anything had to be
     truncated (too many lines, or a line wider than ``max_width``).
     """
-    all_lines = _wrap_all(text, font, max_width)
+    all_lines = wrap_words(text, font, max_width)
     fits = True
     lines = all_lines[:max_lines]
     if len(all_lines) > max_lines:
@@ -64,8 +49,7 @@ def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
 @element("text")
 def text(state: RenderState, element: dict) -> None:
     require(element, ["x", "value"], "text")
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     size = element.get("size", 20)
     font = state.context.font(element.get("font"), size)
 
@@ -85,20 +69,30 @@ def text(state: RenderState, element: dict) -> None:
     bg_padding = element.get("background_padding", 2)
 
     if "max_width" in element:
-        value = get_wrapped_text(str(element["value"]), font, line_length=element["max_width"])
+        value = "\n".join(wrap_words(str(element["value"]), font, element["max_width"]))
         anchor = None
     else:
         value = str(element["value"])
 
+    # Extent of the (unrotated) text at its anchor: drives the background box
+    # and the flow cursor. textbbox ignores image content, so one call serves both.
+    tbbox = d.textbbox(
+        (element["x"], akt_pos_y),
+        value,
+        font=font,
+        anchor=anchor,
+        align=align,
+        spacing=spacing,
+        stroke_width=stroke_width,
+    )
+
     if text_rotation != 0:
         # Render onto a temporary transparent image, rotate, then composite.
-        dummy = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
-        tbbox = dummy.textbbox((0, 0), value, font=font, spacing=spacing, stroke_width=stroke_width)
-        tw = tbbox[2] - tbbox[0] + stroke_width * 2
-        th = tbbox[3] - tbbox[1] + stroke_width * 2
+        raw = d.textbbox((0, 0), value, font=font, spacing=spacing, stroke_width=stroke_width)
+        tw = raw[2] - raw[0] + stroke_width * 2
+        th = raw[3] - raw[1] + stroke_width * 2
         tmp = Image.new("RGBA", (tw + 4, th + 4), (255, 255, 255, 0))
-        tmp_d = ImageDraw.Draw(tmp)
-        tmp_d.fontmode = "1"
+        tmp_d = mono_draw(tmp)
         if bg_color is not None:
             tmp_d.rectangle([(0, 0), (tw + 4, th + 4)], fill=state.context.color(bg_color))
         tmp_d.text(
@@ -116,15 +110,6 @@ def text(state: RenderState, element: dict) -> None:
         state.img = Image.alpha_composite(state.img, canvas)
     else:
         if bg_color is not None:
-            tbbox = d.textbbox(
-                (element["x"], akt_pos_y),
-                value,
-                font=font,
-                anchor=anchor,
-                align=align,
-                spacing=spacing,
-                stroke_width=stroke_width,
-            )
             d.rectangle(
                 [(tbbox[0] - bg_padding, tbbox[1] - bg_padding), (tbbox[2] + bg_padding, tbbox[3] + bg_padding)],
                 fill=state.context.color(bg_color),
@@ -141,23 +126,13 @@ def text(state: RenderState, element: dict) -> None:
             stroke_fill=stroke_fill,
         )
 
-    textbbox = ImageDraw.Draw(state.img).textbbox(
-        (element["x"], akt_pos_y),
-        value,
-        font=font,
-        anchor=anchor,
-        align=align,
-        spacing=spacing,
-        stroke_width=stroke_width,
-    )
-    state.pos_y = textbbox[3]
+    state.pos_y = tbbox[3]
 
 
 @element("text_box")
 def text_box(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "value"], "text_box")
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     size = element.get("size", 20)
     font = state.context.font(element.get("font"), size)
     value = str(element["value"])
@@ -179,8 +154,7 @@ def text_box(state: RenderState, element: dict) -> None:
 @element("multiline")
 def multiline(state: RenderState, element: dict) -> None:
     require(element, ["x", "value", "delimiter", "offset_y"], "multiline")
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     size = element.get("size", 20)
     font = state.context.font(element.get("font"), size)
     color = element.get("color", "black")
@@ -209,8 +183,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
     """Multiline text that can auto-shrink to fit a given width and/or height."""
     require(element, ["x", "y", "value"], "new_multiline")
     value = str(element["value"])
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     color = element.get("color", "black")
     anchor = element.get("anchor", "la")
     size = element.get("size", 20)
@@ -277,8 +250,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
 @element("table")
 def table(state: RenderState, element: dict) -> None:
     require(element, ["x", "y", "columns", "rows"], "table")
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     font_size = element.get("font_size", 14)
     font = state.context.font(element.get("font"), font_size)
     table_x, table_y = element["x"], element["y"]
@@ -329,7 +301,6 @@ def rich_text(state: RenderState, element: dict) -> None:
     positions the run relative to ``element["x"]``.
     """
     require(element, ["x", "y", "spans"], "rich_text")
-    from .media import resolve_icon
 
     spacing = element.get("spacing", 0)
     default_size = element.get("size", 20)
@@ -356,8 +327,7 @@ def rich_text(state: RenderState, element: dict) -> None:
     else:
         cursor = element["x"]
 
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
     for text, font, color, w in measured:
         d.text((cursor, element["y"]), text, font=font, fill=state.context.color(color), anchor="lm")
         cursor += w + spacing
@@ -426,8 +396,7 @@ def text_fit(state: RenderState, element: dict) -> None:
             lines = lines[:max_rows]
             lines[-1] = _ellipsize_line(font, lines[-1], inner_w, ellipsis)
 
-    d = ImageDraw.Draw(state.img)
-    d.fontmode = "1"
+    d = mono_draw(state.img)
 
     if "background" in element or "outline" in element:
         d.rounded_rectangle(

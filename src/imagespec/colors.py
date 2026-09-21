@@ -77,6 +77,19 @@ def _parse_hex(s):
     return None
 
 
+def _parse_color_string(s: str):
+    """Name / CSS color / ``#RGB``/``#RRGGBB`` → RGBA tuple, or ``None`` if unknown."""
+    s = s.strip().lower()
+    if s in NAMED_COLORS:
+        return NAMED_COLORS[s]
+    try:
+        rgb = ImageColor.getrgb(s)
+        return (rgb[0], rgb[1], rgb[2], 255) if len(rgb) == 3 else rgb
+    except ValueError:
+        pass
+    return _parse_hex(s) if s.startswith("#") else None
+
+
 def _normalize_color(c):
     """Resolve one palette entry to an RGBA tuple.
 
@@ -89,21 +102,10 @@ def _normalize_color(c):
         if len(c) == 4:
             return (int(c[0]), int(c[1]), int(c[2]), int(c[3]))
         raise ValueError(f"Invalid palette color {c!r}: expected 3 or 4 components")
-    s = str(c).strip().lower()
-    if s in NAMED_COLORS:
-        return NAMED_COLORS[s]
-    try:
-        rgb = ImageColor.getrgb(s)
-        if len(rgb) == 3:
-            return (rgb[0], rgb[1], rgb[2], 255)
-        return rgb
-    except ValueError:
-        pass
-    if s.startswith("#"):
-        rgba = _parse_hex(s)
-        if rgba is not None:
-            return rgba
-    raise ValueError(f"Unknown palette color {c!r} (not a known name or #RGB/#RRGGBB)")
+    rgba = _parse_color_string(str(c))
+    if rgba is None:
+        raise ValueError(f"Unknown palette color {c!r} (not a known name or #RGB/#RRGGBB)")
+    return rgba
 
 
 def get_palette(spec):
@@ -134,20 +136,9 @@ def _requested_rgb(color):
     """
     if color is None:
         return None
-    s = str(color).strip().lower()
-    if s in NAMED_COLORS:
-        return NAMED_COLORS[s]
-    try:
-        rgb = ImageColor.getrgb(s)
-        if len(rgb) == 3:
-            return (rgb[0], rgb[1], rgb[2], 255)
-        return rgb
-    except ValueError:
-        pass
-    if s.startswith("#"):
-        rgba = _parse_hex(s)
-        if rgba is not None:
-            return rgba
+    rgba = _parse_color_string(str(color))
+    if rgba is not None:
+        return rgba
     _LOGGER.warning("Unknown color %r — falling back to white. Use a known name or #RGB/#RRGGBB.", color)
     return white
 

@@ -11,6 +11,7 @@ from PIL import Image
 from . import elements  # noqa: E402,F401  (side-effect import)
 from .context import RenderContext
 from .dispatch import render_element
+from .dither import dither_to_palette
 from .exceptions import RenderError
 from .state import RenderState
 
@@ -114,6 +115,4 @@ def render(
     result = img.convert("RGB")
     # Elements are drawn in true color; map the whole image to the device palette
     # once here — method selected by `dither` (bool or algorithm name).
-    from .dither import dither_to_palette
-
     return dither_to_palette(result, context.palette, dither=dither)
