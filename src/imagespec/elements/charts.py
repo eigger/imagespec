@@ -158,7 +158,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
     x_start, y_start = element["x_start"], element["y_start"]
     x_end, y_end = element["x_end"], element["y_end"]
     progress = max(0.0, min(100.0, float(element["progress"])))
-    direction = element.get("direction", "right")
+    direction = str(element.get("direction", "right")).lower()
     if direction not in ("right", "left", "up", "down"):
         raise RenderError(f"progress_bar: 'direction' must be right/left/up/down, got {direction!r}")
     bg_color = state.context.color(element.get("background", "white"))

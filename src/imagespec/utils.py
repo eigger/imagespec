@@ -18,12 +18,19 @@ _FALSY_STRINGS = frozenset({"false", "0", "no", "off", "none", ""})
 def should_show(element: dict) -> bool:
     """``visible`` flag, tolerant of the string forms HA templates produce.
 
-    ``"False"``/``"off"``/``"0"``/``""`` hide the element; any other value (or
-    the key being absent) shows it.
+    ``"False"``/``"off"``/``"no"``/``"none"``/``""`` and any numeric string
+    equal to zero (``"0"``, ``"0.0"``) hide the element; any other value (or the
+    key being absent) shows it.
     """
     value = element.get("visible", True)
     if isinstance(value, str):
-        return value.strip().lower() not in _FALSY_STRINGS
+        s = value.strip().lower()
+        if s in _FALSY_STRINGS:
+            return False
+        try:
+            return float(s) != 0
+        except ValueError:
+            return True
     return bool(value)
 
 

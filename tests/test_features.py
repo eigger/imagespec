@@ -58,6 +58,14 @@ def test_progress_bar_clamps_out_of_range(bw_ctx):
     assert fill_pixels(100) <= 40  # nothing beyond x_end
 
 
+def test_progress_bar_direction_is_case_insensitive(bw_ctx):
+    def img(direction):
+        el = {"type": "progress_bar", "x_start": 0, "y_start": 0, "x_end": 39, "y_end": 9, "progress": 50}
+        return render([el, {**el, "direction": direction}], 60, 10, context=bw_ctx)
+
+    assert img("Left").tobytes() == img("left").tobytes()
+
+
 def test_progress_bar_percentage_label_has_no_trailing_zero(bw_ctx, monkeypatch):
     from PIL import ImageDraw
 
