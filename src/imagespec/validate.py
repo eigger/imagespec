@@ -25,7 +25,7 @@ from typing import Any
 from .dither import resolve_dither_method
 from .registry import get_spec, known_types
 from .spec import COMMON_FIELDS, POSITION_KEYS, Field
-from .utils import to_dither, to_number
+from .utils import to_bool, to_dither, to_number
 
 _SCALAR_LABELS = {"number": "a number", "integer": "an integer", "boolean": "a boolean", "string": "a string"}
 
@@ -75,10 +75,25 @@ def _check_element(element: Any, path: str, positioned: bool, issues: list[Issue
     for f in spec.fields:
         # A stack/row/column supplies its children's x/y, so they are optional there.
         supplied = not positioned and f.name in POSITION_KEYS
-        _check_field(element, f, path, issues, etype, required=f.required and not supplied)
+        required = (f.required and not supplied) or _required_now(element, f, fields)
+        _check_field(element, f, path, issues, etype, required=required)
     for f in COMMON_FIELDS:
         if f.name != "type":
             _check_field(element, f, path, issues, etype)
+
+
+def _required_now(element: dict, f: Field, fields: dict[str, Field]) -> bool:
+    """``f.required_when`` triggered by the element's current values (booleans coerced)."""
+    for key, values in f.required_when:
+        value = element.get(key)
+        if value is None:
+            continue
+        trigger = fields.get(key)
+        if trigger is not None and trigger.kind == "boolean" and isinstance(value, (str, int, float)):
+            value = to_bool(value)
+        if any(value == v and type(value) is type(v) for v in values):
+            return True
+    return False
 
 
 def _check_field(
@@ -96,30 +111,30 @@ def _check_field(
 
 def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: str) -> None:
     kind = f.kind
+    if _matches_alt(value, f):
+        return
+    alt = f" or {_SCALAR_LABELS.get(f.alt, f.alt)}" if f.alt else ""
     if kind in ("number", "integer"):
         if not _is_numberish(value, kind):
-            issues.append(Issue(path, f"must be {_SCALAR_LABELS[kind]}, got {value!r}"))
+            issues.append(Issue(path, f"must be {_SCALAR_LABELS[kind]}{alt}, got {value!r}"))
     elif kind == "boolean":
         if not isinstance(value, (bool, int, float, str)):
-            issues.append(Issue(path, f"must be a boolean, got {value!r}"))
+            issues.append(Issue(path, f"must be a boolean{alt}, got {value!r}"))
     elif kind in ("string", "color"):
         if not isinstance(value, str):
-            issues.append(Issue(path, f"must be a string, got {value!r}"))
+            issues.append(Issue(path, f"must be a string{alt}, got {value!r}"))
         elif f.enum is not None and value not in f.enum:
-            issues.append(Issue(path, f"must be one of {', '.join(map(repr, f.enum))}, got {value!r}"))
+            issues.append(Issue(path, f"must be one of {', '.join(map(repr, f.enum))}{alt}, got {value!r}"))
     elif kind == "object":
         if not isinstance(value, dict):
-            issues.append(Issue(path, f"must be an object, got {value!r}"))
+            issues.append(Issue(path, f"must be an object{alt}, got {value!r}"))
         else:
             _check_object(value, f.fields, path, issues, etype)
     elif kind == "array":
-        if isinstance(value, (list, tuple)):
-            _check_items(value, f, path, issues, etype)
-        elif f.alt is not None and _matches_scalar(value, f.alt):
-            return
+        if not isinstance(value, (list, tuple)):
+            issues.append(Issue(path, f"must be an array{alt}, got {value!r}"))
         else:
-            expected = "an array" if f.alt is None else f"an array or {_SCALAR_LABELS.get(f.alt, f.alt)}"
-            issues.append(Issue(path, f"must be {expected}, got {value!r}"))
+            _check_items(value, f, path, issues, etype)
     elif kind == "elements":
         if not isinstance(value, (list, tuple)):
             issues.append(Issue(path, f"must be a list of elements, got {value!r}"))
@@ -181,8 +196,21 @@ def _is_numberish(value: Any, kind: str) -> bool:
 
 
 def _matches_scalar(value: Any, kind: str) -> bool:
+    """``value`` is acceptable as the ``alt`` kind (strict for booleans: an enum
+    with ``alt="boolean"`` must not swallow arbitrary strings)."""
     if kind in ("number", "integer"):
         return _is_numberish(value, kind)
     if kind == "boolean":
-        return isinstance(value, (bool, int, float, str))
+        return isinstance(value, bool)
     return isinstance(value, str)
+
+
+def _matches_alt(value: Any, f: Field) -> bool:
+    """``value`` satisfies ``f.alt``. The string form of a numeric array is a
+    ``,``/``;``-separated list of numbers (what the handlers parse)."""
+    if f.alt is None or not _matches_scalar(value, f.alt):
+        return False
+    if f.kind == "array" and f.alt == "string" and f.items in ("number", "integer"):
+        parts = [p for p in value.replace(";", ",").split(",") if p.strip()]
+        return all(_is_numberish(p, f.items) for p in parts)
+    return True

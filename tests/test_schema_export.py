@@ -96,6 +96,17 @@ REJECTS = [
     ("unknown element type", [{"type": "sprite", "x": 0, "y": 0}]),
     ("wrong scalar type", [{"type": "circle", "x": "left", "y": 1, "radius": 3}]),
     ("dither integer other than 0/1", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": 2}]),
+    ("fit_width without width", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": True}]),
+    (
+        "fit_width with width: null",
+        [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": True, "width": None}],
+    ),
+    ("fit: true without height", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit": True, "width": 1}]),
+    ("fit outside enum/boolean", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit": "both"}]),
+    (
+        "sparkline values neither list nor string",
+        [{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": 7}],
+    ),
 ]
 
 ACCEPTS = [
@@ -117,6 +128,13 @@ ACCEPTS = [
         "optional string null (rectangle corners)",
         [{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 1, "y_end": 1, "corners": None}],
     ),
+    ("fit_width with width", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": True, "width": 30}]),
+    (
+        "fit: true with both",
+        [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit": True, "width": 30, "height": 30}],
+    ),
+    ("fit off needs nothing", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": False}]),
+    ("sparkline values as string", [{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": "1,3,2"}]),
 ]
 
 

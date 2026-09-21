@@ -69,8 +69,12 @@ class Field:
     fields: tuple[Field, ...] = ()
     # array only: kind of each item ("number", "string", "any", "object", "array")
     items: str = "any"
-    # a second accepted scalar kind (e.g. an array field that also takes a string)
+    # a second accepted scalar kind (e.g. an array field that also takes a string,
+    # or an enum that also takes a boolean)
     alt: str | None = None
+    # conditionally required: ((key, accepted values), ...) — the field must be
+    # present when any listed key holds one of its listed values
+    required_when: tuple[tuple[str, tuple[Any, ...]], ...] = ()
     # elements only: False when the container supplies x/y itself (stack children)
     positioned: bool = True
     # an explicit null is meaningful to the handler (see the module docstring)
@@ -86,14 +90,25 @@ class Field:
             raise ValueError(f"field {self.name!r}: unknown kind {self.kind!r}")
         if self.required and self.default is not UNSET:
             raise ValueError(f"field {self.name!r}: a required field cannot have a default")
+        if self.required and self.required_when:
+            raise ValueError(f"field {self.name!r}: required and required_when are exclusive")
 
 
 def _f(kind: str, name: str, default: Any = UNSET, *, required: bool = False, doc: str = "", **kw: Any) -> Field:
     return Field(name, kind, required=required, default=default, doc=doc, **kw)
 
 
-def num(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "", nullable: bool = False) -> Field:
-    return _f("number", name, default, required=required, doc=doc, nullable=nullable)
+def num(
+    name: str,
+    default: Any = UNSET,
+    *,
+    required: bool = False,
+    doc: str = "",
+    nullable: bool = False,
+    required_when: Iterable[tuple[str, Iterable[Any]]] = (),
+) -> Field:
+    when = tuple((k, tuple(v)) for k, v in required_when)
+    return _f("number", name, default, required=required, doc=doc, nullable=nullable, required_when=when)
 
 
 def integer(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:
@@ -116,8 +131,16 @@ def any_(name: str, default: Any = UNSET, *, required: bool = False, doc: str = 
     return _f("any", name, default, required=required, doc=doc)
 
 
-def enum(name: str, values: Iterable[Any], default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:
-    return _f("string", name, default, required=required, doc=doc, enum=tuple(values))
+def enum(
+    name: str,
+    values: Iterable[Any],
+    default: Any = UNSET,
+    *,
+    required: bool = False,
+    doc: str = "",
+    alt: str | None = None,
+) -> Field:
+    return _f("string", name, default, required=required, doc=doc, enum=tuple(values), alt=alt)
 
 
 def obj(name: str, fields: Iterable[Field], *, required: bool = False, doc: str = "", nullable: bool = False) -> Field:

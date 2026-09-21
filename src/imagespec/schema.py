@@ -120,7 +120,23 @@ def _element_schema(spec: ElementSpec) -> dict[str, Any]:
         "required": ["type", *(f.name for f in spec.fields if f.required and f.name not in POSITION_KEYS)],
         "additionalProperties": False,
     }
+    conditional = [_required_when_schema(f) for f in spec.fields if f.required_when]
+    if conditional:
+        schema["allOf"] = conditional
     return schema
+
+
+def _required_when_schema(f: Field) -> dict[str, Any]:
+    """``if`` any trigger key holds one of its values ``then`` the field is required.
+
+    ``then`` also forbids ``null`` for the key: an explicit null is dropped
+    before dispatch (= omitted), so it must not satisfy a requirement.
+    """
+    triggers = [{"properties": {key: {"enum": list(values)}}, "required": [key]} for key, values in f.required_when]
+    return {
+        "if": {"anyOf": triggers},
+        "then": {"required": [f.name], "properties": {f.name: {"not": {"type": "null"}}}},
+    }
 
 
 def _positioned_ref(spec: ElementSpec) -> dict[str, Any]:
@@ -168,20 +184,27 @@ def build_json_schema() -> dict[str, Any]:
 
 def _type_label(f: Field) -> str:
     if f.enum is not None:
-        return " \\| ".join(f"`{v}`" for v in f.enum)
-    if f.kind == "array":
+        label = " \\| ".join(f"`{v}`" for v in f.enum)
+    elif f.kind == "array":
         label = f"array of {f.items}" if f.items != "object" else "array of objects"
-        return f"{label} \\| {f.alt}" if f.alt else label
-    if f.kind == "elements":
+    elif f.kind == "elements":
         return "array of elements"
-    if f.kind == "dither":
+    elif f.kind == "dither":
         return "bool \\| 0/1 \\| method name"
-    return f.kind
+    else:
+        label = f.kind
+    return f"{label} \\| {f.alt}" if f.alt else label
 
 
 def _default_label(f: Field) -> str:
     if f.required:
         return "**required**"
+    if f.required_when:
+        triggers = [
+            f"`{key}`" if values == (True,) else f"`{key}: " + "/".join(_literal(v) for v in values) + "`"
+            for key, values in f.required_when
+        ]
+        return "**required** if " + " or ".join(triggers)
     if f.default is UNSET or f.default is None:
         return ""
     if isinstance(f.default, bool):
@@ -189,6 +212,10 @@ def _default_label(f: Field) -> str:
     if isinstance(f.default, str):
         return f"`{f.default!r}`".replace("'", '"')
     return f"`{f.default}`"
+
+
+def _literal(v: Any) -> str:
+    return ("true" if v else "false") if isinstance(v, bool) else str(v)
 
 
 def _field_rows(fields: tuple[Field, ...], prefix: str = "") -> list[str]:

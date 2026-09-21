@@ -15,7 +15,7 @@ from PIL import ImageDraw
 from ..colors import white
 from ..exceptions import RenderError
 from ..registry import element
-from ..spec import any_, array, boolean, color, enum, num, obj, string
+from ..spec import array, boolean, color, enum, num, obj, string
 from ..state import RenderState
 from ..utils import is_decimal, mono_draw, require
 
@@ -75,7 +75,7 @@ def pie(state: RenderState, element: dict) -> None:
         num("y", required=True),
         num("width", required=True),
         num("height", required=True),
-        any_("values", required=True, doc='List of numbers, or a `"1,3,2"` string'),
+        array("values", "number", required=True, alt="string", doc='List of numbers, or a `"1,3,2"` string'),
         num("min", doc="Y range floor; defaults to the data minimum"),
         num("max", doc="Y range ceiling; defaults to the data maximum"),
         color("color", "black", doc="Line colour"),

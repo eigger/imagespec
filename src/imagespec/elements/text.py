@@ -249,11 +249,11 @@ def multiline(state: RenderState, element: dict) -> None:
         enum("align", ("left", "center", "right"), "left"),
         num("stroke_width", 0),
         color("stroke_fill"),
-        any_("fit", doc='`"width"`, `"height"` or `true` (both)'),
+        enum("fit", ("width", "height"), alt="boolean", doc="Which dimension to shrink to; `true` = both"),
         boolean("fit_width", doc="Shrink until the text is no wider than `width`"),
         boolean("fit_height", doc="Shrink until the text is no taller than `height`"),
-        num("width", doc="Target width (required when fitting width)"),
-        num("height", doc="Target height (required when fitting height)"),
+        num("width", doc="Target width", required_when=[("fit_width", [True]), ("fit", ["width", True])]),
+        num("height", doc="Target height", required_when=[("fit_height", [True]), ("fit", ["height", True])]),
     ],
 )
 def new_multiline(state: RenderState, element: dict) -> None:

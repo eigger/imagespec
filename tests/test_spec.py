@@ -220,6 +220,13 @@ def test_spec_fields_are_unique_and_well_formed(spec):
             assert f.default is UNSET or f.default in f.enum, f"{spec.name}.{path}: default not in enum"
         if f.kind == "array" and f.items == "object":
             assert f.fields, f"{spec.name}.{path}: object items need fields"
+        if f.alt is not None:
+            assert f.alt in ("number", "integer", "boolean", "string"), f"{spec.name}.{path}: alt must be scalar"
+    declared = {f.name for f in spec.fields}
+    for f in spec.fields:
+        for key, values in f.required_when:
+            assert key in declared, f"{spec.name}.{f.name}: required_when names undeclared key {key!r}"
+            assert values, f"{spec.name}.{f.name}: required_when[{key!r}] has no values"
 
 
 def test_layout_fields_cover_child_layout_reader():
