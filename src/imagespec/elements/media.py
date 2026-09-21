@@ -229,11 +229,10 @@ def dlimg(state: RenderState, element: dict) -> None:
 
     if url.startswith(("http://", "https://")):
         try:
-            response = requests.get(url, timeout=element.get("timeout", 30))
-            response.raise_for_status()
+            data = state.context.fetch_image(url, timeout=element.get("timeout", 30))
         except requests.RequestException as exc:
             raise RenderError(f"dlimg: failed to fetch {url}: {exc}") from exc
-        imgdl = Image.open(io.BytesIO(response.content))
+        imgdl = Image.open(io.BytesIO(data))
     elif url.startswith("data:"):
         s = url[5:]
         if not s or "," not in s:

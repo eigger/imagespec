@@ -134,3 +134,121 @@ def test_group_child_error_wrapped_with_context(ctx):
         render([el], 20, 20, context=ctx)
     msg = str(exc.value)
     assert "group" in msg and "rectangle" in msg
+
+
+# ── dlimg fetch: size cap, TTL cache, injected fetcher ─────────────────────
+
+
+def _png_bytes(color=(255, 0, 0)):
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), color).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_dlimg_uses_injected_fetcher_and_caches_within_ttl(monkeypatch):
+    calls = []
+
+    def fetcher(url):
+        calls.append(url)
+        return _png_bytes()
+
+    ctx = RenderContext(palette="4", image_fetcher=fetcher, image_cache_ttl=60)
+    el = {"type": "dlimg", "x": 0, "y": 0, "url": "https://example.test/logo.png", "xsize": 8, "ysize": 8}
+    render([el], 20, 20, context=ctx)
+    render([el], 20, 20, context=ctx)
+    assert calls == ["https://example.test/logo.png"]  # second render served from cache
+
+    import time
+
+    now = time.monotonic()
+    monkeypatch.setattr(time, "monotonic", lambda: now + 61)
+    render([el], 20, 20, context=ctx)
+    assert len(calls) == 2  # expired -> refetched
+
+
+def test_dlimg_cache_off_by_default():
+    calls = []
+    ctx = RenderContext(palette="4", image_fetcher=lambda url: (calls.append(url), _png_bytes())[1])
+    el = {"type": "dlimg", "x": 0, "y": 0, "url": "https://example.test/cam.jpg", "xsize": 8, "ysize": 8}
+    render([el], 20, 20, context=ctx)
+    render([el], 20, 20, context=ctx)
+    assert len(calls) == 2
+
+
+def test_dlimg_rejects_oversized_image_from_fetcher():
+    ctx = RenderContext(palette="4", image_fetcher=lambda url: _png_bytes(), max_image_bytes=10)
+    el = {"type": "dlimg", "x": 0, "y": 0, "url": "https://example.test/big.png", "xsize": 8, "ysize": 8}
+    with pytest.raises(RenderError, match="max_image_bytes"):
+        render([el], 20, 20, context=ctx)
+
+
+class _FakeResponse:
+    def __init__(self, body: bytes, content_length: int | None = None):
+        self._body = body
+        self.headers = {} if content_length is None else {"Content-Length": str(content_length)}
+
+    def raise_for_status(self):
+        pass
+
+    def iter_content(self, chunk):
+        for i in range(0, len(self._body), chunk):
+            yield self._body[i : i + chunk]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def test_dlimg_download_streams_and_aborts_past_limit(monkeypatch):
+    import requests
+
+    body = b"\x00" * 5000
+    monkeypatch.setattr(requests, "get", lambda url, timeout, stream: _FakeResponse(body))
+    ctx = RenderContext(palette="4", max_image_bytes=4096)
+    with pytest.raises(RenderError, match="download aborted"):
+        ctx.fetch_image("https://example.test/x.png")
+
+
+def test_dlimg_download_rejects_declared_content_length(monkeypatch):
+    import requests
+
+    monkeypatch.setattr(requests, "get", lambda url, timeout, stream: _FakeResponse(b"", content_length=10**9))
+    ctx = RenderContext(palette="4")
+    with pytest.raises(RenderError, match="over max_image_bytes"):
+        ctx.fetch_image("https://example.test/x.png")
+
+
+def test_dlimg_download_success_path(monkeypatch):
+    import requests
+
+    png = _png_bytes()
+    monkeypatch.setattr(requests, "get", lambda url, timeout, stream: _FakeResponse(png, content_length=len(png)))
+    ctx = RenderContext(palette="4")
+    el = {"type": "dlimg", "x": 0, "y": 0, "url": "https://example.test/ok.png", "xsize": 8, "ysize": 8}
+    img = render([el], 20, 20, context=ctx)
+    assert img.getpixel((2, 2)) == (255, 0, 0)
+
+
+def test_image_cache_refresh_of_expired_url_does_not_evict_others(monkeypatch):
+    import time
+
+    from imagespec.context import _IMAGE_CACHE_MAX_ENTRIES
+
+    ctx = RenderContext(palette="4", image_fetcher=lambda url: _png_bytes(), image_cache_ttl=10)
+    urls = [f"https://example.test/{i}.png" for i in range(_IMAGE_CACHE_MAX_ENTRIES)]
+    for u in urls:
+        ctx.fetch_image(u)
+    assert set(ctx._image_cache) == set(urls)  # full
+    now = time.monotonic()
+    monkeypatch.setattr(time, "monotonic", lambda: now + 11)  # everything expired
+    ctx.fetch_image(urls[0])  # refresh in place
+    assert set(ctx._image_cache) == set(urls)  # nothing else evicted
+    ctx.fetch_image("https://example.test/new.png")  # genuinely new -> one eviction
+    assert len(ctx._image_cache) == _IMAGE_CACHE_MAX_ENTRIES
+    assert "https://example.test/new.png" in ctx._image_cache

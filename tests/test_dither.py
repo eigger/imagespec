@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from PIL import Image, ImageDraw
 
+import imagespec.dither as dither_mod
 from imagespec import DITHER_METHODS, RenderContext, render, resolve_dither_method
 from imagespec.colors import PALETTE_7, PALETTE_BW, PALETTE_BWR
 from imagespec.dither import _KERNELS, DITHER_ATKINSON, dither_to_palette
@@ -281,3 +282,34 @@ def test_per_element_dither_works_inside_group():
     }
     img = render([grp], 40, 40, background="white", dither=False, context=ctx)
     assert _interior(img) == {(0, 0, 0), (255, 255, 255)}
+
+
+# ── numpy fast path == pure-Python path ────────────────────────────────────
+
+
+@pytest.fixture(scope="module")
+def dither_scene():
+    src = Image.open("examples/dither_methods/source.png").convert("RGB")
+    return src.resize((97, 61))  # odd size: exercises edge taps and serpentine turns
+
+
+@pytest.mark.skipif(dither_mod.np is None, reason="numpy not installed; only the pure path exists")
+@pytest.mark.parametrize("palette", [PALETTE_BW, PALETTE_BWR, PALETTE_7], ids=["bw", "bwr", "7"])
+@pytest.mark.parametrize("method", DITHER_METHODS)
+def test_numpy_and_pure_paths_are_bit_identical(monkeypatch, dither_scene, palette, method):
+    # The numpy path adds error to the rows below with array ops; it must feed
+    # every cell the same float operands in the same order as the scalar scan.
+    fast = dither_to_palette(dither_scene, palette, dither=method, origin=(3, 5))
+    monkeypatch.setattr(dither_mod, "np", None)
+    pure = dither_to_palette(dither_scene, palette, dither=method, origin=(3, 5))
+    assert fast.tobytes() == pure.tobytes()
+
+
+def test_pure_path_matches_dither_golden(monkeypatch):
+    # tests/test_golden.py runs whichever path is installed; pin the pure path
+    # to a golden too so a numpy-only CI never masks a pure-path regression.
+    monkeypatch.setattr(dither_mod, "np", None)
+    src = Image.open("examples/dither_methods/source.png").convert("RGB")
+    out = dither_to_palette(src, PALETTE_BWR, dither="jarvis")
+    golden = Image.open("tests/golden/dither_jarvis_bwr.png").convert("RGB")
+    assert out.tobytes() == golden.tobytes()

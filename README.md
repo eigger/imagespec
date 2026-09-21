@@ -86,7 +86,7 @@ python examples/smoke_test.py
 ## Development & testing
 
 ```bash
-pip install -e ".[dev,datamatrix]"
+pip install -e ".[dev,datamatrix]"   # dev pulls in numpy, so both dither paths are exercised
 pytest                 # unit + golden-image tests: every element, palettes, rotation, dither, errors
 pytest --update-golden # rewrite the golden PNGs after an intentional rendering change
 ruff check . && ruff format --check .   # lint + format
@@ -122,6 +122,10 @@ pixels to differ under a different Pillow/FreeType or python-barcode release.
   unknown element types are warned-and-skipped.
 - `dlimg` only allows `http(s)`/`data:` URLs by default; local paths require
   `RenderContext(allow_local_images=True)`. Network failures become `RenderError`.
+  Downloads are streamed and abort past `max_image_bytes` (20 MB default);
+  `image_cache_ttl=<seconds>` reuses a fetched image across renders (off by
+  default so camera snapshots are never served stale), and `image_fetcher`
+  lets the host supply its own `url -> bytes`.
 - Clear errors for missing required args, invalid barcode symbology, malformed
   `polygon` points, and a `diagram` too small for its bars.
 - Template-friendly input: numeric keys (`x`, `size`, `progress`, ...) accept
