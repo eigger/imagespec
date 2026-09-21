@@ -7,11 +7,22 @@ e-ink: error-diffusion kernels (serpentine scan) and ordered/threshold screens.
 ``none`` uses Pillow's C ``quantize`` path (fast default). Other methods are
 implemented here — Pillow only ships working Floyd–Steinberg, and we keep a
 serpentine Python FS for e-ink quality.
+
+numpy is optional (``pip install imagespec[fast]``). With it, ordered screens
+are fully vectorised and error diffusion pushes error to the rows below with
+array ops; without it the same algorithms run in pure Python. Both paths are
+bit-identical — every error cell receives the same float operands in the same
+order — and the test-suite asserts that.
 """
 
 from __future__ import annotations
 
 from PIL import Image
+
+try:
+    import numpy as np
+except ImportError:  # pragma: no cover - exercised by the pure-Python tests via monkeypatch
+    np = None
 
 # ── Public method names ────────────────────────────────────────────────────
 
@@ -296,6 +307,9 @@ def _quantize_nearest_pillow(img: Image.Image, palette) -> Image.Image:
     return rgb.quantize(palette=pal_img, dither=Image.Dither.NONE).convert("RGB")
 
 
+_INF = float("inf")
+
+
 def _error_diffuse(
     img: Image.Image,
     palette: list[tuple[int, int, int]],
@@ -304,44 +318,135 @@ def _error_diffuse(
     *,
     serpentine: bool = True,
 ) -> Image.Image:
+    """Serpentine error diffusion onto ``palette`` (numpy-assisted when available)."""
+    if np is not None:
+        return _error_diffuse_np(img, palette, kernel, divisor, serpentine=serpentine)
+    return _error_diffuse_py(img, palette, kernel, divisor, serpentine=serpentine)
+
+
+def _scan_row(data, out, base, xs, er_row, eg_row, eb_row, pal, same, w):
+    """Quantize one row in scan order, applying same-row taps as it goes.
+
+    Returns the per-pixel error (three lists) for the taps that reach the rows
+    below. The inner loop is the hot spot of every error-diffusion method, so it
+    reads the source bytes directly and inlines the nearest-color search.
+    """
+    e_r = [0.0] * w
+    e_g = [0.0] * w
+    e_b = [0.0] * w
+    for x in xs:
+        i = base + x * 3
+        r = data[i] + er_row[x]
+        g = data[i + 1] + eg_row[x]
+        b = data[i + 2] + eb_row[x]
+        best = pal[0]
+        best_d = _INF
+        for c in pal:
+            pr, pg, pb = c
+            d = (r - pr) * (r - pr) + (g - pg) * (g - pg) + (b - pb) * (b - pb)
+            if d < best_d:
+                best_d = d
+                best = c
+        nr, ng, nb = best
+        out[i] = nr
+        out[i + 1] = ng
+        out[i + 2] = nb
+        er = r - nr
+        eg = g - ng
+        eb = b - nb
+        if er == 0.0 and eg == 0.0 and eb == 0.0:
+            continue
+        e_r[x] = er
+        e_g[x] = eg
+        e_b[x] = eb
+        for dx, f in same:
+            nx = x + dx
+            if 0 <= nx < w:
+                er_row[nx] += er * f
+                eg_row[nx] += eg * f
+                eb_row[nx] += eb * f
+    return e_r, e_g, e_b
+
+
+def _split_kernel(kernel, divisor):
+    """Kernel taps with ``weight / divisor`` precomputed, split by row.
+
+    Returns ``(same_lr, same_rl, below_lr, below_rl)``. The "below" lists are
+    ordered so that adding them tap by tap reproduces the per-cell accumulation
+    order of a pixel-by-pixel scan (the pixel feeding cell ``nx`` is
+    ``nx - dx``, so left-to-right pixel order is descending ``dx``).
+    """
+    taps = [(dx, dy, weight / divisor) for dx, dy, weight in kernel]
+    same_lr = [(dx, f) for dx, dy, f in taps if dy == 0]
+    same_rl = [(-dx, f) for dx, f in same_lr]
+    below = [(dx, dy, f) for dx, dy, f in taps if dy > 0]
+    below_lr = sorted(below, key=lambda t: -t[0])
+    below_rl = sorted([(-dx, dy, f) for dx, dy, f in below], key=lambda t: t[0])
+    return same_lr, same_rl, below_lr, below_rl
+
+
+def _error_diffuse_np(img, palette, kernel, divisor, *, serpentine=True):
     src = img.convert("RGB")
     w, h = src.size
-    px = src.load()
-    out = Image.new("RGB", (w, h))
-    dest = out.load()
-
+    data = src.tobytes()
+    out = bytearray(len(data))
+    pal = [tuple(c) for c in palette]
+    same_lr, same_rl, below_lr, below_rl = _split_kernel(kernel, divisor)
     max_dy = max((dy for _, dy, _ in kernel), default=0)
-    nbuf = max_dy + 1
-    err = [[[0.0, 0.0, 0.0] for _ in range(w)] for _ in range(nbuf)]
+    err = np.zeros((h + max_dy, w, 3), dtype=np.float64)
 
     for y in range(h):
-        row = err[y % nbuf]
-        left_to_right = (not serpentine) or (y % 2 == 0)
-        xs = range(w) if left_to_right else range(w - 1, -1, -1)
-        for x in xs:
-            r = px[x, y][0] + row[x][0]
-            g = px[x, y][1] + row[x][1]
-            b = px[x, y][2] + row[x][2]
-            nr, ng, nb = _nearest(r, g, b, palette)
-            dest[x, y] = (nr, ng, nb)
-            er, eg, eb = r - nr, g - ng, b - nb
-            if er == 0.0 and eg == 0.0 and eb == 0.0:
+        ltr = (not serpentine) or (y % 2 == 0)
+        er_row, eg_row, eb_row = err[y].T.tolist()
+        xs = range(w) if ltr else range(w - 1, -1, -1)
+        e_r, e_g, e_b = _scan_row(data, out, y * w * 3, xs, er_row, eg_row, eb_row, pal, same_lr if ltr else same_rl, w)
+        if not below_lr:
+            continue
+        e = np.array([e_r, e_g, e_b], dtype=np.float64).T  # (w, 3)
+        for dx, dy, f in below_lr if ltr else below_rl:
+            ny = y + dy
+            if ny >= h:
                 continue
-            for dx, dy, weight in kernel:
-                adx = dx if left_to_right else -dx
-                nx, ny = x + adx, y + dy
-                if 0 <= nx < w and ny < h:
-                    f = weight / divisor
-                    cell = err[ny % nbuf][nx]
-                    cell[0] += er * f
-                    cell[1] += eg * f
-                    cell[2] += eb * f
+            if dx >= 0:  # cell nx receives e[nx - dx] * f
+                err[ny, dx:w] += e[: w - dx] * f
+            else:
+                err[ny, : w + dx] += e[-dx:] * f
+    return Image.frombytes("RGB", (w, h), bytes(out))
+
+
+def _error_diffuse_py(img, palette, kernel, divisor, *, serpentine=True):
+    src = img.convert("RGB")
+    w, h = src.size
+    data = src.tobytes()
+    out = bytearray(len(data))
+    pal = [tuple(c) for c in palette]
+    same_lr, same_rl, below_lr, below_rl = _split_kernel(kernel, divisor)
+    max_dy = max((dy for _, dy, _ in kernel), default=0)
+    nbuf = max_dy + 1
+    err = [([0.0] * w, [0.0] * w, [0.0] * w) for _ in range(nbuf)]
+    zeros = [0.0] * w
+
+    for y in range(h):
+        ltr = (not serpentine) or (y % 2 == 0)
+        er_row, eg_row, eb_row = err[y % nbuf]
+        xs = range(w) if ltr else range(w - 1, -1, -1)
+        e_r, e_g, e_b = _scan_row(data, out, y * w * 3, xs, er_row, eg_row, eb_row, pal, same_lr if ltr else same_rl, w)
+        for dx, dy, f in below_lr if ltr else below_rl:
+            ny = y + dy
+            if ny >= h:
+                continue
+            tr, tg, tb = err[ny % nbuf]
+            lo, hi = max(0, dx), min(w, w + dx)  # cells nx with 0 <= nx - dx < w
+            for nx in range(lo, hi):
+                sx = nx - dx
+                tr[nx] += e_r[sx] * f
+                tg[nx] += e_g[sx] * f
+                tb[nx] += e_b[sx] * f
         # Row y is done; clear its slot before it wraps for y + nbuf.
-        for x in range(w):
-            row[x][0] = 0.0
-            row[x][1] = 0.0
-            row[x][2] = 0.0
-    return out
+        er_row[:] = zeros
+        eg_row[:] = zeros
+        eb_row[:] = zeros
+    return Image.frombytes("RGB", (w, h), bytes(out))
 
 
 def _ordered_dither(
@@ -361,6 +466,16 @@ def _ordered_dither(
     n = len(matrix)
     levels = float(n * n)
     ox, oy = origin
+    if np is not None:
+        arr = np.asarray(src, dtype=np.float64)  # (h, w, 3)
+        tile = np.asarray(matrix, dtype=np.float64)[(np.arange(h) + oy) % n][:, (np.arange(w) + ox) % n]
+        v = arr + (((tile + 0.5) / levels - 0.5) * 255.0)[..., None]
+        pal = np.asarray(palette, dtype=np.float64)
+        d = v[:, :, None, :] - pal[None, None, :, :]  # (h, w, k, 3)
+        # same operand order as the scalar path: (dr*dr + dg*dg) + db*db
+        dist = d[..., 0] * d[..., 0] + d[..., 1] * d[..., 1] + d[..., 2] * d[..., 2]
+        idx = np.argmin(dist, axis=-1)  # first minimum, like the strict `<` search
+        return Image.fromarray(np.asarray(palette, dtype=np.uint8)[idx], "RGB")
     px = src.load()
     out = Image.new("RGB", (w, h))
     dest = out.load()

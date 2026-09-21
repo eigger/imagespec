@@ -54,6 +54,26 @@ img = render(payload, 296, 128, dither="atkinson", context=ctx)
 img = render(payload, 296, 128, dither="bayer8", context=ctx)
 ```
 
+### Performance
+
+Dithering runs in pure Python. Installing the `fast` extra
+(`pip install imagespec[fast]`) adds numpy: ordered screens (`bayer*`,
+`clustered*`) become fully vectorised and error diffusion pushes its error to
+the rows below with array ops. Output is **bit-identical** either way — the
+test-suite asserts it — so it is purely a speed switch. On an 800×480 panel:
+
+| method | palette | pure Python | with numpy |
+|---|---|---|---|
+| `floyd` | bw | 0.37 s | 0.26 s |
+| `jarvis` | bw | 0.67 s | 0.36 s |
+| `bayer8` / `clustered8` | bw | 0.21 s | 0.03 s |
+| `floyd` | 7-color | 0.61 s | 0.55 s |
+| `bayer8` / `clustered8` | 7-color | 0.43 s | 0.07 s |
+
+Error diffusion is inherently sequential along a row, so its remaining cost is
+the per-pixel nearest-colour search (proportional to palette size); `none` uses
+Pillow's C quantizer and is ~10 ms regardless.
+
 Per-element override (bool or method name) — use on **photos and charts**
 (`dlimg`, `pie`, `diagram`, `plot`, `sparkline`, `progress_bar`, `gauge`) when
 they use off-palette colors. Leave text/QR/barcodes without `dither`:

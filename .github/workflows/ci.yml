@@ -61,7 +61,7 @@ jobs:
       - name: Install at lowest allowed direct-dependency versions
         run: |
           uv venv
-          uv pip install --resolution lowest-direct -e ".[dev,datamatrix,yaml]"
+          uv pip install --resolution lowest-direct -e ".[dev,datamatrix,yaml,fast]"
           uv pip list
       # Pillow 10.4 bundles an older FreeType and python-barcode 0.15 lays
       # bars out differently, so goldens cannot match this job exactly; the
