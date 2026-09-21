@@ -40,8 +40,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install (with optional extras)
         run: pip install -e ".[dev,datamatrix]"
-      - name: Run tests
-        run: pytest -q
+      - name: Run tests (with coverage floor)
+        run: pytest -q --cov=imagespec --cov-report=term-missing --cov-fail-under=90
       - name: Schema export is up to date
         run: python scripts/export_schema.py --check
 

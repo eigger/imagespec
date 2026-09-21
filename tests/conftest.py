@@ -11,6 +11,15 @@ from PIL import Image
 from imagespec import RenderContext
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--update-golden",
+        action="store_true",
+        default=False,
+        help="Rewrite golden PNGs (tests/golden/, examples/elements/) from the current renderer instead of comparing.",
+    )
+
+
 @pytest.fixture
 def ctx():
     """4-color context using the bundled fonts/icons."""
