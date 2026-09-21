@@ -1,4 +1,4 @@
-include LICENSE LICENSE-APACHE-2.0 NOTICE README.md
+include LICENSE LICENSE-APACHE-2.0 NOTICE README.md CHANGELOG.md
 recursive-include src/imagespec/fonts *.ttf *.otf *.json *.md *.txt
 recursive-include src/imagespec/icons *.ttf *.otf *.json *.md LICENSE LICENSE-FONTAWESOME
 recursive-include tests *.py
