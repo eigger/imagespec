@@ -12,7 +12,7 @@ import logging
 from PIL import Image
 
 from .registry import get_handler
-from .utils import should_show
+from .utils import coerce_element, should_show
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,8 +59,10 @@ def _draw_isolated(state, element, handler, dither) -> None:
 
 
 def render_element(state, element: dict) -> None:
-    """Dispatch a single element: visibility, handler lookup, per-element dither.
+    """Dispatch a single element: visibility, handler lookup, coercion, per-element dither.
 
+    Numeric/boolean keys are coerced from template strings here (see
+    :func:`~imagespec.utils.coerce_element`) so handlers can read plain numbers.
     Raises whatever the handler raises (the caller adds element index/context).
     """
     if not should_show(element):
@@ -70,6 +72,7 @@ def render_element(state, element: dict) -> None:
     if handler is None:
         _LOGGER.warning("Unknown element type '%s' — skipping.", etype)
         return
+    element = coerce_element(element)
     if "dither" in element:
         _draw_isolated(state, element, handler, element["dither"])
     else:

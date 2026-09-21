@@ -14,6 +14,8 @@ For field definitions and defaults, see the [Element Reference](../README.md#ele
 
 > [!TIP]
 > All elements support `visible: false` to hide them conditionally (default: `true`). String forms from templates (`"False"`, `"off"`, `"no"`, `"none"`, `""`, and zero-valued numeric strings like `"0"`/`"0.0"`) also hide the element.
+>
+> Numeric keys (`x`, `size`, `progress`, `width`, ...) and boolean flags (`show_percentage`, `dot_last`, ...) accept the string forms templates produce — `x: "42"`, `size: "12.5"`, `show_percentage: "False"` — and render exactly like the native values.
 
 ```python
 from imagespec import render, RenderContext

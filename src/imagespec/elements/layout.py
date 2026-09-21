@@ -27,7 +27,7 @@ from ..dispatch import render_element
 from ..exceptions import RenderError
 from ..registry import element
 from ..state import RenderState
-from ..utils import int_xy, require
+from ..utils import coerce_element, int_xy, require
 
 
 @element("group")
@@ -35,8 +35,8 @@ def group(state: RenderState, element: dict) -> None:
     require(element, ["elements"], "group")
     ox = element.get("x", 0)
     oy = element.get("y", 0)
-    gw = element.get("width", state.canvas_width)
-    gh = element.get("height", state.canvas_height)
+    gw = round(element.get("width", state.canvas_width))
+    gh = round(element.get("height", state.canvas_height))
     rotate = int(element.get("rotate", 0) or 0)
 
     sub = Image.new("RGBA", (gw, gh), (0, 0, 0, 0))
@@ -118,8 +118,8 @@ def _child_layout(child: dict) -> dict:
     """
     cls = parse_class(child.get("class"))
     lay = child.get("layout")
-    if not isinstance(lay, dict):
-        lay = {}
+    # Read from the raw child (before its own dispatch coerces it), so coerce here.
+    lay = coerce_element(lay) if isinstance(lay, dict) else {}
 
     grow = lay.get("grow")
     if grow is None:

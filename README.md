@@ -109,6 +109,11 @@ keeping coverage exhaustive by construction.
   `RenderContext(allow_local_images=True)`. Network failures become `RenderError`.
 - Clear errors for missing required args, invalid barcode symbology, malformed
   `polygon` points, and a `diagram` too small for its bars.
+- Template-friendly input: numeric keys (`x`, `size`, `progress`, ...) accept
+  strings (`"42"`, `"3.5"`) and boolean flags (`visible`, `show_percentage`, ...)
+  accept `"False"`/`"off"`/`"0"`, as Home Assistant templates produce them. A
+  non-numeric string fails with `'x' must be a number, got 'oops'` naming the
+  element.
 
 ## Elements
 
