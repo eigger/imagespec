@@ -79,7 +79,7 @@ def line(state: RenderState, element: dict) -> None:
         y_end = y_start
     else:
         y_start = element["y_start"]
-        y_end = element["y_end"]
+        y_end = element.get("y_end", y_start)
 
     fill = state.context.color(element["fill"]) if "fill" in element else state.context.color("black")
     width = element.get("width", 1)

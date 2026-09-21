@@ -63,14 +63,38 @@ def to_bool(value) -> bool:
     return bool(value)
 
 
+_TRUTHY_STRINGS = frozenset({"true", "yes", "on"})
+
+
+def to_dither(value):
+    """Coerce a ``dither`` value: bool-like strings become bools, method names pass through.
+
+    ``"False"``/``"0"``/``"off"`` → ``False``, ``"True"``/``"1"``/``"on"`` →
+    ``True``; anything else (``"bayer8"``, ``True``, ``1``, ``None``) is returned
+    as-is for :func:`imagespec.dither.resolve_dither_method`.
+    """
+    if not isinstance(value, str):
+        return value
+    s = value.strip().lower()
+    if s in _FALSY_STRINGS:
+        return False
+    if s in _TRUTHY_STRINGS:
+        return True
+    try:
+        return float(s) != 0
+    except ValueError:
+        return value
+
+
 def coerce_element(element: dict, fields: Iterable[Field]) -> dict:
     """Return a copy of ``element`` with template strings turned into numbers/bools.
 
     Driven by the element's declared ``fields`` (:mod:`imagespec.spec`): number
     and integer keys go through :func:`to_number`, booleans through
-    :func:`to_bool`, and nested ``object``/``array`` fields recurse into their own
-    declarations. Undeclared keys and child ``elements`` are left untouched
-    (children are coerced when they are dispatched). Raises :class:`ValueError`
+    :func:`to_bool`, ``dither`` through :func:`to_dither`, and nested
+    ``object``/``array`` fields recurse into their own declarations. Undeclared
+    keys and child ``elements`` are left untouched (children are coerced when
+    they are dispatched). Raises :class:`ValueError`
     for a non-numeric string; the render loop wraps it with the element
     index/type.
     """
@@ -83,6 +107,8 @@ def coerce_element(element: dict, fields: Iterable[Field]) -> dict:
             out[f.name] = to_number(value, f.name)
         elif f.kind == "boolean":
             out[f.name] = to_bool(value)
+        elif f.kind == "dither":
+            out[f.name] = to_dither(value)
         elif f.kind == "object":
             if isinstance(value, dict):
                 out[f.name] = coerce_element(value, f.fields)

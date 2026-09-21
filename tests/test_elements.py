@@ -178,6 +178,14 @@ def test_dlimg_fit_modes(ctx, data_url, mode):
     assert render([el], 40, 40, context=ctx).size == (40, 40)
 
 
+def test_line_y_end_defaults_to_y_start(ctx):
+    # The reference documents y_end as optional; a horizontal line needs only y_start.
+    payload = [{"type": "line", "x_start": 0, "x_end": 20, "y_start": 5, "fill": "black", "width": 1}]
+    img = render(payload, 20, 10, background="white", context=ctx).convert("RGB")
+    assert img.getpixel((10, 5)) == (0, 0, 0)
+    assert img.getpixel((10, 8)) == (255, 255, 255)
+
+
 def test_icon_weather_alias(ctx):
     el = {"type": "icon", "x": 0, "y": 0, "value": "weather-partlycloudy", "size": 16}
     assert render([el], 40, 40, context=ctx).size == (40, 40)

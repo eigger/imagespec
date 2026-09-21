@@ -10,7 +10,7 @@ from PIL import ImageDraw
 from imagespec import RenderError, render
 from imagespec.registry import get_spec
 from imagespec.spec import COMMON_FIELDS
-from imagespec.utils import coerce_element, to_bool, to_number
+from imagespec.utils import coerce_element, to_bool, to_dither, to_number
 from test_elements import _samples  # tests/ is on sys.path via conftest (prepend import mode)
 
 # ── unit: helpers ──────────────────────────────────────────────────────────
@@ -51,8 +51,37 @@ def test_to_bool_truthy(value):
     assert to_bool(value) is True
 
 
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("False", False),
+        ("0", False),
+        ("off", False),
+        ("", False),
+        ("True", True),
+        ("1", True),
+        ("on", True),
+        ("bayer8", "bayer8"),  # method names pass through
+        ("Floyd", "Floyd"),
+        (True, True),
+        (0, 0),
+        (None, None),
+    ],
+)
+def test_to_dither(value, expected):
+    assert to_dither(value) == expected and type(to_dither(value)) is type(expected)
+
+
 def _fields(etype):
     return (*COMMON_FIELDS, *get_spec(etype).fields)
+
+
+@pytest.mark.parametrize("value", ["0", "1", "False", "True", "bayer8"])
+def test_dither_template_string_renders(ctx, value):
+    # A templated `dither` used to reach resolve_dither_method as an unknown method name.
+    el = {"type": "circle", "x": 10, "y": 10, "radius": 5, "fill": "red", "dither": value}
+    img = render([el], 20, 20, background="white", dither=False, context=ctx)
+    assert img.size == (20, 20)
 
 
 def test_coerce_element_top_level_and_nested():

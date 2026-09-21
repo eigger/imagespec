@@ -26,7 +26,8 @@ Kinds: ``number`` (int or float), ``integer``, ``boolean``, ``string``,
 ``color`` (name or ``#hex``), ``any`` (handler-defined, documented in ``doc``),
 ``object`` (nested option dict with its own ``fields``), ``array`` (``items``
 gives the item kind; ``object`` items carry ``fields``), ``elements`` (a list of
-child elements, e.g. ``group``/``stack``) and ``dither`` (bool or method name).
+child elements, e.g. ``group``/``stack``) and ``dither`` (bool, ``0``/``1`` or a
+method name).
 """
 
 from __future__ import annotations
@@ -36,7 +37,6 @@ from dataclasses import dataclass
 from typing import Any
 
 KINDS = ("number", "integer", "boolean", "string", "color", "any", "object", "array", "elements", "dither")
-COERCED_KINDS = ("number", "integer", "boolean")
 
 
 class _Unset:
@@ -161,8 +161,8 @@ COMMON_FIELDS: tuple[Field, ...] = (
     _f(
         "dither",
         "dither",
-        doc="Per-element palette mapping: `true`/`false` or a dither method name; "
-        "overrides the render-wide setting for this element only",
+        doc="Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as "
+        '`"False"`) or a dither method name; overrides the render-wide setting for this element only',
     ),
     string(
         "class",

@@ -154,6 +154,58 @@ def test_declared_defaults_match_handler_literals(spec):
     assert not mismatches, f"{spec.name}: " + "; ".join(mismatches)
 
 
+def _catches_key_error(handler: ast.ExceptHandler) -> bool:
+    t = handler.type
+    names = t.elts if isinstance(t, ast.Tuple) else [t]
+    return any(isinstance(n, ast.Name) and n.id == "KeyError" for n in names)
+
+
+@pytest.mark.parametrize("spec", specs(), ids=lambda s: s.name)
+def test_optional_keys_are_not_read_unguarded(spec):
+    # A key declared optional must not be read as recv["key"] unless the same
+    # function also tests `"key" in recv` or catches KeyError around the read
+    # (conditionally-required keys such as new_multiline's width); otherwise a
+    # payload the schema and reference accept raises KeyError in the handler.
+    declared = _declared(spec)
+    unguarded = []
+    for fn in _readers(spec):
+        tree = ast.parse(inspect.getsource(fn))
+        guarded = {
+            (node.comparators[0].id, node.left.value)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Compare)
+            and isinstance(node.left, ast.Constant)
+            and len(node.ops) == 1
+            and isinstance(node.ops[0], (ast.In, ast.NotIn))
+            and isinstance(node.comparators[0], ast.Name)
+        }
+        caught = {
+            id(sub)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Try) and any(_catches_key_error(h) for h in node.handlers)
+            for stmt in node.body
+            for sub in ast.walk(stmt)
+        }
+        for node in ast.walk(tree):
+            if id(node) in caught:
+                continue
+            if not (
+                isinstance(node, ast.Subscript)
+                and isinstance(node.value, ast.Name)
+                and isinstance(node.slice, ast.Constant)
+                and isinstance(node.slice.value, str)
+                and isinstance(node.ctx, ast.Load)
+            ):
+                continue
+            recv, key = node.value.id, node.slice.value
+            path = _path(recv, key)
+            field = declared.get(path) if path else None
+            if field is None or field.required or (recv, key) in guarded:
+                continue
+            unguarded.append(f"{fn.__name__}: {recv}[{key!r}]")
+    assert not unguarded, f"{spec.name} reads optional keys without a guard: {sorted(set(unguarded))}"
+
+
 # ── declaration hygiene ────────────────────────────────────────────────────
 
 

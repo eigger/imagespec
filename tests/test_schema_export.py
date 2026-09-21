@@ -96,6 +96,7 @@ def test_golden_scene_payloads_validate(validator):
         ("enum violation", [{"type": "dlimg", "x": 0, "y": 0, "url": "u", "xsize": 1, "ysize": 1, "mode": "zoom"}]),
         ("unknown element type", [{"type": "sprite", "x": 0, "y": 0}]),
         ("wrong scalar type", [{"type": "circle", "x": "left", "y": 1, "radius": 3}]),
+        ("dither integer other than 0/1", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": 2}]),
     ],
 )
 def test_schema_rejects(validator, label, payload):
@@ -110,6 +111,10 @@ def test_schema_rejects(validator, label, payload):
         ("explicit null for an optional key", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "fill": None}]),
         ("plot ylegend: null disables it", [{"type": "plot", "data": [{"entity": "s.a"}], "ylegend": None}]),
         ("per-element dither by name", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": "bayer8"}]),
+        *(
+            (f"per-element dither as JSON {v!r}", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": v}])
+            for v in (1, 0, None)
+        ),
         ("aliases row/column", [{"type": "column", "elements": []}, {"type": "stack", "elements": []}]),
     ],
 )

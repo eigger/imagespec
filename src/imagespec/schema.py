@@ -59,7 +59,14 @@ def _field_schema(f: Field) -> dict[str, Any]:
         target = "element" if f.positioned else "stack_child"
         s = {"type": "array", "items": {"$ref": f"#/$defs/{target}"}}
     elif f.kind == "dither":
-        s = {"anyOf": [{"type": "boolean"}, {"type": "string", "enum": list(DITHER_METHODS)}]}
+        # Runtime (resolve_dither_method) also takes JSON 1/0 from hosts.
+        s = {
+            "anyOf": [
+                {"type": "boolean"},
+                {"type": "integer", "enum": [0, 1]},
+                {"type": "string", "enum": list(DITHER_METHODS)},
+            ]
+        }
     else:  # pragma: no cover - guarded by Field.__post_init__
         raise ValueError(f.kind)
 
@@ -67,10 +74,13 @@ def _field_schema(f: Field) -> dict[str, Any]:
         s = {"anyOf": [s, {"type": _SCALAR_TYPES[f.alt]}]}
 
     # Optional keys may be set to null explicitly (e.g. `fill: null`, `ylegend: null`).
-    if not f.required and "type" in s:
-        s["type"] = [s["type"], "null"]
-        if "enum" in s:
-            s["enum"] = [*s["enum"], None]
+    if not f.required:
+        if "type" in s:
+            s["type"] = [s["type"], "null"]
+            if "enum" in s:
+                s["enum"] = [*s["enum"], None]
+        elif "anyOf" in s:
+            s["anyOf"] = [*s["anyOf"], {"type": "null"}]
 
     desc = f.doc
     if f.kind == "color":
@@ -165,7 +175,7 @@ def _type_label(f: Field) -> str:
     if f.kind == "elements":
         return "array of elements"
     if f.kind == "dither":
-        return "bool \\| method name"
+        return "bool \\| 0/1 \\| method name"
     return f.kind
 
 
