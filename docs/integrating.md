@@ -80,6 +80,7 @@ def _make_context(hass, *, default_font, palette):
         return get_significant_states(
             hass,
             start_time=start,
+            end_time=end,
             entity_ids=list(entity_ids),
             significant_changes_only=False,
             minimal_response=True,
@@ -101,7 +102,7 @@ def render_image(device, service, hass):
             width=device.width,
             height=device.height,
             rotate=int(service.data.get("rotate", 0)),
-            rotate_mode="canvas",
+            rotate_mode="canvas",  # fixed-resolution ESL panel; a label printer wants "image"
             background=service.data.get("background", "white"),
             dither=service.data.get("dither", False),
             context=_make_context(hass, default_font="NotoSansKR-Regular.ttf", palette=device.palette),
@@ -141,7 +142,9 @@ payload renders correctly on a 2-, 4- or 7-color device without changes (a
 
 Everything imagespec rejects — a missing required key, a non-numeric
 coordinate, an unknown barcode symbology, a failed `dlimg` download — surfaces
-as `RenderError` with the element index and type in the message
+as `RenderError`. Errors raised by a handler's own validation name the element
+type (`Missing required argument(s) 'x' in 'text'`); anything else that fails
+inside a handler is wrapped with the element index and type
 (`error rendering element #3 (type 'text'): ...`). Unknown element `type`s are
 logged and skipped, not raised, so a payload written for a newer imagespec
 degrades instead of failing. Translate `RenderError` once, at the adapter.
