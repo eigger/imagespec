@@ -840,4 +840,4 @@ img.save("label.png")
 
 - [Element Reference](../README.md#elements-reference) — all keys and defaults
 - [Authoring guide](authoring.md) — layout model, palette, pitfalls
-- [Migration guide](migration.md) — integrating into Home Assistant components
+- [Integration guide](integrating.md) — building a host adapter (Home Assistant example)

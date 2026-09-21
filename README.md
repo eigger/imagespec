@@ -5,24 +5,25 @@ QR/barcodes — for e-paper ESL tags and label printers.
 
 ![imagespec Showcase](https://raw.githubusercontent.com/eigger/imagespec/main/examples/showcase.png)
 
-This is the shared rendering core extracted from
-[`hass-gicisky`](https://github.com/eigger/hass-gicisky) and
-[`hass-niimbot`](https://github.com/eigger/hass-niimbot). Both integrations had
-near-identical renderers that had drifted apart; `imagespec` unifies them and
-removes the Home Assistant dependency so the engine can be reused and tested
-standalone. The rendering engine itself was originally adapted from
+`imagespec` is the rendering core behind
+[`hass-ble-esl`](https://github.com/eigger/hass-ble-esl) (BLE e-paper shelf
+labels) and [`hass-niimbot`](https://github.com/eigger/hass-niimbot) (label
+printers): both Home Assistant integrations depend on it from PyPI and keep
+only a thin adapter of their own (see
+[`docs/integrating.md`](docs/integrating.md)). The library has no
+framework dependency, so it can be used and tested standalone. The rendering
+engine was originally adapted from
 [OpenEPaperLink's Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration)
 (`imagegen` module, Apache License 2.0) and has since been substantially
 rewritten and extended — see [`NOTICE`](https://github.com/eigger/imagespec/blob/main/NOTICE) for the full attribution.
 
 ## Status
 
-✅ Every registered element renders and is pinned by a golden-image test (the
-README previews below double as the goldens), alongside unit tests for palettes,
-rotation, dithering, template-string coercion and error handling. Architecture
-(HA-decoupled context, registry dispatch, device-specific rotation + palette) is
-in place. Remaining work is packaging polish and switching the two components
-over to it.
+Used in production by the two integrations above. Every registered element is
+pinned by a golden-image test (the README previews below double as the
+goldens), alongside unit tests for palettes, rotation, dithering,
+template-string coercion and error handling; CI runs the suite on Python
+3.13/3.14 and against the lowest supported dependency versions.
 
 ## Design
 
@@ -55,14 +56,12 @@ over to it.
   blue. Elements are drawn in full color and this mapping is applied to the whole
   image once at the end of `render()` (dithered or flat, per `dither` — see
   *Dithering*).
-- **Merged behaviour.** Where the two sources differed, the superset wins:
-  - qrcode gains `eclevel` (niimbot)
-- **Device-dependent rotation** (`rotate_mode`), *not* unified — both behaviours
-  are kept because they are physically different:
-  - `"canvas"` (gicisky): background/canvas rotates; output stays `width×height`
-    (fixed-resolution e-ink panel).
-  - `"image"` (niimbot): drawing rotates; output dimensions swap (variable-size
-    label printer).
+- **Device-dependent rotation** (`rotate_mode`), *not* unified — the two
+  behaviours are physically different:
+  - `"canvas"` (fixed-resolution e-ink panels, e.g. ble-esl): the drawing
+    surface rotates; output stays `width×height`.
+  - `"image"` (variable-size label printers, e.g. niimbot): the drawing rotates;
+    output dimensions swap.
 
 ## Usage
 
@@ -139,8 +138,6 @@ pixels to differ under a different Pillow/FreeType or python-barcode release.
 > [!TIP]
 > **Copy-paste examples for every element:** [`docs/elements.md`](docs/elements.md)
 
-All ported from the original renderers (superset behaviour where they differed):
-
 | Preview | Element | Module | Notes |
 |:---:|---|---|---|
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/line.png) | `line` | shapes | + dashed lines |
@@ -154,10 +151,10 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/text.png) | `text` | text | + rotation, background box |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/text_box.png) | `text_box` | text | |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/multiline.png) | `multiline` | text | |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/new_multiline.png) | `new_multiline` | text | fit-to-width/height autosize (niimbot) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/new_multiline.png) | `new_multiline` | text | fit-to-width/height autosize |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/text_fit.png) | `text_fit` | text | fit text into a fixed box: shrink font / ellipsis / wrap |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/table.png) | `table` | text | |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/qrcode.png) | `qrcode` | codes | + `eclevel` (niimbot) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/qrcode.png) | `qrcode` | codes | `eclevel`, pixel `width`/`height` sizing |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/barcode.png) | `barcode` | codes | |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/datamatrix.png) | `datamatrix` | codes | optional dep `pyStrich` (`imagespec[datamatrix]`) |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/icon.png) | `icon` | media | Material Design Icons (default) **+ Font Awesome Free** (`fa:`/`fas:`/`far:`/`fab:`); needs bundled `icons/` assets |
@@ -165,20 +162,18 @@ All ported from the original renderers (superset behaviour where they differed):
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/diagram.png) | `diagram` | charts | bar chart |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/plot.png) | `plot` | charts | needs `history_provider`; + area_fill, xlegend |
 | ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/progress_bar.png) | `progress_bar` | charts | + rounded corners |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/pie.png) | `pie` | charts | **new** — pie / donut (`inner_radius`) |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/sparkline.png) | `sparkline` | charts | **new** — compact axis-less line from inline values |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/rich_text.png) | `rich_text` | text | **new** — inline spans: icon + text + color on one line |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/group.png) | `group` | layout | **new** — container: child elements at an offset, clipped, optionally rotated |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/column.png) | `stack` / `row` / `column` | layout | **new** — auto-layout: packs children along an axis (gap/padding/justify/align), flexbox-style, with optional Tailwind-like `class` shorthand |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/legend.png) | `legend` | widgets | **new** — color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/star_rating.png) | `star_rating` | widgets | **new** — full/half/empty stars for rating labels |
-| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/battery.png) | `battery` | widgets | **new** — vector battery gauge with proportional fill |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/pie.png) | `pie` | charts | pie / donut (`inner_radius`) |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/sparkline.png) | `sparkline` | charts | compact axis-less line from inline values |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/rich_text.png) | `rich_text` | text | inline spans: icon + text + color on one line |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/group.png) | `group` | layout | container: child elements at an offset, clipped, optionally rotated |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/column.png) | `stack` / `row` / `column` | layout | auto-layout: packs children along an axis (gap/padding/justify/align), flexbox-style, with optional Tailwind-like `class` shorthand |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/legend.png) | `legend` | widgets | color-swatch ↔ label rows (vertical/horizontal) for `pie`/`plot` |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/star_rating.png) | `star_rating` | widgets | full/half/empty stars for rating labels |
+| ![](https://raw.githubusercontent.com/eigger/imagespec/main/examples/elements/battery.png) | `battery` | widgets | vector battery gauge with proportional fill |
 
-Plus enhancements: `render(..., dither=True|"atkinson"|…)` dithers the whole
-output (15 algorithms + `none`; see [`docs/dithering.md`](docs/dithering.md))
-and **any element** can carry its own `dither` bool/method to override it just
-for itself; `dlimg` also gained `circle`/`mask` (circular crop);
-`text_fit` fits text into a fixed box (shrink / ellipsis / wrap).
+`render(..., dither=True|"atkinson"|…)` dithers the whole output (15 algorithms
++ `none`; see [`docs/dithering.md`](docs/dithering.md)) and **any element** can
+carry its own `dither` bool/method to override it just for itself.
 
 ## Payload Specification & Element Reference
 
@@ -514,12 +509,11 @@ bundled font of the same basename → bundled default. Helpers in
   See `GOOGLE_FONTS_SOURCES` for the exact list.
 - `chain_resolvers(a, b, ...)` — try several in order.
 
-This is why the core bundles only the essentials and **not** gicisky's full
-74 MB font set — decorative/other-script fonts are better downloaded-and-cached
-(`google_fonts_resolver`/`caching_resolver`) or served from `www/fonts`. (Earlier
-builds also bundled niimbot's `ppb.ttf` as a second default font; it was dropped
-because its license/origin could not be confirmed — see *Licensing & attribution*
-below. Pass `default_font=` your own niimbot-style font if you need that look.)
+The package bundles only this baseline: decorative or other-script fonts are
+better downloaded-and-cached (`google_fonts_resolver`/`caching_resolver`) or
+served by the host (e.g. Home Assistant's `www/fonts`) through `font_resolver`.
+Only fonts with a verifiable license are bundled — see *Licensing & attribution*
+below.
 
 ### Licensing & attribution
 
@@ -544,23 +538,9 @@ copy for the icons directory), [`icons/LICENSE-FONTAWESOME`](https://github.com/
 (Font Awesome Free — also notes brand-icon trademark restrictions), and
 [`fonts/OFL.txt`](https://github.com/eigger/imagespec/blob/main/src/imagespec/fonts/OFL.txt).
 
-## Open decisions
+## Integrating into a host
 
-None currently open.
-
-> Resolved: rotation is now a per-device `rotate_mode` (`"canvas"` for gicisky,
-> `"image"` for niimbot), and `RenderState.canvas_width/height` always reflect
-> the actual drawing surface — so `plot`/`diagram` default extents are
-> consistent in both modes.
->
-> Resolved: the default font is `NotoSansKR-Regular.ttf` only — niimbot's
-> `ppb.ttf` was dropped (unverifiable license; see *Licensing & attribution*).
-
-## Integrating back into the components
-
-Replace each component's renderer with a thin adapter (see
-[`docs/migration.md`](https://github.com/eigger/imagespec/blob/main/docs/migration.md)) and add to `manifest.json`:
-
-```json
-"requirements": ["imagespec"]
-```
+Build a `RenderContext` (palette, font lookup, history provider), call
+`render()`, translate `RenderError` into the host's error type — about 60 lines.
+[`docs/integrating.md`](docs/integrating.md) walks through it with a Home
+Assistant adapter.

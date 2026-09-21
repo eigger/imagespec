@@ -1,8 +1,7 @@
 """Text elements: text (with optional rotation + background box), multiline,
 text_box, new_multiline (fit-to-width/height autosize), table, text_fit.
 
-Merged from both sources: rotation/background box/text_box/table are gicisky;
-``new_multiline`` (autosize) is niimbot. ``text_fit`` is new — fit text into a
+``new_multiline`` auto-shrinks to a width/height; ``text_fit`` fits text into a
 fixed box by shrinking the font and/or truncating with an ellipsis.
 """
 

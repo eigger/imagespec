@@ -1,8 +1,7 @@
 """Machine-readable codes: qrcode, barcode, datamatrix.
 
-Merged behaviour: keeps gicisky's defaults while adding niimbot's ``eclevel``
-(error-correction level) option on ``qrcode``. ``datamatrix`` needs the optional
-``pyStrich`` dependency (``imagespec[datamatrix]``).
+``qrcode`` takes an ``eclevel`` (error-correction level). ``datamatrix`` needs
+the optional ``pyStrich`` dependency (``imagespec[datamatrix]``).
 """
 
 from __future__ import annotations
