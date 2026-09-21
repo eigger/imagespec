@@ -95,7 +95,11 @@ python -m build        # build sdist + wheel (bundles fonts/icons)
 
 CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, mypy, the test
 suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
-are present in the wheel. Pushing a `v*` tag triggers
+are present in the wheel.
+
+**Releasing**: move the `[Unreleased]` entries in [`CHANGELOG.md`](CHANGELOG.md)
+under a new version heading (behaviour changes go under *Changed* with before/after),
+bump `version` in `pyproject.toml`, merge, then tag: pushing a `v*` tag triggers
 `.github/workflows/release.yml` to build and publish to PyPI (trusted publishing).
 
 The test matrix (`tests/test_elements.py`) asserts it covers *every* registered
