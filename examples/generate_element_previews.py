@@ -11,7 +11,7 @@ import io
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageFont
 
 # Add src to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -23,6 +23,13 @@ from imagespec.colors import PALETTE_7
 buf = io.BytesIO()
 Image.new("RGB", (16, 16), (255, 0, 0)).save(buf, format="PNG")
 RED_DATA_URL = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "elements")
+SIZE = (150, 80)  # every preview is rendered at this canvas size
+# Pinned so the PNGs are identical on every platform (Linux Pillow wheels ship
+# libraqm and would otherwise shape/kern text differently) — tests/test_golden.py
+# compares against these files exactly.
+LAYOUT_ENGINE = ImageFont.Layout.BASIC
 
 
 def get_history_context() -> RenderContext:
@@ -46,397 +53,406 @@ def get_history_context() -> RenderContext:
             result[eid] = [first] + rest
         return result
 
-    return RenderContext(palette=PALETTE_7, history_provider=mock_provider)
+    return RenderContext(palette=PALETTE_7, history_provider=mock_provider, layout_engine=LAYOUT_ENGINE)
+
+
+SAMPLES: dict[str, dict | list] = {
+    "line": {
+        "type": "line",
+        "x_start": 15,
+        "y_start": 40,
+        "x_end": 135,
+        "y_end": 40,
+        "fill": "red",
+        "width": 3,
+        "dash": [8, 4],
+    },
+    "rectangle": {
+        "type": "rectangle",
+        "x_start": 15,
+        "y_start": 15,
+        "x_end": 135,
+        "y_end": 65,
+        "outline": "blue",
+        "width": 2,
+        "radius": 8,
+    },
+    "rectangle_pattern": {
+        "type": "rectangle_pattern",
+        "x_start": 10,
+        "x_size": 10,
+        "y_start": 10,
+        "y_size": 10,
+        "x_repeat": 9,
+        "y_repeat": 4,
+        "x_offset": 5,
+        "y_offset": 5,
+        "fill": "orange",
+    },
+    "circle": {
+        "type": "circle",
+        "x": 75,
+        "y": 40,
+        "radius": 30,
+        "fill": "yellow",
+        "outline": "black",
+        "width": 2,
+    },
+    "ellipse": {
+        "type": "ellipse",
+        "x_start": 15,
+        "y_start": 20,
+        "x_end": 135,
+        "y_end": 60,
+        "fill": "green",
+        "outline": "black",
+        "width": 2,
+    },
+    "arc": {
+        "type": "arc",
+        "x_start": 25,
+        "y_start": 10,
+        "x_end": 125,
+        "y_end": 70,
+        "start_angle": -180,
+        "end_angle": 0,
+        "outline": "red",
+        "width": 3,
+    },
+    "polygon": {
+        "type": "polygon",
+        "points": "20,65;75,15;130,65",
+        "fill": "blue",
+        "outline": "black",
+        "width": 2,
+    },
+    "gauge": {
+        "type": "gauge",
+        "x": 75,
+        "y": 42,
+        "radius": 28,
+        "progress": 68,
+        "fill": "red",
+        "outline": "black",
+        "width": 6,
+    },
+    "text": {
+        "type": "text",
+        "x": 75,
+        "y": 40,
+        "value": "Hello Spec",
+        "size": 18,
+        "color": "blue",
+        "anchor": "mm",
+    },
+    "text_box": {
+        "type": "text_box",
+        "x": 15,
+        "y": 20,
+        "value": "Status: OK",
+        "size": 16,
+        "fill": "green",
+        "color": "white",
+        "radius": 6,
+    },
+    "multiline": {
+        "type": "multiline",
+        "x": 20,
+        "start_y": 12,
+        "value": "Coffee;Tea;Water",
+        "delimiter": ";",
+        "offset_y": 20,
+        "size": 13,
+        "color": "black",
+    },
+    "new_multiline": {
+        "type": "new_multiline",
+        "x": 15,
+        "y": 15,
+        "value": "Shrunk To\nFit Width",
+        "size": 24,
+        "width": 120,
+        "fit": "width",
+        "color": "red",
+    },
+    "text_fit": {
+        "type": "text_fit",
+        "x": 10,
+        "y": 10,
+        "width": 130,
+        "height": 60,
+        "value": "This text will wrap and shrink to fit perfectly inside this container.",
+        "size": 16,
+        "fit": "shrink",
+        "outline": "black",
+        "padding": 5,
+    },
+    "table": {
+        "type": "table",
+        "x": 15,
+        "y": 12,
+        "columns": [60, 60],
+        "rows": [["Item", "Qty"], ["A", "10"], ["B", "5"]],
+        "font_size": 9,
+        "header": True,
+        "header_fill": "black",
+        "header_color": "white",
+        "row_height": 18,
+    },
+    "qrcode": {
+        "type": "qrcode",
+        "x": 52,
+        "y": 17,
+        "data": "imagespec",
+        "boxsize": 2,
+        "border": 1,
+    },
+    "barcode": {
+        "type": "barcode",
+        "x": 23,
+        "y": -10,
+        "data": "123",
+        "module_width": 0.1,
+        "module_height": 1.8,
+        "quiet_zone": 1.0,
+        "font_size": 5,
+        "text_distance": 3.0,
+        "write_text": True,
+    },
+    "datamatrix": {
+        "type": "datamatrix",
+        "x": 54,
+        "y": 19,
+        "data": "DM",
+        "boxsize": 3,
+    },
+    "icon": {
+        "type": "icon",
+        "x": 75,
+        "y": 40,
+        "value": "mdi:weather-sunny",
+        "size": 52,
+        "color": "orange",
+        "anchor": "mm",
+    },
+    "dlimg": {
+        "type": "dlimg",
+        "x": 45,
+        "y": 10,
+        "url": RED_DATA_URL,
+        "xsize": 60,
+        "ysize": 60,
+        "circle": True,
+    },
+    "diagram": {
+        "type": "diagram",
+        "x": 10,
+        "y": 10,
+        "width": 130,
+        "height": 60,
+        "margin": 10,
+        "bars": {"values": "X,30;Y,75;Z,50", "color": "blue"},
+    },
+    "progress_bar": {
+        "type": "progress_bar",
+        "x_start": 15,
+        "y_start": 25,
+        "x_end": 135,
+        "y_end": 55,
+        "progress": 70,
+        "fill": "orange",
+        "outline": "black",
+        "radius": 4,
+        "show_percentage": True,
+    },
+    "pie": {
+        "type": "pie",
+        "x": 75,
+        "y": 40,
+        "radius": 30,
+        "values": "A,40,red;B,60,blue",
+        "inner_radius": 14,
+        "outline": "black",
+    },
+    "sparkline": {
+        "type": "sparkline",
+        "x": 10,
+        "y": 15,
+        "width": 130,
+        "height": 50,
+        "values": [10, 40, 20, 80, 50, 95, 30],
+        "fill": "yellow",
+        "color": "red",
+        "width_line": 2,
+        "dot_last": True,
+    },
+    "rich_text": {
+        "type": "rich_text",
+        "x": 75,
+        "y": 40,
+        "align": "center",
+        "spans": [
+            {"text": "Alert: "},
+            {"icon": "mdi:fire", "color": "orange", "size": 18},
+            {"text": " Active", "color": "red"},
+        ],
+        "size": 14,
+    },
+    "group": {
+        "type": "group",
+        "x": 15,
+        "y": 10,
+        "width": 120,
+        "height": 60,
+        "elements": [
+            {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 119, "y_end": 59, "fill": "yellow"},
+            {"type": "text", "x": 60, "y": 30, "value": "Group Box", "anchor": "mm", "size": 14},
+        ],
+    },
+    "plot": {
+        "type": "plot",
+        "x_start": 10,
+        "y_start": 10,
+        "x_end": 140,
+        "y_end": 70,
+        "data": [{"entity": "sensor.temp", "color": "red", "area_fill": "yellow"}],
+        "ylegend": None,
+        "xlegend": None,
+        "yaxis": None,
+    },
+    "legend": {
+        "type": "legend",
+        "x": 20,
+        "y": 12,
+        "items": [
+            {"label": "Gas", "color": "red"},
+            {"label": "Water", "color": "blue"},
+            {"label": "Solar", "color": "orange"},
+        ],
+        "size": 15,
+        "swatch_size": 15,
+    },
+    "star_rating": {
+        "type": "star_rating",
+        "x": 12,
+        "y": 28,
+        "rating": 3.5,
+        "max": 5,
+        "size": 25,
+        "color": "orange",
+    },
+    "battery": {
+        "type": "battery",
+        "x": 25,
+        "y": 25,
+        "width": 100,
+        "height": 35,
+        "level": 65,
+        "fill": "green",
+        "outline": "black",
+        "show_percentage": True,
+        "text_color": "white",
+    },
+    "stack": {
+        "type": "stack",
+        "x": 10,
+        "y": 8,
+        "gap": 4,
+        "elements": [
+            {"type": "text", "value": "First", "size": 12},
+            {"type": "text", "value": "Second", "size": 12},
+            {"type": "text", "value": "Third", "size": 12},
+        ],
+    },
+    "row": {
+        "type": "row",
+        "x": 8,
+        "y": 28,
+        "class": "gap-2 items-center",
+        "elements": [
+            {"type": "icon", "value": "mdi:thermometer", "size": 18, "color": "red"},
+            {"type": "text", "value": "24°C", "size": 14},
+            {"type": "battery", "width": 30, "height": 14, "level": 72, "class": "ml-2"},
+        ],
+    },
+    "column": {
+        "type": "column",
+        "x": 8,
+        "y": 8,
+        "class": "gap-1 items-center",
+        "elements": [
+            {"type": "icon", "value": "mdi:home", "size": 20},
+            {"type": "text", "value": "Home", "size": 12},
+            {"type": "text", "value": "23 C", "size": 16, "color": "red"},
+        ],
+    },
+    "label_combo": [
+        {
+            "type": "column",
+            "x": 4,
+            "y": 4,
+            "width": 142,
+            "class": "gap-1",
+            "elements": [
+                {"type": "text", "value": "Warehouse A-12", "size": 10},
+                {
+                    "type": "row",
+                    "class": "gap-1 items-center",
+                    "elements": [
+                        {"type": "qrcode", "data": "https://example.com/item/12345", "width": 36, "height": 36},
+                        {
+                            "type": "column",
+                            "class": "gap-0",
+                            "elements": [
+                                {"type": "text", "value": "Widget XL", "size": 9},
+                                {
+                                    "type": "barcode",
+                                    "data": "123456789012",
+                                    "width": 90,
+                                    "height": 18,
+                                    "write_text": False,
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    "type": "progress_bar",
+                    "x_start": 0,
+                    "y_start": 0,
+                    "x_end": 130,
+                    "y_end": 10,
+                    "progress": 80,
+                    "show_percentage": True,
+                },
+            ],
+        }
+    ],
+}
+
+
+def render_sample(name: str, *, history_ctx: RenderContext | None = None) -> Image.Image:
+    """Render one ``SAMPLES`` entry exactly as the committed preview PNG was made.
+
+    Shared with ``tests/test_golden.py``, which asserts the committed PNGs match
+    the current renderer — so a rendering change must consciously regenerate them.
+    """
+    sample = SAMPLES[name]
+    payload = sample if isinstance(sample, list) else [sample]
+    if name == "plot":
+        ctx = history_ctx or get_history_context()
+    else:
+        ctx = RenderContext(palette=PALETTE_7, layout_engine=LAYOUT_ENGINE)
+    return render(payload, width=SIZE[0], height=SIZE[1], background="white", dither=False, context=ctx)
 
 
 def main():
-    os.makedirs("examples/elements", exist_ok=True)
-    ctx = RenderContext(palette=PALETTE_7)
+    os.makedirs(OUT_DIR, exist_ok=True)
     history_ctx = get_history_context()
-
-    # Individual payloads designed to look good on a 150x80 canvas
-    samples = {
-        "line": {
-            "type": "line",
-            "x_start": 15,
-            "y_start": 40,
-            "x_end": 135,
-            "y_end": 40,
-            "fill": "red",
-            "width": 3,
-            "dash": [8, 4],
-        },
-        "rectangle": {
-            "type": "rectangle",
-            "x_start": 15,
-            "y_start": 15,
-            "x_end": 135,
-            "y_end": 65,
-            "outline": "blue",
-            "width": 2,
-            "radius": 8,
-        },
-        "rectangle_pattern": {
-            "type": "rectangle_pattern",
-            "x_start": 10,
-            "x_size": 10,
-            "y_start": 10,
-            "y_size": 10,
-            "x_repeat": 9,
-            "y_repeat": 4,
-            "x_offset": 5,
-            "y_offset": 5,
-            "fill": "orange",
-        },
-        "circle": {
-            "type": "circle",
-            "x": 75,
-            "y": 40,
-            "radius": 30,
-            "fill": "yellow",
-            "outline": "black",
-            "width": 2,
-        },
-        "ellipse": {
-            "type": "ellipse",
-            "x_start": 15,
-            "y_start": 20,
-            "x_end": 135,
-            "y_end": 60,
-            "fill": "green",
-            "outline": "black",
-            "width": 2,
-        },
-        "arc": {
-            "type": "arc",
-            "x_start": 25,
-            "y_start": 10,
-            "x_end": 125,
-            "y_end": 70,
-            "start_angle": -180,
-            "end_angle": 0,
-            "outline": "red",
-            "width": 3,
-        },
-        "polygon": {
-            "type": "polygon",
-            "points": "20,65;75,15;130,65",
-            "fill": "blue",
-            "outline": "black",
-            "width": 2,
-        },
-        "gauge": {
-            "type": "gauge",
-            "x": 75,
-            "y": 42,
-            "radius": 28,
-            "progress": 68,
-            "fill": "red",
-            "outline": "black",
-            "width": 6,
-        },
-        "text": {
-            "type": "text",
-            "x": 75,
-            "y": 40,
-            "value": "Hello Spec",
-            "size": 18,
-            "color": "blue",
-            "anchor": "mm",
-        },
-        "text_box": {
-            "type": "text_box",
-            "x": 15,
-            "y": 20,
-            "value": "Status: OK",
-            "size": 16,
-            "fill": "green",
-            "color": "white",
-            "radius": 6,
-        },
-        "multiline": {
-            "type": "multiline",
-            "x": 20,
-            "start_y": 12,
-            "value": "Coffee;Tea;Water",
-            "delimiter": ";",
-            "offset_y": 20,
-            "size": 13,
-            "color": "black",
-        },
-        "new_multiline": {
-            "type": "new_multiline",
-            "x": 15,
-            "y": 15,
-            "value": "Shrunk To\nFit Width",
-            "size": 24,
-            "width": 120,
-            "fit": "width",
-            "color": "red",
-        },
-        "text_fit": {
-            "type": "text_fit",
-            "x": 10,
-            "y": 10,
-            "width": 130,
-            "height": 60,
-            "value": "This text will wrap and shrink to fit perfectly inside this container.",
-            "size": 16,
-            "fit": "shrink",
-            "outline": "black",
-            "padding": 5,
-        },
-        "table": {
-            "type": "table",
-            "x": 15,
-            "y": 12,
-            "columns": [60, 60],
-            "rows": [["Item", "Qty"], ["A", "10"], ["B", "5"]],
-            "font_size": 9,
-            "header": True,
-            "header_fill": "black",
-            "header_color": "white",
-            "row_height": 18,
-        },
-        "qrcode": {
-            "type": "qrcode",
-            "x": 52,
-            "y": 17,
-            "data": "imagespec",
-            "boxsize": 2,
-            "border": 1,
-        },
-        "barcode": {
-            "type": "barcode",
-            "x": 23,
-            "y": -10,
-            "data": "123",
-            "module_width": 0.1,
-            "module_height": 1.8,
-            "quiet_zone": 1.0,
-            "font_size": 5,
-            "text_distance": 3.0,
-            "write_text": True,
-        },
-        "datamatrix": {
-            "type": "datamatrix",
-            "x": 54,
-            "y": 19,
-            "data": "DM",
-            "boxsize": 3,
-        },
-        "icon": {
-            "type": "icon",
-            "x": 75,
-            "y": 40,
-            "value": "mdi:weather-sunny",
-            "size": 52,
-            "color": "orange",
-            "anchor": "mm",
-        },
-        "dlimg": {
-            "type": "dlimg",
-            "x": 45,
-            "y": 10,
-            "url": RED_DATA_URL,
-            "xsize": 60,
-            "ysize": 60,
-            "circle": True,
-        },
-        "diagram": {
-            "type": "diagram",
-            "x": 10,
-            "y": 10,
-            "width": 130,
-            "height": 60,
-            "margin": 10,
-            "bars": {"values": "X,30;Y,75;Z,50", "color": "blue"},
-        },
-        "progress_bar": {
-            "type": "progress_bar",
-            "x_start": 15,
-            "y_start": 25,
-            "x_end": 135,
-            "y_end": 55,
-            "progress": 70,
-            "fill": "orange",
-            "outline": "black",
-            "radius": 4,
-            "show_percentage": True,
-        },
-        "pie": {
-            "type": "pie",
-            "x": 75,
-            "y": 40,
-            "radius": 30,
-            "values": "A,40,red;B,60,blue",
-            "inner_radius": 14,
-            "outline": "black",
-        },
-        "sparkline": {
-            "type": "sparkline",
-            "x": 10,
-            "y": 15,
-            "width": 130,
-            "height": 50,
-            "values": [10, 40, 20, 80, 50, 95, 30],
-            "fill": "yellow",
-            "color": "red",
-            "width_line": 2,
-            "dot_last": True,
-        },
-        "rich_text": {
-            "type": "rich_text",
-            "x": 75,
-            "y": 40,
-            "align": "center",
-            "spans": [
-                {"text": "Alert: "},
-                {"icon": "mdi:fire", "color": "orange", "size": 18},
-                {"text": " Active", "color": "red"},
-            ],
-            "size": 14,
-        },
-        "group": {
-            "type": "group",
-            "x": 15,
-            "y": 10,
-            "width": 120,
-            "height": 60,
-            "elements": [
-                {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 119, "y_end": 59, "fill": "yellow"},
-                {"type": "text", "x": 60, "y": 30, "value": "Group Box", "anchor": "mm", "size": 14},
-            ],
-        },
-        "plot": {
-            "type": "plot",
-            "x_start": 10,
-            "y_start": 10,
-            "x_end": 140,
-            "y_end": 70,
-            "data": [{"entity": "sensor.temp", "color": "red", "area_fill": "yellow"}],
-            "ylegend": None,
-            "xlegend": None,
-            "yaxis": None,
-        },
-        "legend": {
-            "type": "legend",
-            "x": 20,
-            "y": 12,
-            "items": [
-                {"label": "Gas", "color": "red"},
-                {"label": "Water", "color": "blue"},
-                {"label": "Solar", "color": "orange"},
-            ],
-            "size": 15,
-            "swatch_size": 15,
-        },
-        "star_rating": {
-            "type": "star_rating",
-            "x": 12,
-            "y": 28,
-            "rating": 3.5,
-            "max": 5,
-            "size": 25,
-            "color": "orange",
-        },
-        "battery": {
-            "type": "battery",
-            "x": 25,
-            "y": 25,
-            "width": 100,
-            "height": 35,
-            "level": 65,
-            "fill": "green",
-            "outline": "black",
-            "show_percentage": True,
-            "text_color": "white",
-        },
-        "stack": {
-            "type": "stack",
-            "x": 10,
-            "y": 8,
-            "gap": 4,
-            "elements": [
-                {"type": "text", "value": "First", "size": 12},
-                {"type": "text", "value": "Second", "size": 12},
-                {"type": "text", "value": "Third", "size": 12},
-            ],
-        },
-        "row": {
-            "type": "row",
-            "x": 8,
-            "y": 28,
-            "class": "gap-2 items-center",
-            "elements": [
-                {"type": "icon", "value": "mdi:thermometer", "size": 18, "color": "red"},
-                {"type": "text", "value": "24°C", "size": 14},
-                {"type": "battery", "width": 30, "height": 14, "level": 72, "class": "ml-2"},
-            ],
-        },
-        "column": {
-            "type": "column",
-            "x": 8,
-            "y": 8,
-            "class": "gap-1 items-center",
-            "elements": [
-                {"type": "icon", "value": "mdi:home", "size": 20},
-                {"type": "text", "value": "Home", "size": 12},
-                {"type": "text", "value": "23 C", "size": 16, "color": "red"},
-            ],
-        },
-        "label_combo": [
-            {
-                "type": "column",
-                "x": 4,
-                "y": 4,
-                "width": 142,
-                "class": "gap-1",
-                "elements": [
-                    {"type": "text", "value": "Warehouse A-12", "size": 10},
-                    {
-                        "type": "row",
-                        "class": "gap-1 items-center",
-                        "elements": [
-                            {"type": "qrcode", "data": "https://example.com/item/12345", "width": 36, "height": 36},
-                            {
-                                "type": "column",
-                                "class": "gap-0",
-                                "elements": [
-                                    {"type": "text", "value": "Widget XL", "size": 9},
-                                    {
-                                        "type": "barcode",
-                                        "data": "123456789012",
-                                        "width": 90,
-                                        "height": 18,
-                                        "write_text": False,
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                    {
-                        "type": "progress_bar",
-                        "x_start": 0,
-                        "y_start": 0,
-                        "x_end": 130,
-                        "y_end": 10,
-                        "progress": 80,
-                        "show_percentage": True,
-                    },
-                ],
-            }
-        ],
-    }
-
-    for name, el in samples.items():
-        # Select appropriate context for the plot element
-        active_ctx = history_ctx if name == "plot" else ctx
+    for name in SAMPLES:
         try:
-            payload = el if name == "label_combo" else [el]
-            size = (150, 80) if name != "label_combo" else (150, 80)
-            img = render(payload, width=size[0], height=size[1], background="white", dither=False, context=active_ctx)
-            output_file = f"examples/elements/{name}.png"
+            img = render_sample(name, history_ctx=history_ctx)
+            output_file = os.path.join(OUT_DIR, f"{name}.png")
             img.save(output_file)
             print(f"Generated preview for '{name}' at {output_file}")
         except Exception as e:

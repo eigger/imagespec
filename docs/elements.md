@@ -500,7 +500,9 @@ Bar chart from semicolon-separated values.
 ![plot preview](../examples/elements/plot.png)
 
 Time-series chart. Requires `RenderContext(history_provider=...)` — in Home
-Assistant integrations this reads from Recorder.
+Assistant integrations this reads from Recorder. `low` / `high` pin the y-axis
+bounds; they only ever *widen* the range (data outside them still stretches the
+axis, nothing is clipped), and `low: 0` is honoured.
 
 ```yaml
 - type: plot
@@ -535,7 +537,8 @@ Assistant integrations this reads from Recorder.
 
 ![progress_bar preview](../examples/elements/progress_bar.png)
 
-Linear progress indicator (0–100).
+Linear progress indicator. `progress` is clamped to 0–100; `direction` is one of
+`right`/`left`/`up`/`down` (case-insensitive).
 
 ```yaml
 - type: progress_bar

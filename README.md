@@ -17,10 +17,12 @@ rewritten and extended — see [`NOTICE`](https://github.com/eigger/imagespec/bl
 
 ## Status
 
-✅ **29 elements** (21 ported + 8 new) rendering, with a 128-test suite.
-Architecture (HA-decoupled context, registry dispatch, device-specific rotation
-+ palette) is in place. Remaining work is packaging polish and switching the two
-components over to it.
+✅ Every registered element renders and is pinned by a golden-image test (the
+README previews below double as the goldens), alongside unit tests for palettes,
+rotation, dithering, template-string coercion and error handling. Architecture
+(HA-decoupled context, registry dispatch, device-specific rotation + palette) is
+in place. Remaining work is packaging polish and switching the two components
+over to it.
 
 ## Design
 
@@ -85,19 +87,32 @@ python examples/smoke_test.py
 
 ```bash
 pip install -e ".[dev,datamatrix]"
-pytest                 # unit tests: every element, palettes, rotation, dither, errors
+pytest                 # unit + golden-image tests: every element, palettes, rotation, dither, errors
+pytest --update-golden # rewrite the golden PNGs after an intentional rendering change
 ruff check . && ruff format --check .   # lint + format
 python -m build        # build sdist + wheel (bundles fonts/icons)
 ```
 
 CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, the test
-suite on Python 3.11/3.12/3.13, and a build that asserts the bundled fonts/icons
+suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
 are present in the wheel. Pushing a `v*` tag triggers
 `.github/workflows/release.yml` to build and publish to PyPI (trusted publishing).
 
 The test matrix (`tests/test_elements.py`) asserts it covers *every* registered
 element type, so adding a new `@element(...)` without a sample fails the suite —
 keeping coverage exhaustive by construction.
+
+**Golden images** (`tests/test_golden.py`) pin the actual pixels: each element
+preview in `examples/elements/` is re-rendered from
+`examples/generate_element_previews.py` and compared exactly, and
+`tests/golden/` holds targeted scenes (every dither method, per-element dither
+phase, rotation modes, less-common handler options). A rendering change that is
+intended is committed by running `pytest --update-golden` and checking in the
+PNGs; an unintended one fails CI with the pixel count and a diff image.
+Text in the goldens is laid out with Pillow's `BASIC` engine
+(`RenderContext(layout_engine=...)`) so the same Pillow release renders them
+identically on every OS; set `IMAGESPEC_GOLDEN_TOLERANCE=0.05` to allow 5 % of
+pixels to differ under a different Pillow/FreeType or python-barcode release.
 
 **Robustness built in:**
 
