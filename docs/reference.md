@@ -269,11 +269,11 @@ Multi-line text (`\n`-separated) that can shrink its font to fit a `width` and/o
 | `align` | `left` \| `center` \| `right` | `"left"` |  |
 | `stroke_width` | number | `0` |  |
 | `stroke_fill` | color |  |  |
-| `fit` | any |  | `"width"`, `"height"` or `true` (both) |
+| `fit` | `width` \| `height` \| boolean |  | Which dimension to shrink to; `true` = both |
 | `fit_width` | boolean |  | Shrink until the text is no wider than `width` |
 | `fit_height` | boolean |  | Shrink until the text is no taller than `height` |
-| `width` | number |  | Target width (required when fitting width) |
-| `height` | number |  | Target height (required when fitting height) |
+| `width` | number | **required** if `fit_width` or `fit: width/true` | Target width |
+| `height` | number | **required** if `fit_height` or `fit: height/true` | Target height |
 
 ### `table`
 
@@ -483,7 +483,7 @@ Compact axis-less line chart from inline values.
 | `y` | number | **required** |  |
 | `width` | number | **required** |  |
 | `height` | number | **required** |  |
-| `values` | any | **required** | List of numbers, or a `"1,3,2"` string |
+| `values` | array of number \| string | **required** | List of numbers, or a `"1,3,2"` string |
 | `min` | number |  | Y range floor; defaults to the data minimum |
 | `max` | number |  | Y range ceiling; defaults to the data maximum |
 | `color` | color | `"black"` | Line colour |

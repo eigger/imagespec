@@ -824,6 +824,17 @@
           "type": "number"
         },
         "values": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ],
           "description": "List of numbers, or a `\"1,3,2\"` string"
         },
         "min": {
@@ -6151,7 +6162,22 @@
           "description": "(colour name or #RGB/#RRGGBB; quantized to the device palette)"
         },
         "fit": {
-          "description": "`\"width\"`, `\"height\"` or `true` (both)"
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "width",
+                "height"
+              ]
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Which dimension to shrink to; `true` = both"
         },
         "fit_width": {
           "type": [
@@ -6172,21 +6198,95 @@
             "number",
             "null"
           ],
-          "description": "Target width (required when fitting width)"
+          "description": "Target width"
         },
         "height": {
           "type": [
             "number",
             "null"
           ],
-          "description": "Target height (required when fitting height)"
+          "description": "Target height"
         }
       },
       "required": [
         "type",
         "value"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "fit_width": {
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "fit_width"
+                ]
+              },
+              {
+                "properties": {
+                  "fit": {
+                    "enum": [
+                      "width",
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "fit"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "width"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "fit_height": {
+                    "enum": [
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "fit_height"
+                ]
+              },
+              {
+                "properties": {
+                  "fit": {
+                    "enum": [
+                      "height",
+                      true
+                    ]
+                  }
+                },
+                "required": [
+                  "fit"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "height"
+            ]
+          }
+        }
+      ]
     },
     "table": {
       "type": "object",

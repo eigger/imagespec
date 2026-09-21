@@ -84,6 +84,30 @@ def test_template_strings_and_nulls_are_tolerated():
     assert validate(payload) == []
 
 
+def test_conditionally_required_keys():
+    base = {"type": "new_multiline", "x": 0, "y": 0, "value": "a"}
+    assert validate([base]) == []
+    assert _paths([{**base, "fit_width": True}]) == ["[0].width"]
+    assert _paths([{**base, "fit_width": "True"}]) == ["[0].width"]  # template string
+    assert _paths([{**base, "fit_width": "False"}]) == []
+    assert _paths([{**base, "fit": "height"}]) == ["[0].height"]
+    assert _paths([{**base, "fit": True}]) == ["[0].width", "[0].height"]
+    assert validate([{**base, "fit": True, "width": 10, "height": "20"}]) == []
+    assert _paths([{**base, "fit_width": True, "width": None}]) == ["[0].width"]  # null = omitted
+
+
+def test_alt_kinds():
+    assert validate([{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": "1,3,2"}]) == []
+    assert validate([{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": [1, "3", 2.5]}]) == []
+    issue = validate([{"type": "sparkline", "x": 0, "y": 0, "width": 9, "height": 9, "values": 7}])[0]
+    assert issue.path == "[0].values" and issue.message.startswith("must be an array or a string")
+    base = {"type": "new_multiline", "x": 0, "y": 0, "value": "a", "width": 1, "height": 1}
+    assert validate([{**base, "fit": True}]) == []
+    assert validate([{**base, "fit": "width"}]) == []
+    assert _paths([{**base, "fit": "both"}]) == ["[0].fit"]
+    assert _paths([{**base, "fit": 1}]) == ["[0].fit"]
+
+
 def test_null_for_required_key_is_missing():
     assert _paths([{"type": "circle", "x": None, "y": 1, "radius": 3}]) == ["[0].x"]
 
@@ -115,11 +139,6 @@ def test_accepted_payloads_render(ctx, label, payload):
 # ── null on any optional key never reaches a handler as None ───────────────
 
 
-# Conditionally required: `null` = omitted, and omitted is a documented RenderError
-# when the matching `fit_*` is on. validate() cannot express that yet.
-_CONDITIONALLY_REQUIRED = {("new_multiline", "width"), ("new_multiline", "height")}
-
-
 def _optional_null_cases():
     from imagespec.registry import get_spec
     from imagespec.spec import COMMON_FIELDS
@@ -129,7 +148,8 @@ def _optional_null_cases():
         for i, el in enumerate(payload):
             spec = get_spec(el["type"])
             for f in (*spec.fields, *COMMON_FIELDS):
-                if f.required or f.name == "type" or (el["type"], f.name) in _CONDITIONALLY_REQUIRED:
+                # required_when keys: null = omitted = a *reported* missing key when the trigger is on
+                if f.required or f.required_when or f.name == "type":
                     continue
                 mutated = [dict(e) for e in payload]
                 mutated[i][f.name] = None
