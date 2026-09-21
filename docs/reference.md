@@ -551,8 +551,8 @@ Time-series line chart over the last `duration` seconds, fed by the host's `hist
 | `data[].area_fill` | color |  | Fill below the line |
 | `x_start` | number | `0` |  |
 | `y_start` | number | `0` |  |
-| `x_end` | number |  | Defaults to the canvas right edge |
-| `y_end` | number |  | Defaults to the canvas bottom edge |
+| `x_end` | number |  | Defaults to `canvas_width - 1 - x_start` (same inset on the right as on the left) |
+| `y_end` | number |  | Defaults to `canvas_height - 1 - y_start` (same inset at the bottom as at the top) |
 | `duration` | number | `86400` | Window in seconds ending now |
 | `size` | number | `10` | Default legend font size |
 | `font` | string |  |  |

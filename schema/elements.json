@@ -1602,14 +1602,14 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas right edge"
+          "description": "Defaults to `canvas_width - 1 - x_start` (same inset on the right as on the left)"
         },
         "y_end": {
           "type": [
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas bottom edge"
+          "description": "Defaults to `canvas_height - 1 - y_start` (same inset at the bottom as at the top)"
         },
         "duration": {
           "type": [
