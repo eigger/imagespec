@@ -24,8 +24,8 @@ def should_show(element: dict) -> bool:
     """``visible`` flag, tolerant of the string forms HA templates produce.
 
     ``"False"``/``"off"``/``"no"``/``"none"``/``""`` and any numeric string
-    equal to zero (``"0"``, ``"0.0"``) hide the element; any other value (or the
-    key being absent) shows it.
+    equal to zero (``"0"``, ``"0.0"``) and ``None`` hide the element; any other
+    value (or the key being absent) shows it.
     """
     return to_bool(element.get("visible", True))
 
@@ -97,12 +97,21 @@ def coerce_element(element: dict, fields: Iterable[Field]) -> dict:
     they are dispatched). Raises :class:`ValueError`
     for a non-numeric string; the render loop wraps it with the element
     index/type.
+
+    An explicit ``None`` is **dropped** (the handler sees the key as omitted)
+    unless the field accepts null — colours, ``dither``, ``any`` and fields
+    declared ``nullable=True`` — so ``y: null`` or ``bars: null`` from a
+    template never reaches arithmetic or ``.get`` inside a handler.
     """
     out = dict(element)
     for f in fields:
         if f.name not in element:
             continue
         value = element[f.name]
+        if value is None:
+            if not f.accepts_null:
+                del out[f.name]
+            continue
         if f.kind in ("number", "integer"):
             out[f.name] = to_number(value, f.name)
         elif f.kind == "boolean":

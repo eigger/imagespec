@@ -106,6 +106,46 @@ def test_accepts_what_the_schema_accepts(label, payload):
     assert validate(payload) == [], label
 
 
+@pytest.mark.parametrize("label, payload", [c for c in ACCEPTS if "plot" not in c[0]])
+def test_accepted_payloads_render(ctx, label, payload):
+    # What validate() passes must not die in a handler.
+    assert render(payload, 40, 40, strict=True, context=ctx).size == (40, 40), label
+
+
+# ── null on any optional key never reaches a handler as None ───────────────
+
+
+# Conditionally required: `null` = omitted, and omitted is a documented RenderError
+# when the matching `fit_*` is on. validate() cannot express that yet.
+_CONDITIONALLY_REQUIRED = {("new_multiline", "width"), ("new_multiline", "height")}
+
+
+def _optional_null_cases():
+    from imagespec.registry import get_spec
+    from imagespec.spec import COMMON_FIELDS
+
+    for name, sample in sorted(_previews().SAMPLES.items()):
+        payload = sample if isinstance(sample, list) else [sample]
+        for i, el in enumerate(payload):
+            spec = get_spec(el["type"])
+            for f in (*spec.fields, *COMMON_FIELDS):
+                if f.required or f.name == "type" or (el["type"], f.name) in _CONDITIONALLY_REQUIRED:
+                    continue
+                mutated = [dict(e) for e in payload]
+                mutated[i][f.name] = None
+                yield pytest.param(mutated, id=f"{name}.{f.name}")
+
+
+@pytest.mark.parametrize("payload", list(_optional_null_cases()))
+def test_every_optional_key_accepts_null(history_ctx, payload):
+    # The schema and validate() accept `null` for every optional key, so the
+    # renderer must too: it is dropped (= omitted) unless the field declares
+    # a meaning for it (colours, dither, nullable=True).
+    assert validate(payload) == []
+    img = render(payload, 296, 128, strict=True, context=history_ctx)
+    assert img.size == (296, 128)
+
+
 # ── render(strict=True) ────────────────────────────────────────────────────
 
 

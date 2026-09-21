@@ -266,10 +266,11 @@ def stack(state: RenderState, element: dict) -> None:
     tiles = []
     for idx, child in enumerate(children):
         eff = child
-        if "x" not in eff or "y" not in eff:
+        if child.get("x") is None or child.get("y") is None:  # absent or an explicit null
             eff = {**child}
-            eff.setdefault("x", 0)
-            eff.setdefault("y", 0)
+            for key in ("x", "y"):
+                if eff.get(key) is None:
+                    eff[key] = 0
         sub = Image.new("RGBA", (max(1, inner_w), max(1, inner_h)), (0, 0, 0, 0))
         substate = RenderState(img=sub, canvas_width=inner_w, canvas_height=inner_h, context=state.context)
         ctype = child.get("type", "")

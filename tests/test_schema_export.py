@@ -109,6 +109,14 @@ ACCEPTS = [
         for v in (1, 0, None)
     ),
     ("aliases row/column", [{"type": "column", "elements": []}, {"type": "stack", "elements": []}]),
+    # null where the handler has no meaning for it = omitted (dropped before dispatch)
+    ("stack child with y: null", [{"type": "row", "elements": [{"type": "text", "value": "a", "y": None}]}]),
+    ("optional number null (text y)", [{"type": "text", "x": 0, "y": None, "value": "a", "size": None}]),
+    ("optional object null (diagram bars)", [{"type": "diagram", "x": 0, "y": 0, "height": 20, "bars": None}]),
+    (
+        "optional string null (rectangle corners)",
+        [{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 1, "y_end": 1, "corners": None}],
+    ),
 ]
 
 
