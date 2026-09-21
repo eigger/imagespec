@@ -128,8 +128,11 @@ class RenderContext:
         """Bytes of an ``http(s)`` image for ``dlimg``: cached per ``image_cache_ttl``.
 
         Uses ``image_fetcher`` when set, else a streamed ``requests`` download
-        that aborts once ``max_image_bytes`` is exceeded. Network errors
-        propagate as ``requests.RequestException`` for the caller to wrap.
+        that aborts once ``max_image_bytes`` is exceeded. A custom fetcher
+        returns the whole body, so the cap is only checked afterwards — a
+        fetcher that must bound memory has to stream and enforce it itself.
+        Network errors propagate as ``requests.RequestException`` for the
+        caller to wrap.
         """
         now = time.monotonic()
         if self.image_cache_ttl > 0:
@@ -143,7 +146,9 @@ class RenderContext:
         else:
             data = self._download(url, timeout)
         if self.image_cache_ttl > 0:
-            if len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:
+            # Refreshing an existing (expired) url reuses its slot; only a new
+            # url needs room, taking it from the oldest entry.
+            if url not in self._image_cache and len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:
                 oldest = min(self._image_cache, key=lambda k: self._image_cache[k][0])
                 del self._image_cache[oldest]
             self._image_cache[url] = (now, data)

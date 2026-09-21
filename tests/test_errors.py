@@ -233,3 +233,22 @@ def test_dlimg_download_success_path(monkeypatch):
     el = {"type": "dlimg", "x": 0, "y": 0, "url": "https://example.test/ok.png", "xsize": 8, "ysize": 8}
     img = render([el], 20, 20, context=ctx)
     assert img.getpixel((2, 2)) == (255, 0, 0)
+
+
+def test_image_cache_refresh_of_expired_url_does_not_evict_others(monkeypatch):
+    import time
+
+    from imagespec.context import _IMAGE_CACHE_MAX_ENTRIES
+
+    ctx = RenderContext(palette="4", image_fetcher=lambda url: _png_bytes(), image_cache_ttl=10)
+    urls = [f"https://example.test/{i}.png" for i in range(_IMAGE_CACHE_MAX_ENTRIES)]
+    for u in urls:
+        ctx.fetch_image(u)
+    assert set(ctx._image_cache) == set(urls)  # full
+    now = time.monotonic()
+    monkeypatch.setattr(time, "monotonic", lambda: now + 11)  # everything expired
+    ctx.fetch_image(urls[0])  # refresh in place
+    assert set(ctx._image_cache) == set(urls)  # nothing else evicted
+    ctx.fetch_image("https://example.test/new.png")  # genuinely new -> one eviction
+    assert len(ctx._image_cache) == _IMAGE_CACHE_MAX_ENTRIES
+    assert "https://example.test/new.png" in ctx._image_cache
