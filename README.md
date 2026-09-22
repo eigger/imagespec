@@ -1,5 +1,10 @@
 # imagespec
 
+[![PyPI](https://img.shields.io/pypi/v/imagespec.svg)](https://pypi.org/project/imagespec/)
+[![Python versions](https://img.shields.io/pypi/pyversions/imagespec.svg)](https://pypi.org/project/imagespec/)
+[![CI](https://github.com/eigger/imagespec/actions/workflows/ci.yml/badge.svg)](https://github.com/eigger/imagespec/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-MIT%20AND%20Apache--2.0-yellow.svg)](LICENSE)
+
 Render images from a declarative **YAML/dict spec** — shapes, text, charts,
 QR/barcodes — for e-paper ESL tags and label printers.
 

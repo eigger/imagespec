@@ -49,6 +49,9 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/eigger/imagespec"
 Repository = "https://github.com/eigger/imagespec"
+Changelog = "https://github.com/eigger/imagespec/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/eigger/imagespec/blob/main/docs/integrating.md"
+Issues = "https://github.com/eigger/imagespec/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
