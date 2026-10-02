@@ -99,3 +99,17 @@ def test_font_cache_honours_layout_engine_change():
     assert ctx.font(None, 12) is basic  # same engine -> cache hit
     ctx.layout_engine = None  # Pillow default (RAQM where available)
     assert ctx.font(None, 12) is not basic  # engine is part of the cache key
+
+
+def test_font_cache_is_bounded_and_keeps_recent_fonts():
+    from imagespec import RenderContext
+    from imagespec.context import FONT_CACHE_SIZE
+
+    c = RenderContext(palette="4")
+    first = c.font(None, 10)
+    for size in range(11, 11 + FONT_CACHE_SIZE + 20):
+        c.font(None, size)
+        c.font(None, 10)  # keep the first one hot
+    assert len(c._font_cache) == FONT_CACHE_SIZE
+    assert c.font(None, 10) is first
+    assert c.font(None, 11) is not None  # evicted entries are simply reloaded
