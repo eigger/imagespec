@@ -11,7 +11,7 @@ payload that validates here renders without a contract error.
 Hosts call it to surface authoring mistakes before (or instead of) rendering::
 
     for issue in imagespec.validate(payload):
-        print(issue)          # "[2].fill: unknown key for 'circle'"
+        print(issue)          # "[2].fill: unknown key for 'circle'"  (+ a "did you mean" hint when close)
 
 ``render(..., strict=True)`` runs the same checks and raises
 :class:`~imagespec.exceptions.RenderError` when any fail.
@@ -19,6 +19,7 @@ Hosts call it to surface authoring mistakes before (or instead of) rendering::
 
 from __future__ import annotations
 
+import difflib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -57,6 +58,17 @@ def validate(payload: Sequence[Any], *, positioned: bool = True) -> list[Issue]:
     return issues
 
 
+def _did_you_mean(word: str, candidates: Iterable[str]) -> str:
+    """``did you mean 'x'?`` for the closest candidate, or ``""`` when nothing is close."""
+    close = difflib.get_close_matches(str(word), list(candidates), n=1)
+    return f"did you mean {close[0]!r}?" if close else ""
+
+
+def _key_hint(key: str, fields: Iterable[str]) -> str:
+    hint = _did_you_mean(key, fields)
+    return f" ({hint})" if hint else ""
+
+
 def _check_element(element: Any, path: str, positioned: bool, issues: list[Issue]) -> None:
     if not isinstance(element, dict):
         issues.append(Issue(path, f"element must be a dict, got {type(element).__name__}"))
@@ -67,13 +79,14 @@ def _check_element(element: Any, path: str, positioned: bool, issues: list[Issue
         return
     spec = get_spec(etype)
     if spec is None:
-        known = ", ".join(sorted(known_types()))
-        issues.append(Issue(f"{path}.type", f"unknown element type {etype!r} (known: {known})"))
+        types = sorted(known_types())
+        hint = _did_you_mean(etype, types)
+        issues.append(Issue(f"{path}.type", f"unknown element type {etype!r} ({hint or 'known: ' + ', '.join(types)})"))
         return
     fields = {f.name: f for f in (*COMMON_FIELDS, *spec.fields)}
     for key in element:
         if key not in fields:
-            issues.append(Issue(f"{path}.{key}", f"unknown key for {etype!r}"))
+            issues.append(Issue(f"{path}.{key}", f"unknown key for {etype!r}{_key_hint(key, fields)}"))
     for f in spec.fields:
         # A stack/row/column supplies its children's x/y, so they are optional there.
         supplied = not positioned and f.name in POSITION_KEYS
@@ -163,7 +176,7 @@ def _check_object(value: dict, fields: Iterable[Field], path: str, issues: list[
     declared = {f.name: f for f in fields}
     for key in value:
         if key not in declared:
-            issues.append(Issue(f"{path}.{key}", f"unknown key for {etype!r}"))
+            issues.append(Issue(f"{path}.{key}", f"unknown key for {etype!r}{_key_hint(key, declared)}"))
     for f in declared.values():
         _check_field(value, f, path, issues, etype)
 
