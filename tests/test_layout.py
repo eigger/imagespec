@@ -202,3 +202,78 @@ def test_stack_child_error_wrapped_with_context(ctx):
         render([el], 40, 40, context=ctx)
     msg = str(exc.value)
     assert "stack" in msg and "rectangle" in msg
+
+
+# --------------------------------------------------------------------------- #
+# align: stretch
+# --------------------------------------------------------------------------- #
+
+
+def _chip(**extra):
+    return {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8, **extra}
+
+
+def _black_rows(img, x):
+    return [y for y in range(img.height) if img.getpixel((x, y)) == BLACK]
+
+
+def test_stretch_fills_the_cross_axis_for_size_aware_children(ctx):
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [_chip()]}
+    img = render([row], 40, 30, context=ctx)
+    ys = _black_rows(img, 1)
+    assert ys[0] == 0 and ys[-1] >= 29 - 1  # box spans the whole 30px row
+
+
+def test_start_keeps_the_natural_height(ctx):
+    row = {"type": "row", "width": 40, "height": 30, "align": "start", "elements": [_chip(height=12)]}
+    ys = _black_rows(render([row], 40, 30, context=ctx), 1)
+    assert ys[-1] <= 12
+
+
+def test_stretch_respects_an_explicit_cross_size(ctx):
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [_chip(height=12)]}
+    ys = _black_rows(render([row], 40, 30, context=ctx), 1)
+    assert ys[-1] <= 12
+
+
+def test_stretch_in_a_column_sizes_the_width(ctx):
+    col = {
+        "type": "column",
+        "width": 50,
+        "height": 40,
+        "align": "stretch",
+        "elements": [
+            {"type": "text_fit", "height": 10, "value": "a", "background": "black", "color": "white", "size": 8}
+        ],
+    }
+    img = render([col], 50, 40, context=ctx)
+    assert img.getpixel((48, 1)) == BLACK
+
+
+def test_stretch_per_child_override_and_margins(ctx):
+    col = {
+        "type": "column",
+        "width": 50,
+        "height": 40,
+        "align": "start",
+        "elements": [
+            {
+                "type": "text_fit",
+                "height": 10,
+                "value": "a",
+                "background": "black",
+                "color": "white",
+                "size": 8,
+                "layout": {"align": "stretch", "margin_x": 5},
+            }
+        ],
+    }
+    img = render([col], 50, 40, context=ctx)
+    assert img.getpixel((2, 1)) == WHITE and img.getpixel((6, 1)) == BLACK
+    assert img.getpixel((44, 1)) == BLACK and img.getpixel((47, 1)) == WHITE
+
+
+def test_stretch_leaves_other_elements_alone(ctx):
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [_rect("black", 10, 5)]}
+    ys = _black_rows(render([row], 40, 30, context=ctx), 1)
+    assert ys == list(range(5))

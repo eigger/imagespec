@@ -2958,7 +2958,7 @@
             "stretch",
             null
           ],
-          "description": "Cross-axis alignment of children",
+          "description": "Cross-axis alignment of children. `stretch` sizes `group`, `stack`/`row`/`column`, `text_fit`, `sparkline` and `diagram` children that have no cross-axis `width`/`height` to fill it; other elements keep their size and sit at `start`",
           "default": "start"
         },
         "align_items": {

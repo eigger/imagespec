@@ -99,7 +99,7 @@ Container:
 - `gap`: int px between children
 - `padding`: int (all sides), or `padding_x` / `padding_y` / `padding_top` / `padding_right` / `padding_bottom` / `padding_left`
 - `justify` (main axis): `start` | `end` | `center` | `between` | `around` | `evenly`
-- `align` (cross axis): `start` | `end` | `center`
+- `align` (cross axis): `start` | `end` | `center` | `stretch` (`group`, `stack`/`row`/`column`, `text_fit`, `sparkline` and `diagram` children without an explicit cross-axis `width`/`height` fill it; other elements stay at `start`)
 - `x`, `y` (offset of the whole stack), `width`, `height` (box; default = canvas), `rotate` (90/180/270)
 
 Per child (set on the child dict, under a `layout:` sub-dict to avoid clashing
