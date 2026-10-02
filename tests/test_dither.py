@@ -313,3 +313,24 @@ def test_pure_path_matches_dither_golden(monkeypatch):
     out = dither_to_palette(src, PALETTE_BWR, dither="jarvis")
     golden = Image.open("tests/golden/dither_jarvis_bwr.png").convert("RGB")
     assert out.tobytes() == golden.tobytes()
+
+
+@pytest.mark.parametrize("method", sorted(_KERNELS))
+def test_on_palette_image_skips_the_diffusion_kernel(method, monkeypatch):
+    """Zero incoming error means zero outgoing error: the kernel must not run, result unchanged."""
+    img = Image.new("RGB", (30, 20), PALETTE_7[1])
+    ImageDraw.Draw(img).rectangle([5, 5, 15, 15], fill=PALETTE_7[3])
+    expected = dither_to_palette(img, PALETTE_7, dither=method)
+
+    def boom(*a, **k):
+        raise AssertionError("kernel ran for an on-palette image")
+
+    monkeypatch.setattr(dither_mod, "_error_diffuse", boom)
+    out = dither_to_palette(img, PALETTE_7, dither=method)
+    assert out.tobytes() == img.tobytes() == expected.tobytes()
+
+
+def test_off_palette_image_still_diffuses():
+    img = Image.new("RGB", (20, 20), (128, 128, 128))
+    out = dither_to_palette(img, PALETTE_BW, dither="floyd")
+    assert _colors(out) == {(0, 0, 0), (255, 255, 255)}
