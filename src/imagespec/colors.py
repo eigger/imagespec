@@ -128,6 +128,12 @@ def get_palette(spec):
     return colors
 
 
+def is_known_color(color) -> bool:
+    """``True`` if ``color`` is a name / CSS color / ``#RGB``/``#RRGGBB`` that rendering resolves
+    (anything else falls back to white with a warning)."""
+    return _parse_color_string(str(color)) is not None
+
+
 def _requested_rgb(color):
     """Resolve a color name or ``#RGB``/``#RRGGBB`` to an RGBA tuple, or ``None``.
 
