@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from PIL import ImageFont
 
 from imagespec import RenderContext, RenderError, render
 from imagespec.elements.text import fit_lines
@@ -127,7 +128,7 @@ class _RecordingContext(RenderContext):
 
 
 def _chosen_size(width, height, value, max_lines, start=60, min_size=8):
-    ctx = _RecordingContext(palette="4")
+    ctx = _RecordingContext(palette="4", layout_engine=ImageFont.Layout.BASIC)
     ctx.sizes = []
     el = {
         "type": "text_fit",
@@ -141,11 +142,11 @@ def _chosen_size(width, height, value, max_lines, start=60, min_size=8):
         "max_lines": max_lines,
     }
     render([el], max(width, 1), max(height, 1), context=ctx)
-    return ctx.sizes[-1], len(ctx.sizes)
+    return ctx.sizes[-1]
 
 
 def _linear_size(width, height, value, max_lines, start=60, min_size=8):
-    ctx = RenderContext(palette="4")
+    ctx = RenderContext(palette="4", layout_engine=ImageFont.Layout.BASIC)
     for size in range(start, min_size - 1, -1):
         font = ctx.font(None, size)
         ascent, descent = font.getmetrics()
@@ -163,16 +164,16 @@ def test_text_fit_shrink_is_the_largest_fitting_size_even_when_fit_is_not_monoto
     and 18 but 4 lines (too tall) at 17, so a bisection would pick 16 (or give up with min_size 17).
     """
     case = (115, 104, "Hi , iii Hi WWW Temperature WWW", 4)
-    assert _chosen_size(*case, start=20, min_size=2)[0] == _linear_size(*case, start=20, min_size=2) == 18
-    assert _chosen_size(*case, start=20, min_size=17)[0] == 18
+    assert _chosen_size(*case, start=20, min_size=2) == _linear_size(*case, start=20, min_size=2) == 18
+    assert _chosen_size(*case, start=20, min_size=17) == 18
 
 
 @pytest.mark.parametrize("value", ["Hi", "Temperature 21.5", "wrap me please now"])
 @pytest.mark.parametrize("max_lines", [1, 3])
 @pytest.mark.parametrize("width,height", [(40, 12), (90, 30), (160, 20), (300, 70), (30, 200)])
 def test_text_fit_picks_the_largest_fitting_size(value, max_lines, width, height):
-    assert _chosen_size(width, height, value, max_lines)[0] == _linear_size(width, height, value, max_lines)
+    assert _chosen_size(width, height, value, max_lines) == _linear_size(width, height, value, max_lines)
 
 
 def test_text_fit_when_start_is_below_min_size():
-    assert _chosen_size(100, 40, "abc", 1, start=6, min_size=10)[0] == 10
+    assert _chosen_size(100, 40, "abc", 1, start=6, min_size=10) == 10
