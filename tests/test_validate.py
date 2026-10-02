@@ -245,3 +245,15 @@ def test_unknown_color_in_a_nested_array_is_reported():
         "items": [{"label": "a", "color": "red"}, {"label": "b", "color": "rde"}],
     }
     assert [i.path for i in validate([legend])] == ["[0].items[1].color"]
+
+
+def test_blank_area_fill_in_a_plot_series_is_tolerated():
+    plot = {
+        "type": "plot",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 50,
+        "y_end": 30,
+        "data": [{"entity": "s.a", "area_fill": ""}],
+    }
+    assert validate([plot]) == []
