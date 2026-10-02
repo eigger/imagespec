@@ -5448,7 +5448,7 @@
             "number",
             "null"
           ],
-          "description": "Degrees counter-clockwise; rotated text is composited at `(x, y)`",
+          "description": "Degrees counter-clockwise; the rotated text's box is placed at `(x, y)`, `anchor` positioning that box (`l`/`m`/`r`, `t`/`m`/`b`) rather than the font baseline",
           "default": 0
         },
         "background": {

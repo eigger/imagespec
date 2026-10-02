@@ -189,3 +189,42 @@ def test_line_y_end_defaults_to_y_start(ctx):
 def test_icon_weather_alias(ctx):
     el = {"type": "icon", "x": 0, "y": 0, "value": "weather-partlycloudy", "size": 16}
     assert render([el], 40, 40, context=ctx).size == (40, 40)
+
+
+def _ink_bbox(img):
+    return img.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+
+
+@pytest.mark.parametrize("value", ["x", "ace", "Hgjy"])
+@pytest.mark.parametrize("rotation", [90, 360])
+def test_rotated_text_keeps_all_ink(ctx, value, rotation):
+    """Lowercase-only text has a bbox origin below 0,0; it must not be clipped or vanish."""
+
+    def ink(**extra):
+        el = {"type": "text", "x": 50, "y": 50, "value": value, "size": 40, **extra}
+        return _ink_bbox(render([el], 200, 200, context=ctx))
+
+    b, r = ink(), ink(rotation=rotation)
+    assert b is not None and r is not None
+    expected = (b[2] - b[0], b[3] - b[1]) if rotation == 360 else (b[3] - b[1], b[2] - b[0])
+    assert (r[2] - r[0], r[3] - r[1]) == expected
+
+
+def test_rotated_text_honours_anchor(ctx):
+    def ink(anchor):
+        el = {"type": "text", "x": 100, "y": 100, "value": "Hi", "size": 30, "rotation": 90, "anchor": anchor}
+        return _ink_bbox(render([el], 200, 200, context=ctx))
+
+    lt, mm, rb = ink("lt"), ink("mm"), ink("rb")
+    assert lt[0] > mm[0] > rb[0] and lt[1] > mm[1] > rb[1]
+
+
+def test_rotated_text_background_padding(ctx):
+    def box(padding):
+        el = {"type": "text", "x": 50, "y": 50, "value": "Hi", "size": 20, "rotation": 90, "background": "black"}
+        el["background_padding"] = padding
+        return _ink_bbox(render([el], 200, 200, context=ctx))
+
+    b0, b10 = box(0), box(10)
+    assert (b10[2] - b10[0]) - (b0[2] - b0[0]) == 20
+    assert (b10[3] - b10[1]) - (b0[3] - b0[1]) == 20
