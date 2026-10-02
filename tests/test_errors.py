@@ -252,3 +252,40 @@ def test_image_cache_refresh_of_expired_url_does_not_evict_others(monkeypatch):
     ctx.fetch_image("https://example.test/new.png")  # genuinely new -> one eviction
     assert len(ctx._image_cache) == _IMAGE_CACHE_MAX_ENTRIES
     assert "https://example.test/new.png" in ctx._image_cache
+
+
+def test_render_error_path_names_the_failing_top_level_element(ctx):
+    ok = {"type": "text", "x": 0, "y": 0, "value": "a"}
+    bad = {"type": "text", "value": "b", "y": 5}  # missing required x
+    with pytest.raises(RenderError) as exc:
+        render([ok, bad], 50, 50, context=ctx)
+    assert exc.value.path == "[1]"
+    assert str(exc.value).startswith("[1]: ")
+    assert "'x'" in exc.value.message and not exc.value.message.startswith("[")
+
+
+def test_render_error_path_survives_nesting(ctx):
+    bad = {"type": "text", "x": 0, "y": 5}  # missing required value
+    ok = {"type": "text", "x": 0, "y": 0, "value": "a"}
+    payload = [ok, {"type": "group", "elements": [ok, {"type": "stack", "elements": [ok, "skip-me", bad]}]}]
+    with pytest.raises(RenderError) as exc:
+        render(payload, 50, 50, context=ctx)
+    # the stack index counts the original list (the non-dict child is skipped, not renumbered)
+    assert exc.value.path == "[1].elements[1].elements[2]"
+
+
+def test_render_error_path_for_unexpected_exceptions(ctx, monkeypatch):
+    import imagespec.dispatch as dispatch
+
+    def boom(state, element):
+        raise ZeroDivisionError("nope")
+
+    monkeypatch.setattr(dispatch, "get_handler", lambda t: boom)
+    with pytest.raises(RenderError) as exc:
+        render([{"type": "text", "x": 0, "y": 0, "value": "a"}], 10, 10, context=ctx)
+    assert exc.value.path == "[0]"
+
+
+def test_render_error_without_path_prints_plain():
+    assert str(RenderError("boom")) == "boom"
+    assert str(RenderError("boom", path="[2]")) == "[2]: boom"
