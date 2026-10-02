@@ -72,7 +72,10 @@ test-suite asserts it — so it is purely a speed switch. On an 800×480 panel:
 
 Error diffusion is inherently sequential along a row, so its remaining cost is
 the per-pixel nearest-colour search (proportional to palette size); `none` uses
-Pillow's C quantizer and is ~10 ms regardless.
+Pillow's C quantizer and is ~10 ms regardless. An image that is already
+entirely on the palette (flat text/fills in palette colours) takes the same
+fast path for every error-diffusion method, since it would diffuse zero error:
+such a label costs ~1 ms instead of ~200 ms.
 
 Per-element override (bool or method name) — use on **photos and charts**
 (`dlimg`, `pie`, `diagram`, `plot`, `sparkline`, `progress_bar`, `gauge`) when

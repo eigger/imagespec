@@ -313,3 +313,42 @@ def test_pure_path_matches_dither_golden(monkeypatch):
     out = dither_to_palette(src, PALETTE_BWR, dither="jarvis")
     golden = Image.open("tests/golden/dither_jarvis_bwr.png").convert("RGB")
     assert out.tobytes() == golden.tobytes()
+
+
+@pytest.mark.parametrize("method", sorted(_KERNELS))
+def test_on_palette_image_skips_the_diffusion_kernel(method, monkeypatch):
+    """Zero incoming error means zero outgoing error: the kernel must not run, result unchanged."""
+    img = Image.new("RGB", (30, 20), PALETTE_7[1])
+    ImageDraw.Draw(img).rectangle([5, 5, 15, 15], fill=PALETTE_7[3])
+    expected = dither_to_palette(img, PALETTE_7, dither=method)
+
+    def boom(*a, **k):
+        raise AssertionError("kernel ran for an on-palette image")
+
+    monkeypatch.setattr(dither_mod, "_error_diffuse", boom)
+    out = dither_to_palette(img, PALETTE_7, dither=method)
+    assert out.tobytes() == img.tobytes() == expected.tobytes()
+
+
+def test_off_palette_image_still_diffuses():
+    img = Image.new("RGB", (20, 20), (128, 128, 128))
+    out = dither_to_palette(img, PALETTE_BW, dither="floyd")
+    assert _colors(out) == {(0, 0, 0), (255, 255, 255)}
+
+
+@pytest.mark.parametrize("mode", ["RGB", "RGBA", "P"])
+def test_on_palette_fast_path_matches_kernel_for_modes_and_duplicates(mode, monkeypatch):
+    pal = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (255, 0, 0)]  # duplicate entry
+    img = Image.new("RGB", (16, 16), (255, 0, 0))
+    ImageDraw.Draw(img).rectangle([2, 2, 9, 9], fill=(0, 0, 0))
+    src = img if mode == "RGB" else img.convert(mode)
+    fast = dither_to_palette(src, pal, dither="floyd")
+    monkeypatch.setattr(dither_mod, "_quantize_nearest_pillow", lambda im, p: Image.new("RGB", im.size, (1, 2, 3)))
+    slow = dither_to_palette(src, pal, dither="floyd")  # forces the kernel
+    assert fast.tobytes() == slow.tobytes()
+
+
+@pytest.mark.parametrize("pal", [[(i % 256, 0, 0) for i in range(300)]])
+def test_unrepresentable_palettes_still_diffuse(pal):
+    img = Image.new("RGB", (6, 6), (128, 0, 0))
+    assert dither_to_palette(img, pal, dither="floyd").size == (6, 6)

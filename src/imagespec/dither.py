@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from types import ModuleType
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 # Optional accelerator. Typed as a plain module so both branches type-check and
 # the tests can monkeypatch it to None to exercise the pure-Python path.
@@ -523,6 +523,13 @@ def dither_to_palette(
 
     kernel_spec = _KERNELS.get(method)
     if kernel_spec is not None:
+        # An image already on the palette diffuses zero error, so every method
+        # would return it unchanged; skip the per-pixel Python/numpy kernel.
+        # Pillow's palette image only holds <= 256 entries of 0..255 channels.
+        if len(rgbs) <= 256 and all(0 <= v <= 255 for c in rgbs for v in c):
+            snapped = _quantize_nearest_pillow(img, palette)
+            if ImageChops.difference(img.convert("RGB"), snapped).getbbox() is None:
+                return snapped
         kernel, divisor = kernel_spec
         return _error_diffuse(img, rgbs, kernel, divisor, serpentine=True)
 
