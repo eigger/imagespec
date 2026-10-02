@@ -204,7 +204,7 @@ Text. Without `y` it flows below the previous text/line (`y_padding` gap) and ad
 | `spacing` | number | `5` | Extra px between lines |
 | `stroke_width` | number | `0` |  |
 | `stroke_fill` | color | `"white"` |  |
-| `rotation` | number | `0` | Degrees counter-clockwise; rotated text is composited at `(x, y)` |
+| `rotation` | number | `0` | Degrees counter-clockwise; rotated text's box is placed at `(x, y)`, offset by `anchor` |
 | `background` | color |  | Fill a box behind the text |
 | `background_padding` | number | `2` | Padding of the background box |
 | `max_width` | number |  | Word-wrap to this width in px |

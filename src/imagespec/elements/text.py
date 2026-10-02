@@ -63,7 +63,9 @@ def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
         num("spacing", 5, doc="Extra px between lines"),
         num("stroke_width", 0),
         color("stroke_fill", "white"),
-        num("rotation", 0, doc="Degrees counter-clockwise; rotated text is composited at `(x, y)`"),
+        num(
+            "rotation", 0, doc="Degrees counter-clockwise; rotated text's box is placed at `(x, y)`, offset by `anchor`"
+        ),
         color("background", doc="Fill a box behind the text"),
         num("background_padding", 2, doc="Padding of the background box"),
         num("max_width", doc="Word-wrap to this width in px"),
@@ -111,24 +113,31 @@ def text(state: RenderState, element: dict) -> None:
     if text_rotation != 0:
         # Render onto a temporary transparent image, rotate, then composite.
         raw = d.textbbox((0, 0), value, font=font, spacing=spacing, stroke_width=stroke_width)
-        tw = raw[2] - raw[0] + stroke_width * 2
-        th = raw[3] - raw[1] + stroke_width * 2
-        tmp = Image.new("RGBA", (tw + 4, th + 4), (255, 255, 255, 0))
+        pad = bg_padding if bg_color is not None else 0
+        tw = int(raw[2] - raw[0] + pad * 2)
+        th = int(raw[3] - raw[1] + pad * 2)
+        tmp = Image.new("RGBA", (max(tw, 1), max(th, 1)), (255, 255, 255, 0))
         tmp_d = mono_draw(tmp)
         if bg_color is not None:
-            tmp_d.rectangle([(0, 0), (tw + 4, th + 4)], fill=state.context.color(bg_color))
+            tmp_d.rectangle([(0, 0), (tw, th)], fill=state.context.color(bg_color))
+        # textbbox is relative to the draw origin: shift so the ink's top-left lands on the pad.
         tmp_d.text(
-            (2, 2),
+            (pad - raw[0], pad - raw[1]),
             value,
             fill=state.context.color(color),
             font=font,
+            align=align,
             spacing=spacing,
             stroke_width=stroke_width,
             stroke_fill=stroke_fill,
         )
         tmp = tmp.rotate(text_rotation, expand=True)
+        # The rotated tile's box sits at (x, y), shifted by the anchor's fractions of its size.
+        h_frac = {"l": 0.0, "m": 0.5, "r": 1.0}.get(anchor[:1], 0.0) if anchor else 0.0
+        v_frac = {"a": 0.0, "t": 0.0, "m": 0.5, "s": 1.0, "b": 1.0, "d": 1.0}.get(anchor[1:2], 0.0) if anchor else 0.0
+        dest = int_xy(element["x"] - tmp.width * h_frac, akt_pos_y - tmp.height * v_frac)
         canvas = Image.new("RGBA", state.img.size, (255, 255, 255, 0))
-        canvas.paste(tmp, int_xy(element["x"], akt_pos_y))
+        canvas.paste(tmp, dest)
         state.img = Image.alpha_composite(state.img, canvas)
     else:
         if bg_color is not None:
