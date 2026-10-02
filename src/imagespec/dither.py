@@ -525,9 +525,11 @@ def dither_to_palette(
     if kernel_spec is not None:
         # An image already on the palette diffuses zero error, so every method
         # would return it unchanged; skip the per-pixel Python/numpy kernel.
-        snapped = _quantize_nearest_pillow(img, palette)
-        if ImageChops.difference(img.convert("RGB"), snapped).getbbox() is None:
-            return snapped
+        # Pillow's palette image only holds <= 256 entries of 0..255 channels.
+        if len(rgbs) <= 256 and all(0 <= v <= 255 for c in rgbs for v in c):
+            snapped = _quantize_nearest_pillow(img, palette)
+            if ImageChops.difference(img.convert("RGB"), snapped).getbbox() is None:
+                return snapped
         kernel, divisor = kernel_spec
         return _error_diffuse(img, rgbs, kernel, divisor, serpentine=True)
 

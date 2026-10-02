@@ -334,3 +334,21 @@ def test_off_palette_image_still_diffuses():
     img = Image.new("RGB", (20, 20), (128, 128, 128))
     out = dither_to_palette(img, PALETTE_BW, dither="floyd")
     assert _colors(out) == {(0, 0, 0), (255, 255, 255)}
+
+
+@pytest.mark.parametrize("mode", ["RGB", "RGBA", "P"])
+def test_on_palette_fast_path_matches_kernel_for_modes_and_duplicates(mode, monkeypatch):
+    pal = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (255, 0, 0)]  # duplicate entry
+    img = Image.new("RGB", (16, 16), (255, 0, 0))
+    ImageDraw.Draw(img).rectangle([2, 2, 9, 9], fill=(0, 0, 0))
+    src = img if mode == "RGB" else img.convert(mode)
+    fast = dither_to_palette(src, pal, dither="floyd")
+    monkeypatch.setattr(dither_mod, "_quantize_nearest_pillow", lambda im, p: Image.new("RGB", im.size, (1, 2, 3)))
+    slow = dither_to_palette(src, pal, dither="floyd")  # forces the kernel
+    assert fast.tobytes() == slow.tobytes()
+
+
+@pytest.mark.parametrize("pal", [[(i % 256, 0, 0) for i in range(300)]])
+def test_unrepresentable_palettes_still_diffuse(pal):
+    img = Image.new("RGB", (6, 6), (128, 0, 0))
+    assert dither_to_palette(img, pal, dither="floyd").size == (6, 6)
