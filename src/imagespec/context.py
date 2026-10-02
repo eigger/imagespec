@@ -36,7 +36,7 @@ ImageFetcher = Callable[[str], bytes]
 
 _IMAGE_CACHE_MAX_ENTRIES = 32
 # Max (font file, size, engine) entries a context keeps loaded; least recently used evicted.
-FONT_CACHE_SIZE = 64
+FONT_CACHE_SIZE = 256
 _DOWNLOAD_CHUNK = 64 * 1024
 
 _PKG_DIR = os.path.dirname(__file__)

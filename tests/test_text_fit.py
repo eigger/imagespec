@@ -156,16 +156,22 @@ def _linear_size(width, height, value, max_lines, start=60, min_size=8):
     return min_size
 
 
+def test_text_fit_shrink_is_the_largest_fitting_size_even_when_fit_is_not_monotonic():
+    """Hinted advances are not monotonic in size, so a size above a failing one can still fit.
+
+    With the bundled font, "Hi , iii Hi WWW Temperature WWW" in a 115x104 box wraps to 3 lines at 16
+    and 18 but 4 lines (too tall) at 17, so a bisection would pick 16 (or give up with min_size 17).
+    """
+    case = (115, 104, "Hi , iii Hi WWW Temperature WWW", 4)
+    assert _chosen_size(*case, start=20, min_size=2)[0] == _linear_size(*case, start=20, min_size=2) == 18
+    assert _chosen_size(*case, start=20, min_size=17)[0] == 18
+
+
 @pytest.mark.parametrize("value", ["Hi", "Temperature 21.5", "wrap me please now"])
 @pytest.mark.parametrize("max_lines", [1, 3])
 @pytest.mark.parametrize("width,height", [(40, 12), (90, 30), (160, 20), (300, 70), (30, 200)])
-def test_text_fit_bisection_matches_a_linear_scan(value, max_lines, width, height):
+def test_text_fit_picks_the_largest_fitting_size(value, max_lines, width, height):
     assert _chosen_size(width, height, value, max_lines)[0] == _linear_size(width, height, value, max_lines)
-
-
-def test_text_fit_bisection_does_few_layouts():
-    _, layouts = _chosen_size(80, 20, "Temperature 21.5", 1, start=120)
-    assert layouts <= 12  # a linear scan from 120 would need ~100
 
 
 def test_text_fit_when_start_is_below_min_size():

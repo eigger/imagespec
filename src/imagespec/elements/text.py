@@ -501,8 +501,7 @@ def text_fit(state: RenderState, element: dict) -> None:
     """Fit text into a fixed ``width × height`` box.
 
     ``fit`` controls overflow handling:
-      * ``"shrink"`` — reduce font size (down to ``min_size``) until it fits (the largest
-        size that fits, found by bisection; wrapping makes fit effectively monotonic in size).
+      * ``"shrink"`` — reduce font size (down to ``min_size``) until it fits.
       * ``"ellipsis"`` — keep size, truncate with ``…``.
       * ``"shrink_ellipsis"`` — shrink to ``min_size`` first, then ellipsize.
 
@@ -539,25 +538,11 @@ def text_fit(state: RenderState, element: dict) -> None:
 
     if fit in ("shrink", "shrink_ellipsis"):
         chosen = None
-        lo, hi = int(min_size), int(start_size)
-
-        def fitting(size):
+        for size in range(int(start_size), int(min_size) - 1, -1):
             font, lines, fits, line_h = layout(size)
-            return (font, lines, line_h) if fits and line_h * len(lines) <= inner_h else None
-
-        # Largest size that fits. Text only gets easier to fit as it shrinks, so bisect
-        # (about log2(start - min) layouts) instead of trying every size from the top.
-        best = fitting(hi) if hi >= lo else None
-        if best is None and hi > lo and fitting(lo) is not None:
-            good, bad = lo, hi  # invariant: `good` fits, `bad` does not
-            while bad - good > 1:
-                mid = (good + bad) // 2
-                if fitting(mid) is None:
-                    bad = mid
-                else:
-                    good = mid
-            best = fitting(good)
-        chosen = best
+            if fits and line_h * len(lines) <= inner_h:
+                chosen = (font, lines, line_h)
+                break
         if chosen is None:
             font, lines, _, line_h = layout(min_size)
             if fit == "shrink_ellipsis":
