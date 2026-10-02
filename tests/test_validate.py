@@ -1,5 +1,6 @@
 """imagespec.validate: spec-driven payload validation with the renderer's tolerance
-(template strings, nulls), agreeing with the JSON Schema on what it rejects."""
+(template strings, nulls), agreeing with the JSON Schema on what it rejects. It is
+deliberately stricter on one point: colour names, which the schema only types as strings."""
 
 from __future__ import annotations
 
@@ -229,3 +230,18 @@ def test_null_color_is_still_allowed():
 def test_strict_render_rejects_unknown_color(ctx):
     with pytest.raises(RenderError, match="unknown color 'rde'"):
         render([{"type": "text", "x": 0, "y": 0, "value": "a", "color": "rde"}], 20, 20, strict=True, context=ctx)
+
+
+def test_blank_color_is_tolerated_where_it_means_no_fill():
+    spark = {"type": "sparkline", "x": 0, "y": 0, "width": 20, "height": 10, "data": [1, 2, 3], "fill": ""}
+    assert validate([spark]) == []
+
+
+def test_unknown_color_in_a_nested_array_is_reported():
+    legend = {
+        "type": "legend",
+        "x": 0,
+        "y": 0,
+        "items": [{"label": "a", "color": "red"}, {"label": "b", "color": "rde"}],
+    }
+    assert [i.path for i in validate([legend])] == ["[0].items[1].color"]
