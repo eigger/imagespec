@@ -277,7 +277,15 @@ def test_unknown_nested_key_suggests_too():
 
 def test_unknown_type_suggests_the_closest_type():
     [issue] = validate([{"type": "circl", "x": 0, "y": 0}])
-    assert issue == Issue("[0].type", "unknown element type 'circl' (did you mean 'circle'?)")
+    assert issue.path == "[0].type"
+    assert issue.message.startswith("unknown element type 'circl' (did you mean 'circle'? known: ")
+
+
+def test_hints_ignore_case():
+    [t] = validate([{"type": "TEXT", "x": 0, "y": 0, "value": "a"}])
+    assert "did you mean 'text'?" in t.message
+    [k] = validate([{"type": "text", "x": 0, "y": 0, "value": "a", "COLOR": "red"}])
+    assert k.message == "unknown key for 'text' (did you mean 'color'?)"
 
 
 def test_unknown_type_without_a_close_match_lists_the_known_ones():

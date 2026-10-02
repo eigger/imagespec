@@ -11,7 +11,7 @@ payload that validates here renders without a contract error.
 Hosts call it to surface authoring mistakes before (or instead of) rendering::
 
     for issue in imagespec.validate(payload):
-        print(issue)          # "[2].fill: unknown key for 'circle'"  (+ a "did you mean" hint when close)
+        print(issue)          # "[2].fil: unknown key for 'circle' (did you mean 'fill'?)"
 
 ``render(..., strict=True)`` runs the same checks and raises
 :class:`~imagespec.exceptions.RenderError` when any fail.
@@ -58,10 +58,11 @@ def validate(payload: Sequence[Any], *, positioned: bool = True) -> list[Issue]:
     return issues
 
 
-def _did_you_mean(word: str, candidates: Iterable[str]) -> str:
-    """``did you mean 'x'?`` for the closest candidate, or ``""`` when nothing is close."""
-    close = difflib.get_close_matches(str(word), list(candidates), n=1)
-    return f"did you mean {close[0]!r}?" if close else ""
+def _did_you_mean(word: object, candidates: Iterable[str]) -> str:
+    """``did you mean 'x'?`` for the closest candidate (case-insensitive), or ``""`` when none is close."""
+    by_lower = {c.lower(): c for c in candidates}
+    close = difflib.get_close_matches(str(word).lower(), list(by_lower), n=1)
+    return f"did you mean {by_lower[close[0]]!r}?" if close else ""
 
 
 def _key_hint(key: str, fields: Iterable[str]) -> str:
@@ -81,7 +82,8 @@ def _check_element(element: Any, path: str, positioned: bool, issues: list[Issue
     if spec is None:
         types = sorted(known_types())
         hint = _did_you_mean(etype, types)
-        issues.append(Issue(f"{path}.type", f"unknown element type {etype!r} ({hint or 'known: ' + ', '.join(types)})"))
+        known = f"{hint} " if hint else ""
+        issues.append(Issue(f"{path}.type", f"unknown element type {etype!r} ({known}known: {', '.join(types)})"))
         return
     fields = {f.name: f for f in (*COMMON_FIELDS, *spec.fields)}
     for key in element:
