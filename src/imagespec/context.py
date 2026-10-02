@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import time
+from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -34,6 +35,8 @@ HistoryProvider = Callable[[Sequence[str], Any, Any], dict[str, Any]]
 ImageFetcher = Callable[[str], bytes]
 
 _IMAGE_CACHE_MAX_ENTRIES = 32
+# Max (font file, size, engine) entries a context keeps loaded; least recently used evicted.
+FONT_CACHE_SIZE = 64
 _DOWNLOAD_CHUNK = 64 * 1024
 
 _PKG_DIR = os.path.dirname(__file__)
@@ -76,8 +79,10 @@ class RenderContext:
     layout_engine: ImageFont.Layout | None = None
     # Cache keyed by (resolved path, size, layout engine) so repeated text
     # elements are cheap and a later change of `layout_engine` is honoured.
-    _font_cache: dict[tuple[str, int, ImageFont.Layout | None], ImageFont.FreeTypeFont] = field(
-        default_factory=dict, repr=False
+    # Bounded LRU (:data:`FONT_CACHE_SIZE`): a long-lived context that fits text at many
+    # sizes must not hold every FreeTypeFont (and its file handle/glyph cache) forever.
+    _font_cache: OrderedDict[tuple[str, int, ImageFont.Layout | None], ImageFont.FreeTypeFont] = field(
+        default_factory=OrderedDict, repr=False
     )
     # url -> (monotonic fetch time, bytes); bounded, oldest entry evicted.
     _image_cache: dict[str, tuple[float, bytes]] = field(default_factory=dict, repr=False)
@@ -124,6 +129,10 @@ class RenderContext:
         if cached is None:
             cached = ImageFont.truetype(path, int(size), layout_engine=self.layout_engine)
             self._font_cache[key] = cached
+            while len(self._font_cache) > FONT_CACHE_SIZE:
+                self._font_cache.popitem(last=False)
+        else:
+            self._font_cache.move_to_end(key)
         return cached
 
     def fetch_image(self, url: str, *, timeout: float = 30) -> bytes:

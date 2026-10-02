@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from imagespec import RenderError, render
+from imagespec import RenderContext, RenderError, render
 from imagespec.elements.text import fit_lines
 
 
@@ -118,3 +118,55 @@ def test_text_max_width_overlong_first_word_starts_at_top(bw_ctx):
     a = render([wide], 150, 40, context=bw_ctx)
     b = render([plain], 150, 40, context=bw_ctx)
     assert a.tobytes() == b.tobytes()  # no phantom empty first line shifting the text down
+
+
+class _RecordingContext(RenderContext):
+    def font(self, name, size):
+        self.sizes.append(int(size))
+        return super().font(name, size)
+
+
+def _chosen_size(width, height, value, max_lines, start=60, min_size=8):
+    ctx = _RecordingContext(palette="4")
+    ctx.sizes = []
+    el = {
+        "type": "text_fit",
+        "x": 0,
+        "y": 0,
+        "width": width,
+        "height": height,
+        "value": value,
+        "size": start,
+        "min_size": min_size,
+        "max_lines": max_lines,
+    }
+    render([el], max(width, 1), max(height, 1), context=ctx)
+    return ctx.sizes[-1], len(ctx.sizes)
+
+
+def _linear_size(width, height, value, max_lines, start=60, min_size=8):
+    ctx = RenderContext(palette="4")
+    for size in range(start, min_size - 1, -1):
+        font = ctx.font(None, size)
+        ascent, descent = font.getmetrics()
+        line_h = ascent + descent + 2
+        lines, fits = fit_lines(value, font, width, max_lines, "…")
+        if fits and line_h * len(lines) <= height:
+            return size
+    return min_size
+
+
+@pytest.mark.parametrize("value", ["Hi", "Temperature 21.5", "wrap me please now"])
+@pytest.mark.parametrize("max_lines", [1, 3])
+@pytest.mark.parametrize("width,height", [(40, 12), (90, 30), (160, 20), (300, 70), (30, 200)])
+def test_text_fit_bisection_matches_a_linear_scan(value, max_lines, width, height):
+    assert _chosen_size(width, height, value, max_lines)[0] == _linear_size(width, height, value, max_lines)
+
+
+def test_text_fit_bisection_does_few_layouts():
+    _, layouts = _chosen_size(80, 20, "Temperature 21.5", 1, start=120)
+    assert layouts <= 12  # a linear scan from 120 would need ~100
+
+
+def test_text_fit_when_start_is_below_min_size():
+    assert _chosen_size(100, 40, "abc", 1, start=6, min_size=10)[0] == 10
