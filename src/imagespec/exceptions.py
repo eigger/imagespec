@@ -26,6 +26,9 @@ class RenderError(Exception):
     def __str__(self) -> str:
         return f"{self.path}: {self.message}" if self.path else self.message
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.message!r}, path={self.path!r})"
+
     def at(self, segment: str) -> RenderError:
         """Prepend ``segment`` (an enclosing container/index) to :attr:`path`; returns ``self``."""
         self.path = segment + self.path

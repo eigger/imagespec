@@ -149,6 +149,13 @@ inside a handler is wrapped with the element index and type
 logged and skipped, not raised, so a payload written for a newer imagespec
 degrades instead of failing. Translate `RenderError` once, at the adapter.
 
+`RenderError.path` locates the failing element in the payload, in the same
+notation as `Issue.path` from `validate()` (`[1].elements[2]` is the third child
+of the group at index 1; nested `group`/`stack` positions are kept), and
+`RenderError.message` is the text without it. `str(err)` is `"<path>: <message>"`,
+so an adapter doing `HomeAssistantError(str(err))` already tells users which
+element to fix.
+
 Unknown *keys* (a typo such as `fil: red`) are ignored by `render()`. To catch
 them — and missing required keys, wrong kinds, bad enum values — before
 rendering, call `imagespec.validate(payload)`; it returns a list of

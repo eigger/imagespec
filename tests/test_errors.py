@@ -289,3 +289,36 @@ def test_render_error_path_for_unexpected_exceptions(ctx, monkeypatch):
 def test_render_error_without_path_prints_plain():
     assert str(RenderError("boom")) == "boom"
     assert str(RenderError("boom", path="[2]")) == "[2]: boom"
+
+
+def test_render_error_path_for_non_dict_payload_element(ctx):
+    with pytest.raises(RenderError) as exc:
+        render([{"type": "fill", "color": "white"}, "oops"], 10, 10, context=ctx)
+    assert exc.value.path == "[1]"
+
+
+def test_render_error_path_for_unexpected_exception_in_group_and_stack(ctx, monkeypatch):
+    import imagespec.dispatch as dispatch
+
+    real = dispatch.get_handler
+
+    def get(t):
+        if t == "text":
+            raise_it = ZeroDivisionError
+
+            def boom(state, element):
+                raise raise_it("nope")
+
+            return boom
+        return real(t)
+
+    monkeypatch.setattr(dispatch, "get_handler", get)
+    t = {"type": "text", "x": 0, "y": 0, "value": "a"}
+    with pytest.raises(RenderError) as exc:
+        render([{"type": "group", "elements": [t]}], 10, 10, context=ctx)
+    assert exc.value.path == "[0].elements[0]"
+    with pytest.raises(RenderError) as exc:
+        render([{"type": "stack", "elements": ["skip", t]}], 10, 10, context=ctx)
+    assert exc.value.path == "[0].elements[1]"
+    assert "child #1" in exc.value.message
+    assert repr(exc.value).endswith("path='[0].elements[1]')")

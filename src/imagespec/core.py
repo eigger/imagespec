@@ -110,7 +110,7 @@ def render(
 
     for idx, element in enumerate(payload or []):
         if not isinstance(element, dict):
-            raise RenderError(f"each payload element must be a dict, got {type(element).__name__}")
+            raise RenderError(f"each payload element must be a dict, got {type(element).__name__}", path=f"[{idx}]")
         etype = element.get("type", "")
         _LOGGER.debug("type: %s", etype)
         try:
