@@ -217,3 +217,14 @@ def test_rotated_text_honours_anchor(ctx):
 
     lt, mm, rb = ink("lt"), ink("mm"), ink("rb")
     assert lt[0] > mm[0] > rb[0] and lt[1] > mm[1] > rb[1]
+
+
+def test_rotated_text_background_padding(ctx):
+    def box(padding):
+        el = {"type": "text", "x": 50, "y": 50, "value": "Hi", "size": 20, "rotation": 90, "background": "black"}
+        el["background_padding"] = padding
+        return _ink_bbox(render([el], 200, 200, context=ctx))
+
+    b0, b10 = box(0), box(10)
+    assert (b10[2] - b10[0]) - (b0[2] - b0[0]) == 20
+    assert (b10[3] - b10[1]) - (b0[3] - b0[1]) == 20

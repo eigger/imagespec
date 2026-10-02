@@ -64,7 +64,10 @@ def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
         num("stroke_width", 0),
         color("stroke_fill", "white"),
         num(
-            "rotation", 0, doc="Degrees counter-clockwise; rotated text's box is placed at `(x, y)`, offset by `anchor`"
+            "rotation",
+            0,
+            doc="Degrees counter-clockwise; the rotated text's box is placed at `(x, y)`, "
+            "`anchor` positioning that box (`l`/`m`/`r`, `t`/`m`/`b`) rather than the font baseline",
         ),
         color("background", doc="Fill a box behind the text"),
         num("background_padding", 2, doc="Padding of the background box"),
@@ -132,7 +135,8 @@ def text(state: RenderState, element: dict) -> None:
             stroke_fill=stroke_fill,
         )
         tmp = tmp.rotate(text_rotation, expand=True)
-        # The rotated tile's box sits at (x, y), shifted by the anchor's fractions of its size.
+        # The rotated tile's box sits at (x, y), shifted by the anchor's fractions of its size
+        # (an approximation on the ink box; baseline/descender anchors act as `b`).
         h_frac = {"l": 0.0, "m": 0.5, "r": 1.0}.get(anchor[:1], 0.0) if anchor else 0.0
         v_frac = {"a": 0.0, "t": 0.0, "m": 0.5, "s": 1.0, "b": 1.0, "d": 1.0}.get(anchor[1:2], 0.0) if anchor else 0.0
         dest = int_xy(element["x"] - tmp.width * h_frac, akt_pos_y - tmp.height * v_frac)
