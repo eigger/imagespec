@@ -214,8 +214,9 @@ else is generated from those declarations:
   declared key types
 - `imagespec.validate(payload)` — the same checks at runtime, without a JSON
   Schema library: returns `[Issue(path, message), ...]` such as
-  `[2].fill: unknown key for 'circle'`, tolerating template strings and `null`
-  exactly as `render()` does. `render(..., strict=True)` runs it first and
+  `[2].fil: unknown key for 'circle' (did you mean 'fill'?)` (typos get a
+  "did you mean" hint), tolerating template strings and `null` exactly as
+  `render()` does. `render(..., strict=True)` runs it first and
   raises `RenderError` listing every issue.
 
 `python scripts/export_schema.py` regenerates the two files; CI fails if they

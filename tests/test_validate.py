@@ -35,8 +35,8 @@ def _paths(payload):
 
 def test_unknown_key_typo():
     issues = validate([{"type": "circle", "x": 1, "y": 1, "radius": 3, "fil": "red"}])
-    assert issues == [Issue("[0].fil", "unknown key for 'circle'")]
-    assert str(issues[0]) == "[0].fil: unknown key for 'circle'"
+    assert issues == [Issue("[0].fil", "unknown key for 'circle' (did you mean 'fill'?)")]
+    assert str(issues[0]) == "[0].fil: unknown key for 'circle' (did you mean 'fill'?)"
 
 
 def test_missing_required_top_level_and_in_group():
@@ -257,3 +257,37 @@ def test_blank_area_fill_in_a_plot_series_is_tolerated():
         "data": [{"entity": "s.a", "area_fill": ""}],
     }
     assert validate([plot]) == []
+
+
+def test_unknown_key_suggests_the_closest_declared_key():
+    [issue] = validate([{"type": "text", "x": 0, "y": 0, "value": "a", "colr": "red"}])
+    assert issue == Issue("[0].colr", "unknown key for 'text' (did you mean 'color'?)")
+
+
+def test_unknown_key_without_a_close_match_has_no_hint():
+    [issue] = validate([{"type": "text", "x": 0, "y": 0, "value": "a", "zzzzzz": 1}])
+    assert issue.message == "unknown key for 'text'"
+
+
+def test_unknown_nested_key_suggests_too():
+    legend = {"type": "legend", "x": 0, "y": 0, "items": [{"label": "a", "colr": "red"}]}
+    [issue] = validate([legend])
+    assert issue.path == "[0].items[0].colr" and "did you mean 'color'?" in issue.message
+
+
+def test_unknown_type_suggests_the_closest_type():
+    [issue] = validate([{"type": "circl", "x": 0, "y": 0}])
+    assert issue.path == "[0].type"
+    assert issue.message.startswith("unknown element type 'circl' (did you mean 'circle'? known: ")
+
+
+def test_hints_ignore_case():
+    [t] = validate([{"type": "TEXT", "x": 0, "y": 0, "value": "a"}])
+    assert "did you mean 'text'?" in t.message
+    [k] = validate([{"type": "text", "x": 0, "y": 0, "value": "a", "COLOR": "red"}])
+    assert k.message == "unknown key for 'text' (did you mean 'color'?)"
+
+
+def test_unknown_type_without_a_close_match_lists_the_known_ones():
+    [issue] = validate([{"type": "zzqq", "x": 0, "y": 0}])
+    assert "known: " in issue.message and "circle" in issue.message
