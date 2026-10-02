@@ -157,7 +157,8 @@ so an adapter doing `HomeAssistantError(str(err))` already tells users which
 element to fix.
 
 Unknown *keys* (a typo such as `fil: red`) are ignored by `render()`. To catch
-them — and missing required keys, wrong kinds, bad enum values — before
+them — and missing required keys, wrong kinds, bad enum values, unknown colour
+names (rendering would silently use white) — before
 rendering, call `imagespec.validate(payload)`; it returns a list of
 `Issue(path, message)` (empty when valid) with paths like
 `[0].elements[2].fill`, and accepts template strings and `null` exactly as the

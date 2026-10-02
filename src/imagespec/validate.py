@@ -22,6 +22,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from .colors import is_known_color
 from .dither import resolve_dither_method
 from .registry import get_spec, known_types
 from .spec import COMMON_FIELDS, POSITION_KEYS, Field
@@ -123,6 +124,9 @@ def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: st
     elif kind in ("string", "color"):
         if not isinstance(value, str):
             issues.append(Issue(path, f"must be a string{alt}, got {value!r}"))
+        elif kind == "color" and not is_known_color(value):
+            # rendering would fall back to white with a log warning: the commonest silent typo
+            issues.append(Issue(path, f"unknown color {value!r} (use a color name or #RGB/#RRGGBB){alt}"))
         elif f.enum is not None and value not in f.enum:
             issues.append(Issue(path, f"must be one of {', '.join(map(repr, f.enum))}{alt}, got {value!r}"))
     elif kind == "object":

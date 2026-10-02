@@ -196,3 +196,36 @@ def test_dither_null_inherits_render_wide_setting():
     with_false = render([dict(el, dither=False)], 40, 40, background="white", dither=True, context=ctx)
     assert with_null.tobytes() == dithered.tobytes()
     assert with_false.tobytes() != dithered.tobytes()
+
+
+# ── colours ────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("color", ["red", "RED", "#f00", "#ff0000", "rgb(255, 0, 0)", "yellow"])
+def test_known_colors_validate(color):
+    assert validate([{"type": "text", "x": 0, "y": 0, "value": "a", "color": color}]) == []
+
+
+def test_unknown_color_is_reported_where_it_is():
+    issues = validate([{"type": "text", "x": 0, "y": 0, "value": "a", "color": "rde"}])
+    assert [i.path for i in issues] == ["[0].color"]
+    assert "unknown color 'rde'" in issues[0].message
+
+
+def test_unknown_nested_color_is_reported():
+    payload = [
+        {
+            "type": "group",
+            "elements": [{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 5, "y_end": 5, "fill": "bleu"}],
+        }
+    ]
+    assert [i.path for i in validate(payload)] == ["[0].elements[0].fill"]
+
+
+def test_null_color_is_still_allowed():
+    assert validate([{"type": "text", "x": 0, "y": 0, "value": "a", "color": None}]) == []
+
+
+def test_strict_render_rejects_unknown_color(ctx):
+    with pytest.raises(RenderError, match="unknown color 'rde'"):
+        render([{"type": "text", "x": 0, "y": 0, "value": "a", "color": "rde"}], 20, 20, strict=True, context=ctx)
