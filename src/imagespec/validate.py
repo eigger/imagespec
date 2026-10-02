@@ -3,7 +3,8 @@
 :func:`validate` walks a payload the way the renderer will and reports every
 problem the declarations can detect: unknown element types, keys no handler
 reads (typos such as ``fil``), missing required keys, values of the wrong
-kind, and unknown colour names (which render as white). It applies the same tolerance as rendering — numeric/boolean keys may be
+kind, and unknown colour names (which render as white). It applies the same
+tolerance as rendering — numeric/boolean keys may be
 template strings (``"42"``, ``"False"``), optional keys may be ``null`` — so a
 payload that validates here renders without a contract error.
 

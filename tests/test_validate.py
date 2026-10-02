@@ -233,7 +233,7 @@ def test_strict_render_rejects_unknown_color(ctx):
 
 
 def test_blank_color_is_tolerated_where_it_means_no_fill():
-    spark = {"type": "sparkline", "x": 0, "y": 0, "width": 20, "height": 10, "data": [1, 2, 3], "fill": ""}
+    spark = {"type": "sparkline", "x": 0, "y": 0, "width": 20, "height": 10, "values": [1, 2, 3], "fill": ""}
     assert validate([spark]) == []
 
 
