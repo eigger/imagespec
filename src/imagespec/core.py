@@ -110,15 +110,16 @@ def render(
 
     for idx, element in enumerate(payload or []):
         if not isinstance(element, dict):
-            raise RenderError(f"each payload element must be a dict, got {type(element).__name__}")
+            raise RenderError(f"each payload element must be a dict, got {type(element).__name__}", path=f"[{idx}]")
         etype = element.get("type", "")
         _LOGGER.debug("type: %s", etype)
         try:
             render_element(state, element)
-        except RenderError:
-            raise  # already descriptive (names the element type / missing arg)
+        except RenderError as exc:
+            exc.at(f"[{idx}]")  # descriptive already; add where it happened
+            raise
         except Exception as exc:  # noqa: BLE001 — add element context, then surface
-            raise RenderError(f"error rendering element #{idx} (type '{etype}'): {exc}") from exc
+            raise RenderError(f"error rendering element #{idx} (type '{etype}'): {exc}", path=f"[{idx}]") from exc
 
     img = state.img
     if rotate in (90, 180, 270):

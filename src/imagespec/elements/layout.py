@@ -61,10 +61,13 @@ def group(state: RenderState, element: dict) -> None:
         ctype = child.get("type", "")
         try:
             render_element(substate, child)
-        except RenderError:
-            raise  # already descriptive
+        except RenderError as exc:
+            exc.at(f".elements[{idx}]")  # already descriptive
+            raise
         except Exception as exc:  # noqa: BLE001 — add child context, then surface
-            raise RenderError(f"group: error rendering child #{idx} (type '{ctype}'): {exc}") from exc
+            raise RenderError(
+                f"group: error rendering child #{idx} (type '{ctype}'): {exc}", path=f".elements[{idx}]"
+            ) from exc
 
     result = substate.img
     if rotate in (90, 180, 270):
@@ -257,7 +260,8 @@ def stack(state: RenderState, element: dict) -> None:
     inner_w = max(0, cw - pl - pr)
     inner_h = max(0, ch - pt - pb)
 
-    children = [c for c in element["elements"] if isinstance(c, dict)]
+    source_idx = [i for i, c in enumerate(element["elements"]) if isinstance(c, dict)]
+    children = [element["elements"][i] for i in source_idx]
 
     # Render each child onto its own transparent layer and measure its drawn
     # extent (alpha bbox). Children need no coordinates — default x/y to 0 for the
@@ -276,10 +280,14 @@ def stack(state: RenderState, element: dict) -> None:
         ctype = child.get("type", "")
         try:
             render_element(substate, eff)
-        except RenderError:
-            raise  # already descriptive
+        except RenderError as exc:
+            exc.at(f".elements[{source_idx[idx]}]")  # already descriptive
+            raise
         except Exception as exc:  # noqa: BLE001 — add child context, then surface
-            raise RenderError(f"stack: error rendering child #{idx} (type '{ctype}'): {exc}") from exc
+            raise RenderError(
+                f"stack: error rendering child #{source_idx[idx]} (type '{ctype}'): {exc}",
+                path=f".elements[{source_idx[idx]}]",
+            ) from exc
         rendered = substate.img
         bbox = rendered.getbbox()
         tile = rendered.crop(bbox) if bbox else None

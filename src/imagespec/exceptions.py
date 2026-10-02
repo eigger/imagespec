@@ -10,4 +10,26 @@ from __future__ import annotations
 
 
 class RenderError(Exception):
-    """Raised when a payload cannot be rendered (bad arguments, missing data, ...)."""
+    """Raised when a payload cannot be rendered (bad arguments, missing data, ...).
+
+    ``path`` locates the failing element in the payload in the same notation as
+    :attr:`imagespec.Issue.path` (e.g. ``[0].elements[1]``); it is empty for errors
+    that are not tied to one element. ``str(exc)`` is prefixed with it, and
+    ``exc.message`` is the bare text.
+    """
+
+    def __init__(self, message: str = "", *, path: str = "") -> None:
+        super().__init__(message)
+        self.message = message
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"{self.path}: {self.message}" if self.path else self.message
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.message!r}, path={self.path!r})"
+
+    def at(self, segment: str) -> RenderError:
+        """Prepend ``segment`` (an enclosing container/index) to :attr:`path`; returns ``self``."""
+        self.path = segment + self.path
+        return self
