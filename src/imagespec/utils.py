@@ -206,3 +206,12 @@ def blit(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
         return  # fully off-canvas
     part = tile.crop((sx, sy, ex, ey)) if (sx, sy, ex, ey) != (0, 0, tw, th) else tile
     canvas.alpha_composite(part, (x + sx, y + sy))
+
+
+def multiline_anchor(anchor: str | None, text: str, *, always: bool = False) -> str | None:
+    """``anchor`` usable for ``text``: Pillow has no top/bottom anchor (``t``/``b``) for multi-line
+    text, so those map to the ascender/descender line (``a``/``d``). ``always`` forces the mapping
+    for APIs that are multi-line even for one line (``multiline_text``)."""
+    if anchor and len(anchor) >= 2 and anchor[1] in ("t", "b") and (always or "\n" in text):
+        return anchor[0] + {"t": "a", "b": "d"}[anchor[1]] + anchor[2:]
+    return anchor

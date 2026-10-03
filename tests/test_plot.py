@@ -90,3 +90,17 @@ def test_plot_empty_data_is_a_payload_error(history_ctx):
     # used to reach math.ceil(None) and surface as a TypeError
     with pytest.raises(RenderError, match="at least one entity"):
         render([{"type": "plot", "data": []}], 200, 100, context=history_ctx)
+
+
+def test_plot_xlegend_format_with_a_newline_renders(history_ctx):
+    """`%H\\n%M` stacks the label on two lines; the t-anchored legend used to raise."""
+    el = {
+        "type": "plot",
+        "x_start": 2,
+        "y_start": 2,
+        "x_end": 197,
+        "y_end": 80,
+        "data": [{"entity": "sensor.temp"}],
+        "xlegend": {"format": "%H\n%M"},
+    }
+    assert render([el], 200, 100, context=history_ctx).size == (200, 100)

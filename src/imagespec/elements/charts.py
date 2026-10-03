@@ -17,7 +17,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import array, boolean, color, enum, num, obj, string
 from ..state import RenderState
-from ..utils import is_decimal, mono_draw, require
+from ..utils import is_decimal, mono_draw, multiline_anchor, require
 
 
 @element(
@@ -512,4 +512,10 @@ def plot(state: RenderState, element: dict) -> None:
             lx = round(diag_x + ratio * (diag_width - 1))
             time_label = (start + duration * ratio).strftime(xlegend_format)
             anchor = "lt" if i == 0 else "rt" if i == xlegend_ticks - 1 else "mt"
-            draw.text((lx, label_y), time_label, fill=xlegend_color, font=xlegend_font, anchor=anchor)
+            draw.text(
+                (lx, label_y),
+                time_label,
+                fill=xlegend_color,
+                font=xlegend_font,
+                anchor=multiline_anchor(anchor, time_label),
+            )
