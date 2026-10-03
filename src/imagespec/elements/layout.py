@@ -139,31 +139,36 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
 
 
 class _InkRuler:
-    """``getlength`` as the text is really drawn: the right edge of the ink of a 1-bit render.
+    """``getlength`` for wrapping that errs on the side of never clipping.
 
     Hinted 1-bit glyphs can come out a few px wider than ``font.getlength`` / ``textbbox``
-    predict, which would leave wrapped lines clipped by the slot (what :func:`wrap_words` needs).
+    predict, which would leave wrapped lines clipped by the slot. Far from ``avail`` the plain
+    advance decides; within a small slack of it the line is really drawn and its ink measured.
     """
 
-    def __init__(self, font) -> None:
+    def __init__(self, font, avail: float) -> None:
         self._font = font
+        self._avail = avail
         ascent, descent = font.getmetrics()
         self._height = ascent + descent + 8
         self._cache: dict[str, float] = {}
 
     def getlength(self, text: str) -> float:
+        advance = self._font.getlength(text)
+        if advance > self._avail or advance < self._avail - (3 + 0.1 * advance):
+            return advance  # clearly over, or clearly (by more than any hinting overhang) under
         if text not in self._cache:
-            width = int(self._font.getlength(text) * 1.5) + 32
-            scratch = Image.new("L", (width, self._height), 0)
+            scratch = Image.new("L", (int(advance * 1.5) + 32, self._height), 0)
             mono_draw(scratch).text((0, 0), text, fill=255, font=self._font)
             ink = scratch.getbbox()
-            self._cache[text] = float(ink[2]) if ink else 0.0
+            self._cache[text] = max(advance, float(ink[2])) if ink else advance
         return self._cache[text]
 
 
 def _wrap_text_to(state, child: dict, avail: int) -> dict:
     """A ``text`` child whose lines are wider than ``avail`` px, word-wrapped to fit (explicit
-    ``\\n`` breaks kept); anything else (fits, ``max_width`` set, rotated, ...) comes back unchanged.
+    ``\\n`` breaks and the whitespace of lines that already fit are kept); anything else (fits,
+    ``max_width`` set, rotated, ...) comes back unchanged.
 
     A stack clips whatever overflows it, so a long text in a narrow column used to be cut off.
     """
@@ -173,16 +178,19 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
         if int(float(child.get("rotation") or 0)) % 360 != 0:
             return child
         font = state.context.font(child.get("font"), float(child.get("size", 20)))
-    except (TypeError, ValueError, OverflowError):
-        return child  # bad values are reported by the element itself
+    except Exception:  # noqa: BLE001 — bad size/rotation/font: the element itself reports it
+        return child
     value = str(child.get("value", ""))
     paragraphs = value.split("\n")
-    ruler = _InkRuler(font)
+    ruler = _InkRuler(font, avail)
     if all(ruler.getlength(p) <= avail for p in paragraphs):
         return child
     lines: list[str] = []
     for para in paragraphs:
-        lines.extend(wrap_words(para, ruler, avail) if para.strip() else [""])
+        if ruler.getlength(para) <= avail or not para.strip():
+            lines.append(para)  # fits (or blank): keep it as written, indentation included
+        else:
+            lines.extend(wrap_words(para, ruler, avail))
     return {**child, "value": "\n".join(lines)}
 
 

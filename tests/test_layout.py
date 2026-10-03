@@ -837,11 +837,50 @@ def test_text_that_fits_is_untouched(ctx):
 
 
 def test_explicit_newlines_and_blank_lines_survive_wrapping(ctx):
-    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": "one\n\ntwo " + LONG, "size": 12}]}
-    nowrap = {"type": "column", "width": 600, "elements": [{"type": "text", "value": "one\n\ntwo", "size": 12}]}
-    tall = _ink(render([col], 200, 200, context=ctx))
-    short = _ink(render([nowrap], 700, 200, context=ctx))
-    assert tall[3] - tall[1] > short[3] - short[1]  # at least the 3 original lines (blank one included) plus wrapping
+    from imagespec.elements.layout import _wrap_text_to
+
+    class _State:
+        context = ctx
+
+    child = {"type": "text", "value": "one\n\ntwo " + LONG, "size": 12}
+    lines = _wrap_text_to(_State, child, 60)["value"].split("\n")
+    assert lines[:3] == ["one", "", "two"] or lines[:3] == ["one", "", "two alpha"]
+    assert len(lines) > 4  # the long paragraph wrapped, the original breaks are all still there
+
+
+def test_whitespace_of_lines_that_fit_is_kept(ctx):
+    from imagespec.elements.layout import _wrap_text_to
+
+    class _State:
+        context = ctx
+
+    value = "  indented\nA  B\n" + LONG
+    lines = _wrap_text_to(_State, {"type": "text", "value": value, "size": 12}, 60)["value"].split("\n")
+    assert lines[0] == "  indented" and lines[1] == "A  B"  # only the overflowing paragraph is reflowed
+
+
+def test_a_failing_font_resolver_is_reported_with_the_child_path():
+    from imagespec import RenderContext, RenderError
+
+    def boom(name):
+        raise RuntimeError("no such font")
+
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12, "font": "x.ttf"}]}
+    with pytest.raises(RenderError) as exc:
+        render([col], 100, 100, context=RenderContext(palette="4", font_resolver=boom))
+    assert exc.value.path == "[0].elements[0]"
+
+
+def test_wrapping_measures_ink_only_near_the_slot_edge(ctx, monkeypatch):
+    import imagespec.elements.layout as layout
+
+    calls = []
+    real = layout.mono_draw
+    monkeypatch.setattr(layout, "mono_draw", lambda im: calls.append(1) or real(im))
+    words = " ".join(["lorem", "ipsum", "dolor", "sit", "amet"] * 80)
+    col = {"type": "column", "width": 300, "height": 2000, "elements": [{"type": "text", "value": words, "size": 10}]}
+    render([col], 320, 600, context=ctx)
+    assert len(calls) < 250  # 400 words: a drawn measurement for every trial would be >> this
 
 
 def test_explicit_max_width_is_left_alone(ctx):
@@ -882,10 +921,11 @@ def test_text_wraps_inside_a_nested_card(ctx):
     img = render([card], 200, 200, context=ctx)
     text_ink = [(x, y) for x in range(200) for y in range(200) if img.getpixel((x, y)) == BLACK]
     assert max(x for x, _ in text_ink) <= 70 - 4
+    assert max(y for _, y in text_ink) - min(y for _, y in text_ink) > 30  # wrapped onto several lines, not clipped
 
 
-@pytest.mark.parametrize("size", [10, 12, 16, 22])
-@pytest.mark.parametrize("avail", [45, 60, 77, 98, 140])
+@pytest.mark.parametrize("size", [8, 10, 12, 14, 16, 22, 30])
+@pytest.mark.parametrize("avail", list(range(40, 160, 7)))
 def test_wrapped_lines_never_overflow_the_slot_as_drawn(ctx, size, avail):
     """Measured by really drawing each line in 1-bit (hinted glyphs are wider than getlength says)."""
     from PIL import Image
