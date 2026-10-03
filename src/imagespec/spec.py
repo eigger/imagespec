@@ -180,7 +180,12 @@ STRETCHABLE_TYPES = frozenset({"group", "stack", "row", "column", "text_fit", "s
 
 # Read by an enclosing stack/row/column from each child (see layout._child_layout).
 LAYOUT_FIELDS: tuple[Field, ...] = (
-    num("grow", 0, doc="Share of leftover main-axis space this child takes (flex-grow)"),
+    num(
+        "grow",
+        0,
+        doc="Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with "
+        "`background`/`outline` and no main-axis size) grows its box to fill it",
+    ),
     enum("align", ("start", "end", "center", "stretch"), doc="Cross-axis alignment for this child only"),
     enum("self", ("start", "end", "center", "stretch"), doc="Alias of `align`"),
     num("margin", doc="All four margins (px)"),

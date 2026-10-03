@@ -148,6 +148,13 @@ def _cross_extent(tile: dict, horizontal: bool) -> int:
     return (tile["h"] if horizontal else tile["w"]) + _cross_margins(tile, horizontal)
 
 
+def _fills_slot(child: dict, main_key: str) -> bool:
+    """A card (nested stack with ``background``/``outline``) with no explicit main-axis size: `grow` makes
+    its box fill the slot. Unstyled stacks draw nothing for their empty space, so there is nothing to fill."""
+    styled = child.get("background") is not None or child.get("outline") is not None
+    return styled and child.get("type") in ("stack", "row", "column") and child.get(main_key) is None
+
+
 # Stretchable elements that can be rendered without a cross size (their width/height are optional).
 _MEASURABLE = frozenset({"group", "stack", "row", "column"})
 
@@ -351,10 +358,18 @@ def stack(state: RenderState, element: dict) -> None:
             return child
         return {**child, **{k: 0 for k in ("x", "y") if child.get(k) is None}}
 
-    def render_child(idx, child, lay, stretch_size):
+    main_key = "width" if horizontal else "height"
+
+    def render_child(idx, child, lay, stretch_size, main_size=None):
         """Render ``child`` on its own layer and crop it to its drawn extent: ``lay`` + img/w/h."""
         eff = positioned(child)
         sub_w, sub_h = max(1, inner_w), max(1, inner_h)
+        if main_size is not None:  # a growing card: its box is the whole slot along the main axis
+            eff = {**eff, main_key: main_size}
+            if horizontal:
+                sub_w = max(sub_w, main_size)
+            else:
+                sub_h = max(sub_h, main_size)
         if stretch_size is not None:
             # the child's own cross coordinate is ignored (like any stack child); a negative margin
             # can make the slot larger than the stack, so give the layer room for it
@@ -383,7 +398,7 @@ def stack(state: RenderState, element: dict) -> None:
             bbox = (bbox[0], 0, bbox[2], stretch_size) if horizontal else (0, bbox[1], stretch_size, bbox[3])
         tile = rendered.crop(bbox) if bbox else None
         tw, th = tile.size if tile else (0, 0)
-        return {**lay, "img": tile, "w": tw, "h": th}
+        return {**lay, "img": tile, "w": tw, "h": th, "stretch": stretch_size}
 
     lays = [_child_layout(c) for c in children]
     # `align: stretch`: size-aware children without an explicit cross size fill the cross axis.
@@ -464,6 +479,12 @@ def stack(state: RenderState, element: dict) -> None:
         if last is not None:
             grow_extra[last] += int(free) - handed  # rounding remainder
         free = 0
+        # A growing card (styled nested stack without its own main size) fills its slot: its box,
+        # not just the empty space after it, takes the extra.
+        for i, (c, t) in enumerate(zip(children, tiles, strict=True)):
+            if grow_extra[i] > 0 and _fills_slot(c, main_key):
+                tiles[i] = render_child(i, c, t, t["stretch"], main_of(t) + grow_extra[i])
+                grow_extra[i] = 0
 
     leading, spacing = _justify_offsets(justify, free, n, gap)
 

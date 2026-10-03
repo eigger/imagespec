@@ -26,7 +26,7 @@ See [`elements.md`](elements.md) for a rendered YAML example of every element an
 | `dither` | bool \| 0/1 \| method name |  | Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `"False"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override |
 | `class` | string |  | Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column |
 | `layout` | object |  | Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand) |
-| `layout.grow` | number | `0` | Share of leftover main-axis space this child takes (flex-grow) |
+| `layout.grow` | number | `0` | Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it |
 | `layout.align` | `start` \| `end` \| `center` \| `stretch` |  | Cross-axis alignment for this child only |
 | `layout.self` | `start` \| `end` \| `center` \| `stretch` |  | Alias of `align` |
 | `layout.margin` | number |  | All four margins (px) |

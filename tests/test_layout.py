@@ -674,3 +674,81 @@ def test_card_of_only_size_required_stretched_children_falls_back_to_the_availab
     img = render([card], 60, 50, context=ctx)
     ys = [y for y in range(50) if img.getpixel((6, y)) == BLACK]
     assert min(ys) == 5 and max(ys) == 49
+
+
+# --------------------------------------------------------------------------- #
+# grow on cards
+# --------------------------------------------------------------------------- #
+
+
+def _xs(img, color, y):
+    return [x for x in range(img.width) if img.getpixel((x, y)) == color]
+
+
+def test_growing_card_fills_the_free_space(ctx):
+    row = {
+        "type": "row",
+        "width": 120,
+        "height": 30,
+        "gap": 6,
+        "elements": [_card("A", "yellow"), _card("B", "red", layout={"grow": 1})],
+    }
+    img = render([row], 120, 30, context=ctx)
+    red = _xs(img, RED, 2)
+    assert max(red) == 119  # the red card runs to the end of the row
+    yellow = _xs(img, YELLOW, 2)
+    assert min(red) - max(yellow) - 1 == 6  # the gap is untouched
+
+
+def test_growing_cards_share_the_free_space_by_weight(ctx):
+    def widths(grows):
+        els = [_card("A", "yellow", layout={"grow": grows[0]}), _card("B", "red", layout={"grow": grows[1]})]
+        img = render([{"type": "row", "width": 150, "height": 30, "elements": els}], 150, 30, context=ctx)
+        return len(_xs(img, YELLOW, 2)), len(_xs(img, RED, 2)), img
+
+    natural_y, natural_r, _ = widths((0, 0))
+    y, r, img = widths((1, 2))
+    extra_y, extra_r = y - natural_y, r - natural_r
+    assert extra_y > 0 and abs(extra_r - 2 * extra_y) <= 2  # the free space is split 1:2
+    assert max(_xs(img, RED, 2)) == 149  # and all of it is used
+
+
+def test_growing_card_in_a_column_fills_the_height(ctx):
+    col = {
+        "type": "column",
+        "width": 60,
+        "height": 90,
+        "gap": 4,
+        "elements": [_card("A", "yellow"), _card("B", "red", layout={"grow": 1})],
+    }
+    img = render([col], 60, 90, context=ctx)
+    red_rows = [y for y in range(90) if img.getpixel((2, y)) == RED]
+    assert max(red_rows) == 89
+
+
+def test_growing_card_with_an_explicit_size_keeps_it(ctx):
+    row = {"type": "row", "width": 120, "height": 30, "elements": [_card("A", "red", width=40, layout={"grow": 1})]}
+    img = render([row], 120, 30, context=ctx)
+    assert max(_xs(img, RED, 2)) == 39
+
+
+def test_unstyled_growing_stack_is_unchanged(ctx):
+    inner = {"type": "row", "elements": [{"type": "text", "value": "A", "size": 12}], "layout": {"grow": 1}}
+    row = {"type": "row", "width": 100, "height": 20, "elements": [inner, {"type": "text", "value": "Z", "size": 12}]}
+    plain = {**row, "elements": [{k: v for k, v in inner.items() if k != "layout"}, row["elements"][1]]}
+    a = render([row], 100, 20, context=ctx)
+    b = render([plain], 100, 20, context=ctx)
+    xs = lambda im: [x for x in range(100) if any(im.getpixel((x, y)) == BLACK for y in range(20))]  # noqa: E731
+    assert max(xs(a)) > max(xs(b))  # grow still pushes the sibling to the end, as before
+
+
+def test_growing_card_respects_margins(ctx):
+    row = {
+        "type": "row",
+        "width": 100,
+        "height": 30,
+        "elements": [_card("B", "red", layout={"grow": 1, "margin_x": 5})],
+    }
+    img = render([row], 100, 30, context=ctx)
+    red = _xs(img, RED, 2)
+    assert min(red) == 5 and max(red) == 94
