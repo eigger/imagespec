@@ -324,14 +324,15 @@ def _error_diffuse(
     divisor: int,
     *,
     serpentine: bool = True,
+    protect_mask: Image.Image | None = None,
 ) -> Image.Image:
     """Serpentine error diffusion onto ``palette`` (numpy-assisted when available)."""
     if np is not None:
-        return _error_diffuse_np(img, palette, kernel, divisor, serpentine=serpentine)
-    return _error_diffuse_py(img, palette, kernel, divisor, serpentine=serpentine)
+        return _error_diffuse_np(img, palette, kernel, divisor, serpentine=serpentine, protect_mask=protect_mask)
+    return _error_diffuse_py(img, palette, kernel, divisor, serpentine=serpentine, protect_mask=protect_mask)
 
 
-def _scan_row(data, out, base, xs, er_row, eg_row, eb_row, pal, same, w):
+def _scan_row(data, out, base, xs, er_row, eg_row, eb_row, pal, same, w, protect_row=None):
     """Quantize one row in scan order, applying same-row taps as it goes.
 
     Returns the per-pixel error (three lists) for the taps that reach the rows
@@ -343,6 +344,10 @@ def _scan_row(data, out, base, xs, er_row, eg_row, eb_row, pal, same, w):
     e_b = [0.0] * w
     for x in xs:
         i = base + x * 3
+        if protect_row is not None and protect_row[x]:
+            nr, ng, nb = _nearest(data[i], data[i + 1], data[i + 2], pal)
+            out[i], out[i + 1], out[i + 2] = nr, ng, nb
+            continue
         r = data[i] + er_row[x]
         g = data[i + 1] + eg_row[x]
         b = data[i + 2] + eb_row[x]
@@ -392,7 +397,7 @@ def _split_kernel(kernel, divisor):
     return same_lr, same_rl, below_lr, below_rl
 
 
-def _error_diffuse_np(img, palette, kernel, divisor, *, serpentine=True):
+def _error_diffuse_np(img, palette, kernel, divisor, *, serpentine=True, protect_mask=None):
     assert np is not None
     src = img.convert("RGB")
     w, h = src.size
@@ -403,17 +408,23 @@ def _error_diffuse_np(img, palette, kernel, divisor, *, serpentine=True):
     max_dy = max((dy for _, dy, _ in kernel), default=0)
     err = np.zeros((h + max_dy, w, 3), dtype=np.float64)
 
+    protected = protect_mask.convert("L").tobytes() if protect_mask is not None else None
     for y in range(h):
         ltr = (not serpentine) or (y % 2 == 0)
         er_row, eg_row, eb_row = err[y].T.tolist()
         xs = range(w) if ltr else range(w - 1, -1, -1)
-        e_r, e_g, e_b = _scan_row(data, out, y * w * 3, xs, er_row, eg_row, eb_row, pal, same_lr if ltr else same_rl, w)
+        protected_row = protected[y * w : (y + 1) * w] if protected is not None else None
+        e_r, e_g, e_b = _scan_row(
+            data, out, y * w * 3, xs, er_row, eg_row, eb_row, pal, same_lr if ltr else same_rl, w, protected_row
+        )
         if not below_lr:
             continue
         e = np.array([e_r, e_g, e_b], dtype=np.float64).T  # (w, 3)
         for dx, dy, f in below_lr if ltr else below_rl:
             ny = y + dy
             if ny >= h:
+                continue
+            if abs(dx) >= w:
                 continue
             if dx >= 0:  # cell nx receives e[nx - dx] * f
                 err[ny, dx:w] += e[: w - dx] * f
@@ -422,7 +433,7 @@ def _error_diffuse_np(img, palette, kernel, divisor, *, serpentine=True):
     return Image.frombytes("RGB", (w, h), bytes(out))
 
 
-def _error_diffuse_py(img, palette, kernel, divisor, *, serpentine=True):
+def _error_diffuse_py(img, palette, kernel, divisor, *, serpentine=True, protect_mask=None):
     src = img.convert("RGB")
     w, h = src.size
     data = src.tobytes()
@@ -434,11 +445,15 @@ def _error_diffuse_py(img, palette, kernel, divisor, *, serpentine=True):
     err = [([0.0] * w, [0.0] * w, [0.0] * w) for _ in range(nbuf)]
     zeros = [0.0] * w
 
+    protected = protect_mask.convert("L").tobytes() if protect_mask is not None else None
     for y in range(h):
         ltr = (not serpentine) or (y % 2 == 0)
         er_row, eg_row, eb_row = err[y % nbuf]
         xs = range(w) if ltr else range(w - 1, -1, -1)
-        e_r, e_g, e_b = _scan_row(data, out, y * w * 3, xs, er_row, eg_row, eb_row, pal, same_lr if ltr else same_rl, w)
+        protected_row = protected[y * w : (y + 1) * w] if protected is not None else None
+        e_r, e_g, e_b = _scan_row(
+            data, out, y * w * 3, xs, er_row, eg_row, eb_row, pal, same_lr if ltr else same_rl, w, protected_row
+        )
         for dx, dy, f in below_lr if ltr else below_rl:
             ny = y + dy
             if ny >= h:
@@ -463,6 +478,7 @@ def _ordered_dither(
     matrix: list[list[int]] | tuple[tuple[int, ...], ...],
     *,
     origin: tuple[int, int] = (0, 0),
+    protect_mask: Image.Image | None = None,
 ) -> Image.Image:
     """Threshold-bias ordered dither, then snap to the nearest palette color.
 
@@ -483,16 +499,29 @@ def _ordered_dither(
         # same operand order as the scalar path: (dr*dr + dg*dg) + db*db
         dist = d[..., 0] * d[..., 0] + d[..., 1] * d[..., 1] + d[..., 2] * d[..., 2]
         idx = np.argmin(dist, axis=-1)  # first minimum, like the strict `<` search
+        if protect_mask is not None:
+            protected = np.asarray(protect_mask.convert("L")) > 0
+            original = np.asarray(src, dtype=np.uint8)
+            base_d = original[:, :, None, :].astype(np.float64) - pal[None, None, :, :]
+            base_dist = base_d[..., 0] ** 2 + base_d[..., 1] ** 2 + base_d[..., 2] ** 2
+            idx = np.where(protected, np.argmin(base_dist, axis=-1), idx)
         return Image.fromarray(np.asarray(palette, dtype=np.uint8)[idx], "RGB")
     data = src.tobytes()
     out = bytearray(len(data))
+    protected = protect_mask.convert("L").tobytes() if protect_mask is not None else None
     for y in range(h):
         row = matrix[(y + oy) % n]
         base = y * w * 3
         for x in range(w):
             bias = ((row[(x + ox) % n] + 0.5) / levels - 0.5) * 255.0
             i = base + x * 3
-            out[i], out[i + 1], out[i + 2] = _nearest(data[i] + bias, data[i + 1] + bias, data[i + 2] + bias, palette)
+            if protected is not None and protected[y * w + x]:
+                r, g, b = _nearest(data[i], data[i + 1], data[i + 2], palette)
+                out[i], out[i + 1], out[i + 2] = r, g, b
+            else:
+                out[i], out[i + 1], out[i + 2] = _nearest(
+                    data[i] + bias, data[i + 1] + bias, data[i + 2] + bias, palette
+                )
     return Image.frombytes("RGB", (w, h), bytes(out))
 
 
@@ -502,6 +531,7 @@ def dither_to_palette(
     *,
     dither: bool | str | int | None = True,
     origin: tuple[int, int] = (0, 0),
+    protect_mask: Image.Image | None = None,
 ) -> Image.Image:
     """Return ``img`` quantized to ``palette`` (RGB), using ``dither`` method.
 
@@ -531,19 +561,19 @@ def dither_to_palette(
             if ImageChops.difference(img.convert("RGB"), snapped).getbbox() is None:
                 return snapped
         kernel, divisor = kernel_spec
-        return _error_diffuse(img, rgbs, kernel, divisor, serpentine=True)
+        return _error_diffuse(img, rgbs, kernel, divisor, serpentine=True, protect_mask=protect_mask)
 
     if method == DITHER_BAYER2:
-        return _ordered_dither(img, rgbs, _bayer_matrix(2), origin=origin)
+        return _ordered_dither(img, rgbs, _bayer_matrix(2), origin=origin, protect_mask=protect_mask)
     if method == DITHER_BAYER4:
-        return _ordered_dither(img, rgbs, _bayer_matrix(4), origin=origin)
+        return _ordered_dither(img, rgbs, _bayer_matrix(4), origin=origin, protect_mask=protect_mask)
     if method == DITHER_BAYER8:
-        return _ordered_dither(img, rgbs, _bayer_matrix(8), origin=origin)
+        return _ordered_dither(img, rgbs, _bayer_matrix(8), origin=origin, protect_mask=protect_mask)
     if method == DITHER_BAYER16:
-        return _ordered_dither(img, rgbs, _bayer_matrix(16), origin=origin)
+        return _ordered_dither(img, rgbs, _bayer_matrix(16), origin=origin, protect_mask=protect_mask)
     if method == DITHER_CLUSTERED4:
-        return _ordered_dither(img, rgbs, _CLUSTERED4, origin=origin)
+        return _ordered_dither(img, rgbs, _CLUSTERED4, origin=origin, protect_mask=protect_mask)
     if method == DITHER_CLUSTERED8:
-        return _ordered_dither(img, rgbs, _CLUSTERED8, origin=origin)
+        return _ordered_dither(img, rgbs, _CLUSTERED8, origin=origin, protect_mask=protect_mask)
 
     raise ValueError(f"unhandled dither method {method!r}")  # pragma: no cover

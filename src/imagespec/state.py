@@ -31,3 +31,6 @@ class RenderState:
     canvas_height: int
     context: RenderContext
     pos_y: float = 0
+    # Pixels quantized under an element-level dither override; the final
+    # whole-canvas pass must leave these pixels unchanged.
+    dither_protected: Image.Image | None = None

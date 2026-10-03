@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 from .registry import get_handler, get_spec
 from .spec import COMMON_FIELDS
@@ -57,6 +57,12 @@ def _draw_isolated(state, element, handler, dither) -> None:
     ).convert("RGBA")
     quant.putalpha(alpha)
     base.alpha_composite(quant, dest=(ox, oy))
+    if state.dither_protected is None:
+        state.dither_protected = Image.new("L", base.size, 0)
+    protected = state.dither_protected.crop((ox, oy, right, bottom))
+    protected = ImageChops.subtract(protected, alpha)
+    protected = ImageChops.lighter(protected, alpha.point(lambda p: 255 if p else 0))
+    state.dither_protected.paste(protected, (ox, oy))
 
 
 def render_element(state, element: dict) -> None:
@@ -80,4 +86,20 @@ def render_element(state, element: dict) -> None:
     if element.get("dither") is not None:
         _draw_isolated(state, element, handler, element["dither"])
     else:
-        handler(state, element)
+        old_protected = state.dither_protected
+        if old_protected is not None and old_protected.getbbox() is not None:
+            # Draw to transparency so coverage is known even when an element
+            # paints the same RGB value already present under a protected pixel.
+            base = state.img
+            state.img = Image.new("RGBA", base.size, (0, 0, 0, 0))
+            state.dither_protected = Image.new("L", base.size, 0)
+            handler(state, element)
+            layer = state.img.convert("RGBA")
+            additions = state.dither_protected
+            coverage = layer.getchannel("A").point(lambda p: 255 if p else 0)
+            state.img = base
+            base.alpha_composite(layer)
+            surviving = ImageChops.subtract(old_protected, coverage)
+            state.dither_protected = ImageChops.lighter(surviving, additions)
+        else:
+            handler(state, element)

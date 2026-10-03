@@ -20,7 +20,9 @@ the normal element handlers, so every registered element works as a child.
 
 from __future__ import annotations
 
-from PIL import Image
+import math
+
+from PIL import Image, ImageDraw
 
 from ..classutil import parse_class
 from ..dispatch import render_element
@@ -28,7 +30,17 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
 from ..state import RenderState
-from ..utils import blit, coerce_element, int_xy, mono_draw, require, wrap_words
+from ..utils import (
+    blit,
+    coerce_element,
+    int_xy,
+    merge_mask,
+    mono_draw,
+    multiline_anchor,
+    require,
+    subtract_mask,
+    wrap_words,
+)
 
 
 @element(
@@ -53,7 +65,13 @@ def group(state: RenderState, element: dict) -> None:
     rotate = int(element.get("rotate", 0) or 0)
 
     sub = Image.new("RGBA", (gw, gh), (0, 0, 0, 0))
-    substate = RenderState(img=sub, canvas_width=gw, canvas_height=gh, context=state.context)
+    substate = RenderState(
+        img=sub,
+        canvas_width=gw,
+        canvas_height=gh,
+        context=state.context,
+        dither_protected=Image.new("L", sub.size, 0),
+    )
 
     for idx, child in enumerate(element["elements"]):
         if not isinstance(child, dict):
@@ -73,7 +91,15 @@ def group(state: RenderState, element: dict) -> None:
     if rotate in (90, 180, 270):
         result = result.rotate(-rotate, expand=True)
 
-    state.img.alpha_composite(result, int_xy(ox, oy))
+    offset = int_xy(ox, oy)
+    state.img.alpha_composite(result, offset)
+    if substate.dither_protected is not None:
+        protected = substate.dither_protected
+        if rotate in (90, 180, 270):
+            protected = protected.rotate(-rotate, expand=True)
+        if state.dither_protected is None:
+            state.dither_protected = Image.new("L", state.img.size, 0)
+        merge_mask(state.dither_protected, protected, *offset)
 
 
 # --------------------------------------------------------------------------- #
@@ -232,6 +258,65 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
             else:
                 lines.append(line)
     return {**child, "value": "\n".join(lines)}
+
+
+def _origin_padding(state: RenderState, child: dict, sub_w: int, sub_h: int) -> int:
+    """Room around (0, 0) to measure center-origin geometry without clipping ink."""
+    padding = max(sub_w, sub_h)
+    try:
+        radius = float(child.get("radius", 0) or 0)
+        stroke = float(child.get("width", 1) or 0)
+        padding = max(padding, math.ceil(max(0, radius + stroke + 2)))
+    except (TypeError, ValueError, OverflowError):
+        pass  # the element handler will report malformed geometry
+
+    etype = child.get("type")
+    if etype not in ("text", "multiline", "new_multiline", "icon"):
+        return padding
+    try:
+        size = float(child.get("size", 20))
+        font = state.context.font(child.get("font"), size)
+        anchor = child.get("anchor", {"text": "lt", "multiline": "lm", "new_multiline": "la", "icon": "la"}[etype])
+        value = str(child.get("value", ""))
+        spacing = child.get("spacing", size if etype == "new_multiline" else 5)
+        align = child.get("align", "left")
+        stroke_width = child.get("stroke_width", 0)
+        draw = ImageDraw.Draw(Image.new("L", (1, 1)))
+        if etype == "multiline":
+            delimiter = child.get("delimiter", "|")
+            lines = value.replace("\n", "").split(delimiter)
+            offset = child.get("offset_y", size)
+            boxes = [
+                draw.textbbox(
+                    (0, i * offset), line, font=font, anchor=anchor, stroke_width=stroke_width
+                )
+                for i, line in enumerate(lines)
+            ]
+        elif etype in ("new_multiline",) or "\n" in value:
+            anchor = multiline_anchor(anchor, value, always=etype == "new_multiline")
+            boxes = [
+                draw.multiline_textbbox(
+                    (0, 0),
+                    value,
+                    font=font,
+                    anchor=anchor,
+                    spacing=spacing,
+                    align=align,
+                    stroke_width=stroke_width,
+                )
+            ]
+        else:
+            boxes = [draw.textbbox((0, 0), value, font=font, anchor=anchor, stroke_width=stroke_width)]
+        background_padding = float(child.get("background_padding", 0) or 0)
+        ink_extent = max((abs(edge) + background_padding for box in boxes for edge in box), default=0)
+        rotation = abs(float(child.get("rotation", 0) or 0))
+        if rotation % 360:
+            width = max((box[2] - box[0] for box in boxes), default=0) + 2 * background_padding
+            height = max((box[3] - box[1] for box in boxes), default=0) + 2 * background_padding
+            ink_extent = max(ink_extent, math.ceil(math.hypot(width, height) + stroke_width + 2))
+        return max(padding, math.ceil(ink_extent + stroke_width + 2))
+    except Exception:  # noqa: BLE001 — let the element handler report invalid font/size/anchor
+        return padding
 
 
 def _cross_margins(lay: dict, horizontal: bool) -> int:
@@ -482,9 +567,7 @@ def stack(state: RenderState, element: dict) -> None:
 
     def positioned(child):
         """``child`` with the x/y every element requires defaulted to 0 (the stack places it)."""
-        if child.get("x") is not None and child.get("y") is not None:
-            return child
-        return {**child, **{k: 0 for k in ("x", "y") if child.get(k) is None}}
+        return {**child, "x": 0, "y": 0}
 
     main_key = "width" if horizontal else "height"
 
@@ -510,11 +593,22 @@ def stack(state: RenderState, element: dict) -> None:
                 sub_h = max(sub_h, stretch_size)
             else:
                 sub_w = max(sub_w, stretch_size)
-        sub = Image.new("RGBA", (sub_w, sub_h), (0, 0, 0, 0))
-        substate = RenderState(img=sub, canvas_width=sub_w, canvas_height=sub_h, context=state.context)
+        # Give anchor-based elements room to draw around x/y=0 (circle, gauge,
+        # middle-anchored text, ...); the crop below turns their full ink bounds
+        # into the tile origin before the stack positions the tile.
+        origin_pad = _origin_padding(state, child, sub_w, sub_h)
+        pad_x = pad_y = origin_pad
+        sub = Image.new("RGBA", (sub_w + 2 * pad_x, sub_h + 2 * pad_y), (0, 0, 0, 0))
+        substate = RenderState(
+            img=sub,
+            canvas_width=sub_w,
+            canvas_height=sub_h,
+            context=state.context,
+            dither_protected=Image.new("L", sub.size, 0),
+        )
         ctype = child.get("type", "")
         try:
-            render_element(substate, eff)
+            render_element(substate, {**eff, "x": eff.get("x", 0) + pad_x, "y": eff.get("y", 0) + pad_y})
         except RenderError as exc:
             exc.at(f".elements[{source_idx[idx]}]")  # already descriptive
             raise
@@ -527,10 +621,23 @@ def stack(state: RenderState, element: dict) -> None:
         bbox = rendered.getbbox()
         if bbox and stretch_size is not None:
             # keep the whole stretched slot on the cross axis (valign/background stay where drawn)
-            bbox = (bbox[0], 0, bbox[2], stretch_size) if horizontal else (0, bbox[1], stretch_size, bbox[3])
+            bbox = (
+                (bbox[0], pad_y, bbox[2], pad_y + stretch_size)
+                if horizontal
+                else (pad_x, bbox[1], pad_x + stretch_size, bbox[3])
+            )
         tile = rendered.crop(bbox) if bbox else None
+        protected = substate.dither_protected.crop(bbox) if bbox and substate.dither_protected is not None else None
         tw, th = tile.size if tile else (0, 0)
-        return {**lay, "img": tile, "w": tw, "h": th, "stretch": stretch_size, "basis": bases[idx] or 0}
+        return {
+            **lay,
+            "img": tile,
+            "protected": protected,
+            "w": tw,
+            "h": th,
+            "stretch": stretch_size,
+            "basis": bases[idx] or 0,
+        }
 
     lays = [_child_layout(c) for c in children]
     inner_main_now = inner_w if horizontal else inner_h  # (pre-hug: the space available)
@@ -631,6 +738,7 @@ def stack(state: RenderState, element: dict) -> None:
     leading, spacing = _justify_offsets(justify, free, n, gap)
 
     canvas = Image.new("RGBA", (max(1, cw), max(1, ch)), (0, 0, 0, 0))
+    protected_canvas = Image.new("L", canvas.size, 0)
     if styled and cw > 0 and ch > 0:
         mono_draw(canvas).rounded_rectangle(
             [(0, 0), (cw - 1, ch - 1)],
@@ -657,10 +765,18 @@ def stack(state: RenderState, element: dict) -> None:
             else:
                 pos = (pl + round(cross_pos), pt + round(main_pos))
             blit(canvas, t["img"], *pos)
+            coverage = t["img"].getchannel("A").point(lambda p: 255 if p else 0)
+            subtract_mask(protected_canvas, coverage, *pos)
+            if t.get("protected") is not None:
+                protected_canvas.paste(t["protected"], pos, t["protected"])
         cursor += m_main_lead(t) + slot_main + m_main_trail(t)
         if i < n - 1:
             cursor += spacing
 
     if rotate in (90, 180, 270):
         canvas = canvas.rotate(-rotate, expand=True)
+        protected_canvas = protected_canvas.rotate(-rotate, expand=True)
     state.img.alpha_composite(canvas, (ox, oy))
+    if state.dither_protected is None:
+        state.dither_protected = Image.new("L", state.img.size, 0)
+    merge_mask(state.dither_protected, protected_canvas, ox, oy)

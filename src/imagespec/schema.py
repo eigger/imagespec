@@ -110,7 +110,12 @@ def _element_schema(spec: ElementSpec) -> dict[str, Any]:
         else:
             props[f.name] = _field_schema(f)
     for f in spec.fields:
-        props[f.name] = _field_schema(f)
+        field_schema = _field_schema(f)
+        if f.name in POSITION_KEYS and f.required:
+            # Coordinates are optional in a stack child and null is dropped
+            # before dispatch. Positioned refs below restore non-null requiredness.
+            field_schema["type"] = [field_schema["type"], "null"]
+        props[f.name] = field_schema
     # x/y are required at the top level and inside `group`, but a stack supplies
     # them, so the per-element def leaves them optional and `$defs/element`
     # adds them back (see build_json_schema).
@@ -147,7 +152,8 @@ def _stack_child_name(spec: ElementSpec) -> str:
 def _positioned_ref(spec: ElementSpec) -> dict[str, Any]:
     pos = [f.name for f in spec.fields if f.required and f.name in POSITION_KEYS]
     ref = {"$ref": f"#/$defs/{spec.name}"}
-    return {"allOf": [ref, {"required": pos}]} if pos else ref
+    positioned = {"required": pos, "properties": {key: {"not": {"type": "null"}} for key in pos}}
+    return {"allOf": [ref, positioned]} if pos else ref
 
 
 def build_json_schema() -> dict[str, Any]:
@@ -168,9 +174,9 @@ def build_json_schema() -> dict[str, Any]:
         if s.name in STRETCHABLE_TYPES:
             # `align: stretch` fills the cross-axis size, so a stack child may omit width/height
             # (the schema cannot see the parent's `align`, so it allows it for any stack child)
-            variant = _element_schema(s)
-            variant["required"] = [k for k in variant["required"] if k not in ("width", "height")]
-            defs[_stack_child_name(s)] = variant
+            child_variant = _element_schema(s)
+            child_variant["required"] = [k for k in child_variant["required"] if k not in ("width", "height")]
+            defs[_stack_child_name(s)] = child_variant
     types = sorted(name for s in all_specs for name in s.names)
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

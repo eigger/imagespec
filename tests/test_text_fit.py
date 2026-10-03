@@ -207,3 +207,27 @@ def test_new_multiline_fit_never_overflows_the_target(axis, anchor, stroke_width
         assert ink is not None  # canvas leaves room on every side, so nothing is clipped
         extent = ink[2] - ink[0] if axis == "width" else ink[3] - ink[1]
         assert extent <= limit, (value, axis, anchor, stroke_width, limit, extent)
+
+
+@pytest.mark.parametrize("fit", ["ellipsis", "shrink_ellipsis"])
+def test_text_fit_accepts_fractional_height_when_truncating(ctx, fit):
+    el = {
+        "type": "text_fit",
+        "x": 0,
+        "y": 0,
+        "width": 45,
+        "height": 70.5,
+        "value": "alpha beta gamma delta epsilon",
+        "size": 20,
+        "min_size": 20,
+        "max_lines": 5,
+        "fit": fit,
+    }
+    assert render([el], 60, 80, context=ctx).size == (60, 80)
+
+
+@pytest.mark.parametrize("axis", ["width", "height"])
+def test_new_multiline_fit_clamps_scaled_font_size_to_one(ctx, axis):
+    el = {"type": "new_multiline", "x": 0, "y": 0, "value": "Hello world", "size": 20, "fit": axis}
+    el[axis] = 5
+    assert render([el], 40, 40, context=ctx).size == (40, 40)

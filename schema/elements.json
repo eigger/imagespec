@@ -74,7 +74,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -87,7 +99,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -100,7 +124,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -119,7 +155,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -132,7 +180,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -145,7 +205,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -164,7 +236,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -177,7 +261,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -199,7 +295,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -221,7 +329,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -233,7 +353,14 @@
             {
               "required": [
                 "x"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -246,7 +373,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -258,7 +397,14 @@
             {
               "required": [
                 "x"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -271,7 +417,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -284,7 +442,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -297,7 +467,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -310,7 +492,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -323,7 +517,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -336,7 +542,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         },
@@ -349,7 +567,19 @@
               "required": [
                 "x",
                 "y"
-              ]
+              ],
+              "properties": {
+                "x": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "y": {
+                  "not": {
+                    "type": "null"
+                  }
+                }
+              }
             }
           ]
         }
@@ -618,11 +848,17 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Centre x"
         },
         "y": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Centre y"
         },
         "radius": {
@@ -840,10 +1076,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "width": {
           "type": "number"
@@ -1106,10 +1348,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "width": {
           "type": "number"
@@ -1370,10 +1618,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "height": {
           "type": "number"
@@ -1620,10 +1874,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "height": {
           "type": "number"
@@ -2582,10 +2842,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "data": {
           "description": "Content to encode"
@@ -2826,10 +3092,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "data": {
           "description": "Content to encode"
@@ -3102,10 +3374,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "data": {},
         "color": {
@@ -4503,10 +4781,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "value": {
           "type": "string",
@@ -4729,10 +5013,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "url": {
           "type": "string"
@@ -5672,11 +5962,17 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Centre x"
         },
         "y": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Centre y"
         },
         "radius": {
@@ -6517,11 +6813,17 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Centre x"
         },
         "y": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Centre y"
         },
         "radius": {
@@ -6783,7 +7085,10 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "value": {
           "description": "Text to draw (converted with `str()`)"
@@ -7076,10 +7381,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "value": {},
         "size": {
@@ -7316,7 +7627,10 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "value": {},
         "delimiter": {
@@ -7562,10 +7876,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "value": {},
         "size": {
@@ -7940,10 +8260,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "columns": {
           "type": "array",
@@ -8230,10 +8556,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Vertical centre of the line"
         },
         "spans": {
@@ -8496,10 +8828,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "width": {
           "type": "number"
@@ -8811,10 +9149,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "width": {
           "type": "number"
@@ -9124,10 +9468,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "items": {
           "anyOf": [
@@ -9413,10 +9763,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "rating": {
           "type": "number"
@@ -9641,10 +9997,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "width": {
           "type": "number"
@@ -9935,10 +10297,16 @@
           "description": "Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand)"
         },
         "x": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "y": {
-          "type": "number"
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "width": {
           "type": "number"

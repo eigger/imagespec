@@ -348,6 +348,112 @@ def test_on_palette_fast_path_matches_kernel_for_modes_and_duplicates(mode, monk
     assert fast.tobytes() == slow.tobytes()
 
 
+@pytest.mark.parametrize("method", ["floyd", "bayer8"])
+def test_global_dither_preserves_already_quantized_palette_pixels(method):
+    ctx = RenderContext(palette="7")
+    el = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 15,
+        "fill": "green",
+        "outline": None,
+        "dither": False,
+    }
+    img = render([el], 16, 16, background="white", dither=method, context=ctx)
+    assert set(img.get_flattened_data()) == {(0, 128, 0)}
+
+
+@pytest.mark.parametrize("method", ["floyd", "bayer8"])
+def test_global_dither_preserves_per_element_override_next_to_other_colors(method):
+    ctx = RenderContext(palette="4")
+    left = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 7,
+        "y_end": 15,
+        "fill": "#0b00b2",
+        "outline": None,
+    }
+    right = {
+        "type": "rectangle",
+        "x_start": 8,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 15,
+        "fill": "red",
+        "outline": None,
+        "dither": False,
+    }
+    img = render([left, right], 16, 16, background="white", dither=method, context=ctx)
+    assert set(img.crop((8, 0, 16, 16)).get_flattened_data()) == {(255, 0, 0)}
+
+
+def test_later_same_color_element_replaces_an_earlier_dither_override():
+    ctx = RenderContext(palette="7")
+    rect = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 15,
+        "fill": "green",
+        "outline": None,
+    }
+    expected = render([rect], 16, 16, dither="bayer8", context=ctx)
+    actual = render([{**rect, "dither": False}, rect], 16, 16, dither="bayer8", context=ctx)
+    assert actual.tobytes() == expected.tobytes()
+
+
+@pytest.mark.parametrize("container", ["group", "column"])
+def test_nested_override_replaces_an_overlapping_outer_override(container):
+    ctx = RenderContext(palette="7")
+    red = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 15,
+        "fill": "red",
+        "outline": None,
+        "dither": False,
+    }
+    green = {**red, "fill": "green"}
+    nested = (
+        {"type": "group", "x": 0, "y": 0, "width": 16, "height": 16, "elements": [green]}
+        if container == "group"
+        else {"type": "column", "x": 0, "y": 0, "width": 16, "height": 16, "elements": [green]}
+    )
+    img = render([red, nested], 16, 16, dither="bayer8", context=ctx)
+    assert set(img.get_flattened_data()) == {(0, 128, 0)}
+
+
+def test_later_overlapping_stack_child_clears_an_earlier_override_mask():
+    ctx = RenderContext(palette="7")
+    base = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 15,
+        "outline": None,
+    }
+    red = {**base, "fill": "red", "dither": False}
+    green = {**base, "fill": "green"}
+    row = {"type": "row", "width": 16, "height": 16, "elements": [red, {**green, "class": "-ml-[16]"}]}
+    expected = render([green], 16, 16, dither="bayer8", context=ctx)
+    actual = render([row], 16, 16, dither="bayer8", context=ctx)
+    assert actual.tobytes() == expected.tobytes()
+
+
+@pytest.mark.skipif(dither_mod.np is None, reason="numpy optional fast path not installed")
+def test_numpy_stevenson_arce_handles_images_narrower_than_its_kernel():
+    img = Image.new("RGB", (2, 4), (128, 128, 128))
+    assert dither_to_palette(img, PALETTE_BW, dither="stevenson-arce").size == img.size
+
+
 @pytest.mark.parametrize("pal", [[(i % 256, 0, 0) for i in range(300)]])
 def test_unrepresentable_palettes_still_diffuse(pal):
     img = Image.new("RGB", (6, 6), (128, 0, 0))
