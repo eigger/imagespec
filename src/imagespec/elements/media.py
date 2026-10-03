@@ -16,7 +16,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import int_xy, mono_draw, require
+from ..utils import blit, int_xy, mono_draw, require
 
 # MDI metadata is large (~3MB); load+cache once per file path.
 _mdi_meta_cache: dict[str, list] = {}
@@ -304,6 +304,8 @@ def dlimg(state: RenderState, element: dict) -> None:
         ImageDraw.Draw(circle).ellipse([(0, 0), (xsize - 1, ysize - 1)], fill=255)
         imgdl.putalpha(ImageChops.multiply(imgdl.split()[-1], circle))
 
-    temp = Image.new("RGBA", state.img.size)
-    temp.paste(imgdl, int_xy(pos_x, pos_y), imgdl)
-    state.img = Image.alpha_composite(state.img, temp)
+    # Pasting through its own alpha onto a transparent tile (as the old canvas-sized layer did)
+    # squares the alpha of soft edges; keep that look, but only on a tile the size of the image.
+    tile = Image.new("RGBA", imgdl.size)
+    tile.paste(imgdl, (0, 0), imgdl)
+    blit(state.img, tile, *int_xy(pos_x, pos_y))

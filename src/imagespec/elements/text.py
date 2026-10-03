@@ -13,7 +13,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import any_, array, boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import int_xy, mono_draw, require, wrap_words
+from ..utils import blit, int_xy, mono_draw, require, wrap_words
 from .media import resolve_icon
 
 
@@ -140,9 +140,7 @@ def text(state: RenderState, element: dict) -> None:
         h_frac = {"l": 0.0, "m": 0.5, "r": 1.0}.get(anchor[:1], 0.0) if anchor else 0.0
         v_frac = {"a": 0.0, "t": 0.0, "m": 0.5, "s": 1.0, "b": 1.0, "d": 1.0}.get(anchor[1:2], 0.0) if anchor else 0.0
         dest = int_xy(element["x"] - tmp.width * h_frac, akt_pos_y - tmp.height * v_frac)
-        canvas = Image.new("RGBA", state.img.size, (255, 255, 255, 0))
-        canvas.paste(tmp, dest)
-        state.img = Image.alpha_composite(state.img, canvas)
+        blit(state.img, tmp, *dest)
     else:
         if bg_color is not None:
             d.rectangle(

@@ -36,7 +36,7 @@ def _draw_isolated(state, element, handler, dither) -> None:
 
     base = state.img
     state.img = Image.new("RGBA", base.size, (0, 0, 0, 0))
-    handler(state, element)  # handler may reassign state.img (rotation/composite)
+    handler(state, element)  # draws into the fresh layer (a handler may also assign state.img)
     layer = state.img.convert("RGBA")
     state.img = base
 

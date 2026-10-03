@@ -8,7 +8,8 @@ import io
 import pytest
 from PIL import Image
 
-from imagespec import RenderError, render
+from imagespec import RenderContext, RenderError, render
+from imagespec.dither import dither_to_palette
 
 
 @pytest.fixture
@@ -350,3 +351,44 @@ def test_datamatrix_recolor(ctx):
             seen.add(src)
     assert seen == set(mapping), "expected both dark and light modules inside the symbol"
     assert px_tinted[plain.width - 1, plain.height - 1][:3] == (255, 255, 255)
+
+
+# ── direct compositing (no canvas-sized temp layer) ───────────────────────
+
+
+def _soft_png():
+    """A 6x6 soft-edged RGBA image and its PNG data URL."""
+    img = Image.new("RGBA", (6, 6), (255, 0, 0, 120))
+    img.putpixel((0, 0), (0, 0, 0, 255))
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return img, "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+@pytest.mark.parametrize("pos", [(0, 0), (7, 5), (-3, -2), (17, 14), (30, 30), (-20, 4)])
+def test_dlimg_matches_the_legacy_canvas_sized_composite(pos):
+    """Soft-edged images keep exactly the pixels the full-canvas layer used to give, in or off canvas."""
+    ctx7 = RenderContext(palette="7")
+    src, url = _soft_png()
+    x, y = pos
+    el = {"type": "dlimg", "x": x, "y": y, "url": url, "xsize": 6, "ysize": 6}
+    got = render([{"type": "fill", "color": "white"}, el], 20, 20, context=ctx7)
+
+    base = Image.new("RGBA", (20, 20), (255, 255, 255, 255))
+    temp = Image.new("RGBA", base.size)
+    temp.paste(src, (x, y), src)
+    expected = Image.alpha_composite(base, temp).convert("RGB")
+    assert got.tobytes() == dither_to_palette(expected, ctx7.palette, dither=False).tobytes()
+
+
+@pytest.mark.parametrize("pos", [(-30, 5), (5, -40), (90, 5), (5, 90)])
+def test_rotated_text_fully_off_canvas_draws_nothing_and_does_not_raise(ctx, pos):
+    el = {"type": "text", "x": pos[0], "y": pos[1], "value": "off", "size": 20, "rotation": 90}
+    img = render([el], 60, 40, context=ctx)
+    assert img.getcolors(maxcolors=4) == [(2400, (255, 255, 255))]
+
+
+def test_rotated_text_partially_off_canvas_is_clipped(ctx):
+    el = {"type": "text", "x": -8, "y": 5, "value": "HHHH", "size": 24, "rotation": 90}
+    img = render([el], 60, 40, context=ctx)
+    assert any(c != (255, 255, 255) for _, c in img.getcolors(maxcolors=16))

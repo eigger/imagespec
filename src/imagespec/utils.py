@@ -189,3 +189,20 @@ def is_decimal(string: str) -> bool:
     if string.startswith("-"):
         string = string[1:]
     return len(string.split(".")) <= 2 and string.replace(".", "").isdecimal()
+
+
+def blit(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
+    """Alpha-composite ``tile`` at ``(x, y)``, clipping to the canvas bounds.
+
+    Plain ``alpha_composite`` rejects offsets that fall outside the destination;
+    negative margins and overflow can produce those, so we crop the tile to its
+    visible rectangle first (and skip it entirely if nothing is visible).
+    """
+    cw, ch = canvas.size
+    tw, th = tile.size
+    sx, sy = max(0, -x), max(0, -y)
+    ex, ey = min(tw, cw - x), min(th, ch - y)
+    if ex <= sx or ey <= sy:
+        return  # fully off-canvas
+    part = tile.crop((sx, sy, ex, ey)) if (sx, sy, ex, ey) != (0, 0, tw, th) else tile
+    canvas.alpha_composite(part, (x + sx, y + sy))
