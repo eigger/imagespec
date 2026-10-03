@@ -362,3 +362,18 @@ def test_strict_render_accepts_a_stretched_child_without_cross_size(ctx):
     chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black"}
     row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [chip]}
     assert render([row], 40, 30, strict=True, context=ctx).size == (40, 30)
+
+
+@pytest.mark.parametrize(
+    "child",
+    [
+        {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 1, "y_end": 1},
+        {"type": "text_fit", "width": 5, "height": 5, "value": "a"},
+    ],
+    ids=["rectangle", "text_fit"],
+)
+def test_validate_reports_bad_layout_values_instead_of_raising(child):
+    from imagespec import validate
+
+    issues = validate([{"type": "row", "align": "stretch", "elements": [{**child, "layout": {"margin": "abc"}}]}])
+    assert [i.path for i in issues] == ["[0].elements[0].layout.margin"]

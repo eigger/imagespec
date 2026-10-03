@@ -141,11 +141,17 @@ def stretch_cross_key(owner: dict, child: dict) -> str | None:
     etype = owner.get("type")
     if etype not in ("stack", "row", "column") or not isinstance(child, dict):
         return None
+    if child.get("type") not in STRETCHABLE_TYPES:
+        return None
     cls = parse_class(owner.get("class"))
     default_dir = "horizontal" if etype == "row" else "vertical"
     horizontal = _norm_dir(_first(owner.get("direction"), cls.get("direction"), default_dir)) == "horizontal"
     align = _first(owner.get("align"), owner.get("align_items"), cls.get("align"), "start")
-    if not _stretched(child, _child_layout(child), align):
+    try:
+        lay = _child_layout(child)
+    except (TypeError, ValueError):
+        return None  # a bad `layout` value is reported by the normal field check
+    if not _stretched(child, lay, align):
         return None
     return "height" if horizontal else "width"
 
