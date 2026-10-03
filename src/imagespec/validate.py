@@ -26,7 +26,7 @@ from typing import Any
 
 from .colors import is_known_color
 from .dither import resolve_dither_method
-from .elements.layout import stretch_cross_key
+from .elements.layout import basis_error, stretch_cross_key
 from .registry import get_spec, known_types
 from .spec import COMMON_FIELDS, POSITION_KEYS, Field
 from .utils import to_bool, to_dither, to_number
@@ -131,6 +131,11 @@ def _check_field(
 
 def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: str, owner: dict | None = None) -> None:
     kind = f.kind
+    if f.name == "basis" and kind == "any":
+        problem = basis_error(value)
+        if problem:
+            issues.append(Issue(path, problem))
+        return
     if _matches_alt(value, f):
         return
     alt = f" or {_SCALAR_LABELS.get(f.alt, f.alt)}" if f.alt else ""

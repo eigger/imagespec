@@ -189,8 +189,11 @@ LAYOUT_FIELDS: tuple[Field, ...] = (
     any_(
         "basis",
         doc="Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size "
-        "(`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` "
-        "and no main-axis size) is sized to it; any other child keeps its own size inside the slot",
+        "(for a container that hugs its content, of the space its parent offers). `0` + `grow: 1` makes "
+        "equal-width columns: the content is clipped to the column and a card gets no room at all when "
+        "nothing is left over. A card (a nested stack with `background`/`outline` and no main-axis size) "
+        "is sized to it; any other child keeps its own size inside the slot. Class: `basis-1/2`, "
+        "`basis-[30%]`, `basis-N` (N x 4 px), `basis-full`",
     ),
     enum("align", ("start", "end", "center", "stretch"), doc="Cross-axis alignment for this child only"),
     enum("self", ("start", "end", "center", "stretch"), doc="Alias of `align`"),

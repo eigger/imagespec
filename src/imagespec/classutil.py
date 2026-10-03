@@ -25,6 +25,7 @@ per-child resolver can pick the ones they care about:
 * ``align``               – cross-axis item alignment (from ``items-*``)
 * ``self``                – per-child cross-axis override (from ``self-*``)
 * ``grow``                – per-child main-axis grow factor (int)
+* ``basis``               – per-child starting main-axis size: int px or ``"N%"`` (from ``basis-*``)
 * ``ml`` ``mt`` ``mr`` ``mb`` – per-child margin per side (int px, may be < 0)
 """
 
@@ -65,6 +66,22 @@ def _to_float(s: str):
     except (TypeError, ValueError):
         return None
     return n if math.isfinite(n) else None
+
+
+def _basis(val: str):
+    """``basis-*`` value: ``full``, a fraction (``1/2`` -> ``"50%"``), ``[30%]`` / ``[40px]``, or N x 4 px."""
+    if val == "full":
+        return "100%"
+    if "/" in val and not val.startswith("["):
+        num, _, den = val.partition("/")
+        a, b = _to_float(num), _to_float(den)
+        return None if a is None or not b else f"{a / b * 100:g}%"
+    if len(val) >= 2 and val[0] == "[" and val[-1] == "]":
+        inner = val[1:-1]
+        if inner.endswith("%"):
+            pct = _to_float(inner[:-1])
+            return None if pct is None else f"{pct:g}%"
+    return _space(val)
 
 
 def _space(val: str):
@@ -112,6 +129,12 @@ def _apply(token: str, props: dict) -> None:
         n = _to_float(val)
         if n is not None:
             props["grow"] = int(n)
+    elif prefix == "basis":
+        if neg:
+            return
+        basis = _basis(val)
+        if basis is not None:
+            props["basis"] = basis
     elif prefix == "gap":
         if neg:
             return  # no negative gap

@@ -1151,6 +1151,71 @@ def test_bad_basis_is_reported_with_the_child_path(ctx, bad):
     assert exc.value.path.endswith(".elements[0].layout.basis")
 
 
-def test_negative_basis_is_clamped_to_zero(ctx):
-    row = {"type": "row", "width": 100, "height": 20, "elements": [_card("A", "red", layout={"basis": -30})]}
-    assert render([row], 100, 20, context=ctx).size == (100, 20)
+def test_zero_or_negative_basis_card_collapses_without_free_space(ctx):
+    """Documented: a card sized to 0 has no box (and clips its content); only grow can give it room."""
+    for basis in (0, -30):
+        row = {"type": "row", "width": 100, "height": 20, "elements": [_card("A", "red", layout={"basis": basis})]}
+        assert render([row], 100, 20, context=ctx).getcolors() == [(2000, WHITE)]
+    grown = {"type": "row", "width": 100, "height": 20, "elements": [_card("A", "red", layout={"basis": 0, "grow": 1})]}
+    assert max(_xs(render([grown], 100, 20, context=ctx), RED, 2)) >= 97
+
+
+@pytest.mark.parametrize(
+    "token,expected",
+    [
+        ("basis-1/2", "50%"),
+        ("basis-1/3", "33.3333%"),
+        ("basis-full", "100%"),
+        ("basis-[30%]", "30%"),
+        ("basis-10", 40),
+        ("basis-[40px]", 40),
+        ("basis-0", 0),
+    ],
+)
+def test_basis_class_tokens(token, expected):
+    assert parse_class(token).get("basis") == expected
+
+
+@pytest.mark.parametrize("token", ["basis-x", "basis-1/0", "basis-[abc]", "-basis-4", "basis-inf", "basis-[nan%]"])
+def test_bad_basis_class_tokens_are_ignored(token):
+    assert "basis" not in parse_class(token)
+
+
+def test_basis_class_token_sizes_a_card(ctx):
+    row = {
+        "type": "row",
+        "width": 100,
+        "height": 20,
+        "elements": [_card("A", "yellow", **{"class": "basis-1/4"}), _card("B", "red", **{"class": "basis-3/4"})],
+    }
+    img = render([row], 100, 20, context=ctx)
+    y, r = _widths(img, (YELLOW, RED))
+    assert abs(y - 23) <= 3 and abs(r - 73) <= 3
+    # an explicit layout.basis wins over the class token
+    row["elements"][0]["layout"] = {"basis": "50%"}
+    assert abs(_widths(render([row], 100, 20, context=ctx), (YELLOW,))[0] - 48) <= 3
+
+
+@pytest.mark.parametrize("bad", ["abc", "5x%", True, float("nan"), [1], "nan%"])
+def test_validate_flags_a_bad_basis(bad):
+    from imagespec import validate
+
+    row = {"type": "row", "elements": [_card("A", "red", layout={"basis": bad})]}
+    issues = validate([row])
+    assert [i.path for i in issues] == ["[0].elements[0].layout.basis"]
+
+
+@pytest.mark.parametrize("good", [0, 40, 40.5, "40", "30%", " 30 % ", None])
+def test_validate_accepts_a_good_basis(good):
+    from imagespec import validate
+
+    row = {"type": "row", "elements": [_card("A", "red", layout={"basis": good})]}
+    assert validate([row]) == []
+
+
+def test_schema_types_basis_as_number_or_string():
+    from imagespec.schema import build_json_schema
+
+    basis = build_json_schema()["$defs"]["stack"]["properties"]["layout"]["properties"]["basis"]
+    kinds = [alt.get("type") for alt in basis["anyOf"]]
+    assert "number" in kinds and "string" in kinds

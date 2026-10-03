@@ -336,7 +336,7 @@ def _child_layout(child: dict) -> dict:
 
     return {
         "grow": grow,
-        "basis": lay.get("basis"),
+        "basis": lay.get("basis") if lay.get("basis") is not None else cls.get("basis"),
         "self": self_align,
         "ml": margin("left", "margin_x", "ml"),
         "mt": margin("top", "margin_y", "mt"),
@@ -359,6 +359,15 @@ def _resolve_basis(raw, inner_main: int) -> int | None:
         return max(0, _px(value))
     except (TypeError, ValueError, OverflowError):
         raise RenderError(f"layout.basis must be a number or a percentage like '50%', got {raw!r}") from None
+
+
+def basis_error(raw) -> str | None:
+    """Why ``raw`` is not a usable ``layout.basis`` (``None`` if it is, or is unset); for ``validate()``."""
+    try:
+        _resolve_basis(raw, 100)
+    except RenderError as exc:
+        return exc.message
+    return None
 
 
 def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float, float]:
