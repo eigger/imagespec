@@ -12,6 +12,7 @@ first use.
 from __future__ import annotations
 
 import os
+import tempfile
 
 import requests
 
@@ -81,10 +82,14 @@ def caching_resolver(
             return None
         resp = http.get(url, timeout=timeout)
         resp.raise_for_status()
-        tmp = cached + ".part"
-        with open(tmp, "wb") as f:
-            f.write(resp.content)
-        os.replace(tmp, cached)  # atomic: avoid a half-written cache file
+        fd, tmp = tempfile.mkstemp(prefix=base + ".", suffix=".part", dir=cache_dir)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(resp.content)
+            os.replace(tmp, cached)  # atomic: avoid a half-written cache file
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
         return cached
 
     return resolver

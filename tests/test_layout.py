@@ -7,6 +7,7 @@ element handler's job, so we only check where tiles land.
 from __future__ import annotations
 
 import pytest
+from PIL import Image, ImageChops
 
 from imagespec import render
 from imagespec.classutil import parse_class
@@ -1219,3 +1220,80 @@ def test_schema_types_basis_as_number_or_string():
     basis = build_json_schema()["$defs"]["stack"]["properties"]["layout"]["properties"]["basis"]
     kinds = [alt.get("type") for alt in basis["anyOf"]]
     assert "number" in kinds and "string" in kinds
+
+
+def test_stack_ignores_child_coordinates(ctx):
+    row = {
+        "type": "column",
+        "width": 100,
+        "height": 40,
+        "elements": [{"type": "text", "x": 90, "y": 0, "value": "Hello", "size": 20}],
+    }
+    img = render([row], 100, 40, context=ctx)
+    assert img.getpixel((2, 8)) == BLACK
+    assert img.getpixel((95, 8)) == WHITE
+
+
+def test_stack_measures_center_origin_child_without_clipping(ctx):
+    gauge = {"type": "gauge", "x": 0, "y": 0, "radius": 20, "progress": 50, "width": 4}
+    img = render([{"type": "column", "width": 60, "height": 50, "elements": [gauge]}], 60, 50, context=ctx)
+    # The radius extends around the gauge center; a stack child must retain both
+    # sides of that geometry before the stack crops and packs its tile.
+    ink = img.convert("RGB")
+    bbox = ImageChops.difference(ink, Image.new("RGB", ink.size, WHITE)).getbbox()
+    assert bbox is not None and bbox[2] >= 38 and bbox[3] >= 34
+
+
+def test_stack_origin_child_bounds_do_not_depend_on_cross_axis_size(ctx):
+    child = {"type": "circle", "x": 0, "y": 0, "radius": 20, "width": 3, "fill": "black"}
+    short = render([{"type": "column", "width": 60, "height": 5, "elements": [child]}], 60, 5, context=ctx)
+    tall = render([{"type": "column", "width": 60, "height": 50, "elements": [child]}], 60, 50, context=ctx)
+    assert short.tobytes() == tall.crop((0, 0, 60, 5)).tobytes()
+
+
+@pytest.mark.parametrize("anchor", ["mm", "rm"])
+def test_stack_measures_long_anchored_text_without_clipping(ctx, anchor):
+    text = {"type": "text", "x": 0, "y": 20, "value": "HelloHelloHelloHelloHello", "size": 20, "anchor": anchor}
+    narrow = render([{"type": "row", "width": 100, "height": 40, "elements": [text]}], 100, 40, context=ctx)
+    wide = render([{"type": "row", "width": 500, "height": 40, "elements": [text]}], 500, 40, context=ctx)
+    assert narrow.tobytes() == wide.crop((0, 0, 100, 40)).tobytes()
+
+
+def test_stack_text_measurement_includes_custom_multiline_spacing(ctx):
+    text = {
+        "type": "new_multiline",
+        "x": 0,
+        "y": 0,
+        "value": "Hello\nHello",
+        "size": 20,
+        "spacing": 100,
+        "anchor": "mm",
+    }
+    narrow = render([{"type": "row", "width": 60, "height": 20, "elements": [text]}], 60, 20, context=ctx)
+    wide = render([{"type": "row", "width": 400, "height": 400, "elements": [text]}], 400, 400, context=ctx)
+    assert narrow.tobytes() == wide.crop((0, 0, 60, 20)).tobytes()
+
+
+def test_stack_measures_rotated_right_anchored_multiline_text(ctx):
+    text = {"type": "text", "x": 0, "y": 0, "value": "HH\nHH", "size": 40, "rotation": 45, "anchor": "rm"}
+    narrow = render([{"type": "row", "width": 30, "height": 40, "elements": [text]}], 30, 40, context=ctx)
+    wide = render([{"type": "row", "width": 500, "height": 400, "elements": [text]}], 500, 400, context=ctx)
+    assert narrow.tobytes() == wide.crop((0, 0, 30, 40)).tobytes()
+
+
+@pytest.mark.parametrize("rotation", [0, 45])
+def test_stack_text_measurement_includes_background_padding(ctx, rotation):
+    text = {
+        "type": "text",
+        "x": 0,
+        "y": 20,
+        "value": "Hi",
+        "size": 20,
+        "anchor": "mm",
+        "rotation": rotation,
+        "background": "red",
+        "background_padding": 100,
+    }
+    narrow = render([{"type": "row", "width": 60, "height": 60, "elements": [text]}], 60, 60, context=ctx)
+    wide = render([{"type": "row", "width": 500, "height": 400, "elements": [text]}], 500, 400, context=ctx)
+    assert narrow.tobytes() == wide.crop((0, 0, 60, 60)).tobytes()

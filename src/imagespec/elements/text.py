@@ -367,6 +367,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
         if rendered_width > width:
             size = size * (width / rendered_width)
             spacing = spacing * (width / rendered_width)
+            size = max(1, size)
             font = state.context.font(element.get("font"), size)
             settle(0, width)
     if element.get("fit_height") or element.get("fit") in ["height", True]:
@@ -382,6 +383,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
         if rendered_height > height:
             size = size * (height / rendered_height)
             spacing = spacing * (height / rendered_height)
+            size = max(1, size)
             font = state.context.font(element.get("font"), size)
             settle(1, height)
 
@@ -607,7 +609,7 @@ def text_fit(state: RenderState, element: dict) -> None:
         if chosen is None:
             font, lines, _, line_h = layout(min_size)
             if fit == "shrink_ellipsis":
-                max_rows = max(1, inner_h // line_h)
+                max_rows = max(1, int(inner_h // line_h))
                 if len(lines) > max_rows:
                     lines = lines[:max_rows]
                     lines[-1] = _ellipsize_line(font, lines[-1], inner_w, ellipsis)
@@ -615,7 +617,7 @@ def text_fit(state: RenderState, element: dict) -> None:
         font, lines, line_h = chosen
     else:  # ellipsis only
         font, lines, _, line_h = layout(start_size)
-        max_rows = max(1, inner_h // line_h)
+        max_rows = max(1, int(inner_h // line_h))
         if len(lines) > max_rows:
             lines = lines[:max_rows]
             lines[-1] = _ellipsize_line(font, lines[-1], inner_w, ellipsis)

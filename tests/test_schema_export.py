@@ -122,6 +122,10 @@ ACCEPTS = [
     ("aliases row/column", [{"type": "column", "elements": []}, {"type": "stack", "elements": []}]),
     # null where the handler has no meaning for it = omitted (dropped before dispatch)
     ("stack child with y: null", [{"type": "row", "elements": [{"type": "text", "value": "a", "y": None}]}]),
+    (
+        "required coordinates may be null inside a stack",
+        [{"type": "row", "elements": [{"type": "circle", "x": None, "y": None, "radius": 3}]}],
+    ),
     ("optional number null (text y)", [{"type": "text", "x": 0, "y": None, "value": "a", "size": None}]),
     ("optional object null (diagram bars)", [{"type": "diagram", "x": 0, "y": 0, "height": 20, "bars": None}]),
     (

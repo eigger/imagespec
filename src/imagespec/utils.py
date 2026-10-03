@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 from .exceptions import RenderError
 from .spec import Field
@@ -206,6 +206,32 @@ def blit(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
         return  # fully off-canvas
     part = tile.crop((sx, sy, ex, ey)) if (sx, sy, ex, ey) != (0, 0, tw, th) else tile
     canvas.alpha_composite(part, (x + sx, y + sy))
+
+
+def merge_mask(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
+    """Union a clipped L-mode mask into another L-mode image."""
+    cw, ch = canvas.size
+    tw, th = tile.size
+    sx, sy = max(0, -x), max(0, -y)
+    ex, ey = min(tw, cw - x), min(th, ch - y)
+    if ex <= sx or ey <= sy:
+        return
+    target = (x + sx, y + sy, x + ex, y + ey)
+    merged = ImageChops.lighter(canvas.crop(target), tile.crop((sx, sy, ex, ey)).convert("L"))
+    canvas.paste(merged, target[:2])
+
+
+def subtract_mask(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
+    """Clear covered pixels from an L-mode mask, clipping at the destination edges."""
+    cw, ch = canvas.size
+    tw, th = tile.size
+    sx, sy = max(0, -x), max(0, -y)
+    ex, ey = min(tw, cw - x), min(th, ch - y)
+    if ex <= sx or ey <= sy:
+        return
+    target = (x + sx, y + sy, x + ex, y + ey)
+    cleared = ImageChops.subtract(canvas.crop(target), tile.crop((sx, sy, ex, ey)).convert("L"))
+    canvas.paste(cleared, target[:2])
 
 
 def multiline_anchor(anchor: str | None, text: str, *, always: bool = False) -> str | None:

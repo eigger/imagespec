@@ -106,6 +106,7 @@ def render(
         canvas_width=img.width,
         canvas_height=img.height,
         context=context,
+        dither_protected=Image.new("L", img.size, 0),
     )
 
     for idx, element in enumerate(payload or []):
@@ -127,4 +128,4 @@ def render(
     result = img.convert("RGB")
     # Elements are drawn in true color; map the whole image to the device palette
     # once here — method selected by `dither` (bool or algorithm name).
-    return dither_to_palette(result, context.palette, dither=dither)
+    return dither_to_palette(result, context.palette, dither=dither, protect_mask=state.dither_protected)

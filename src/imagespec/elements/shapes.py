@@ -36,6 +36,8 @@ def _draw_dashed_line(draw, x0, y0, x1, y1, dash, fill, width):
     """Draw a dashed/dotted line between two points."""
     dash_on = dash[0]
     dash_off = dash[1] if len(dash) > 1 else dash[0]
+    if not math.isfinite(dash_on) or not math.isfinite(dash_off) or dash_on <= 0 or dash_off <= 0:
+        raise RenderError("line: dash lengths must be finite positive numbers")
     total_len = math.hypot(x1 - x0, y1 - y0)
     if total_len == 0:
         return

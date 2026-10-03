@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from imagespec import GOOGLE_FONTS_SOURCES, chain_resolvers, directory_resolver, google_fonts_resolver
 from imagespec.context import BUNDLED_FONTS_DIR
@@ -72,3 +74,29 @@ def test_google_fonts_resolver_families_filter_excludes_others(tmp_path):
     r = google_fonts_resolver(str(tmp_path), families=["NotoSansJP-Regular.ttf"])
     # not in the filtered subset, and not cached -> no source to fetch from -> None
     assert r("NotoSansArabic-Regular.ttf") is None
+
+
+def test_caching_resolver_allows_concurrent_cold_downloads(tmp_path):
+    barrier = threading.Barrier(2)
+
+    class Response:
+        content = b"font bytes"
+
+        @staticmethod
+        def raise_for_status():
+            pass
+
+    class Session:
+        @staticmethod
+        def get(url, timeout):
+            barrier.wait(timeout=2)
+            return Response()
+
+    resolver = caching_resolver(
+        str(tmp_path), {"font.ttf": "https://example.test/font.ttf"}, session=Session()
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(resolver, ["font.ttf", "font.ttf"]))
+    assert results == [str(tmp_path / "font.ttf")] * 2
+    assert (tmp_path / "font.ttf").read_bytes() == b"font bytes"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["font.ttf"]

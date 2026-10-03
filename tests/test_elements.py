@@ -289,3 +289,11 @@ def test_rotated_multiline_text_lands_where_rotated_single_line_text_does(ctx, r
     two = _ink_bbox(render([{**base, "value": "Hab\nHab"}], 220, 220, context=ctx))
     edge = 3 if anchor and anchor[1] == "b" else 1
     assert abs(one[edge] - two[edge]) <= 2
+
+
+@pytest.mark.parametrize("dash", [[0, 0], [-1, 1], [1, float("inf")]])
+def test_line_rejects_dash_lengths_without_finite_positive_progress(ctx, dash):
+    from imagespec import RenderError
+
+    with pytest.raises(RenderError, match="dash lengths must be finite positive"):
+        render([{"type": "line", "x_start": 0, "x_end": 10, "y_start": 0, "dash": dash}], 20, 20, context=ctx)
