@@ -287,9 +287,7 @@ def _origin_padding(state: RenderState, child: dict, sub_w: int, sub_h: int) -> 
             lines = value.replace("\n", "").split(delimiter)
             offset = child.get("offset_y", size)
             boxes = [
-                draw.textbbox(
-                    (0, i * offset), line, font=font, anchor=anchor, stroke_width=stroke_width
-                )
+                draw.textbbox((0, i * offset), line, font=font, anchor=anchor, stroke_width=stroke_width)
                 for i, line in enumerate(lines)
             ]
         elif etype in ("new_multiline",) or "\n" in value:
