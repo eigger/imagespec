@@ -298,8 +298,7 @@ def stack(state: RenderState, element: dict) -> None:
     justify = _first(element.get("justify"), element.get("justify_content"), cls.get("justify"), "start")
     align = _first(element.get("align"), element.get("align_items"), cls.get("align"), "start")
 
-    ox = int(element.get("x", 0) or 0)
-    oy = int(element.get("y", 0) or 0)
+    ox, oy = int_xy(element.get("x", 0) or 0, element.get("y", 0) or 0)  # rounded, like `group`
     cw = round(_first(element.get("width"), state.canvas_width))  # round, like `group`
     ch = round(_first(element.get("height"), state.canvas_height))
     rotate = int(element.get("rotate", 0) or 0)
