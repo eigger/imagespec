@@ -28,7 +28,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, elements, enum, num
 from ..state import RenderState
-from ..utils import coerce_element, int_xy, require
+from ..utils import blit, coerce_element, int_xy, require
 
 
 @element(
@@ -234,23 +234,6 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
     return 0.0, gap  # start (default)
 
 
-def _blit(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
-    """Alpha-composite ``tile`` at ``(x, y)``, clipping to the canvas bounds.
-
-    Plain ``alpha_composite`` rejects offsets that fall outside the destination;
-    negative margins and overflow can produce those, so we crop the tile to its
-    visible rectangle first (and skip it entirely if nothing is visible).
-    """
-    cw, ch = canvas.size
-    tw, th = tile.size
-    sx, sy = max(0, -x), max(0, -y)
-    ex, ey = min(tw, cw - x), min(th, ch - y)
-    if ex <= sx or ey <= sy:
-        return  # fully off-canvas
-    part = tile.crop((sx, sy, ex, ey)) if (sx, sy, ex, ey) != (0, 0, tw, th) else tile
-    canvas.alpha_composite(part, (x + sx, y + sy))
-
-
 @element(
     "stack",
     "row",
@@ -422,7 +405,7 @@ def stack(state: RenderState, element: dict) -> None:
                 pos = (pl + round(main_pos), pt + round(cross_pos))
             else:
                 pos = (pl + round(cross_pos), pt + round(main_pos))
-            _blit(canvas, t["img"], *pos)
+            blit(canvas, t["img"], *pos)
         cursor += m_main_lead(t) + slot_main + m_main_trail(t)
         if i < n - 1:
             cursor += spacing
