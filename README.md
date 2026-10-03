@@ -71,13 +71,22 @@ template-string coercion and error handling; CI runs the suite on Python
 ## Usage
 
 ```python
-from imagespec import render, RenderContext
+from imagespec import render, validate, RenderContext, RenderError
 
 ctx = RenderContext(
     font_resolver=my_font_lookup,  # optional
     history_provider=my_history_lookup,  # optional, only for `plot`
 )
-image = render(payload, width=296, height=128, rotate=0, background="white", context=ctx)  # -> PIL.Image (RGB)
+
+# Optional: lint the payload first — typos, unknown colours, missing keys (with "did you mean" hints)
+for issue in validate(payload):
+    print(issue)  # e.g. "[2].colr: unknown key for 'text' (did you mean 'color'?)"
+
+try:
+    image = render(payload, width=296, height=128, rotate=0, background="white", context=ctx)  # -> PIL.Image (RGB)
+    # render(..., strict=True) runs the same validation and raises instead of rendering leniently
+except RenderError as err:
+    print(err.path, err.message)  # which element failed, e.g. "[1].elements[0]"
 ```
 
 Run the smoke test (no fonts required):
