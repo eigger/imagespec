@@ -28,7 +28,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
 from ..state import RenderState
-from ..utils import blit, coerce_element, int_xy, mono_draw, require
+from ..utils import blit, coerce_element, int_xy, mono_draw, require, wrap_words
 
 
 @element(
@@ -136,6 +136,102 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
         side("right", "padding_x", "pr"),
         side("bottom", "padding_y", "pb"),
     )
+
+
+class _InkRuler:
+    """``getlength`` for wrapping that errs on the side of never clipping.
+
+    Hinted 1-bit glyphs can come out much wider than ``font.getlength`` / ``textbbox`` predict
+    (a quarter wider for "degrees" at 10px), which would leave wrapped lines clipped by the slot.
+    Each word's own overhang (drawn ink minus advance) is measured once and added up: a line
+    whose advance plus that overhang still fits is accepted without drawing it, one whose advance
+    alone is over is rejected, and only the lines in between are really drawn and measured.
+    """
+
+    _MARGIN = 3  # kerning/rounding across word boundaries (+ _DRIFT of the advance on long lines)
+    _DRIFT = 0.03
+
+    def __init__(self, font, avail: float, *, strict: bool = False) -> None:
+        self._font = font
+        self._avail = avail
+        self._strict = strict  # always draw: no estimate is trusted
+        ascent, descent = font.getmetrics()
+        self._height = ascent + descent + 8
+        self._excess: dict[str, float] = {}
+        self._cache: dict[str, float] = {}
+
+    def _ink_right(self, text: str, advance: float) -> float:
+        scratch = Image.new("L", (int(advance * 1.5) + 32, self._height), 0)
+        mono_draw(scratch).text((0, 0), text, fill=255, font=self._font)
+        ink = scratch.getbbox()
+        return float(ink[2]) if ink else 0.0
+
+    def _word_excess(self, word: str) -> float:
+        if word not in self._excess:
+            self._excess[word] = max(
+                0.0, self._ink_right(word, self._font.getlength(word)) - self._font.getlength(word)
+            )
+        return self._excess[word]
+
+    def ink_right(self, text: str) -> float:
+        """Right edge of the drawn ink of ``text`` (at least its advance), cached."""
+        if text not in self._cache:
+            advance = self._font.getlength(text)
+            self._cache[text] = max(advance, self._ink_right(text, advance))
+        return self._cache[text]
+
+    def getlength(self, text: str) -> float:
+        advance = self._font.getlength(text)
+        if advance > self._avail:
+            return advance  # clearly over
+        if (
+            not self._strict
+            and advance * (1 + self._DRIFT) + self._MARGIN + sum(self._word_excess(w) for w in text.split())
+            <= self._avail
+        ):
+            return advance  # fits even with every word's hinting overhang
+        return self.ink_right(text)
+
+
+def _wrap_text_to(state, child: dict, avail: int) -> dict:
+    """A ``text`` child whose lines are wider than ``avail`` px, word-wrapped to fit (explicit
+    ``\\n`` breaks and the whitespace of lines that already fit are kept); anything else (fits,
+    ``max_width`` set, rotated, ...) comes back unchanged.
+
+    A stack clips whatever overflows it, so a long text in a narrow column used to be cut off.
+    """
+    if child.get("type") != "text" or child.get("max_width") is not None or avail <= 0:
+        return child
+    try:
+        if int(float(child.get("rotation") or 0)) % 360 != 0:
+            return child
+        font = state.context.font(child.get("font"), float(child.get("size", 20)))
+    except Exception:  # noqa: BLE001 — bad size/rotation/font: the element itself reports it
+        return child
+    value = str(child.get("value", ""))
+    paragraphs = value.split("\n")
+    ruler = _InkRuler(font, avail)
+
+    def fits(para: str) -> bool:
+        # the estimate says it fits; a paragraph is only kept whole once its drawn ink agrees
+        return ruler.getlength(para) <= avail and ruler.ink_right(para) <= avail
+
+    if all(fits(p) for p in paragraphs):
+        return child
+    strict = _InkRuler(font, avail, strict=True)
+    lines: list[str] = []
+    for para in paragraphs:
+        if not para.strip() or fits(para):
+            lines.append(para)  # fits (or blank): keep it as written, indentation included
+            continue
+        for line in wrap_words(para, ruler, avail):
+            # the estimates above can be a pixel or two short for some fonts: every line that
+            # was accepted without being drawn is checked once, and re-wrapped by drawing if over
+            if " " in line and ruler.ink_right(line) > avail:
+                lines.extend(wrap_words(line, strict, avail))
+            else:
+                lines.append(line)
+    return {**child, "value": "\n".join(lines)}
 
 
 def _cross_margins(lay: dict, horizontal: bool) -> int:
@@ -278,7 +374,8 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
     "column",
     doc="Flexbox-style auto-layout: children need no coordinates; they are measured and packed along "
     "the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. "
-    "Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.",
+    "Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card "
+    "behind them. Long `text` children of a `column` word-wrap to the column's width.",
     fields=[
         elements(positioned=False, doc="Child elements; their `x`/`y` are ignored (the stack positions them)"),
         enum("direction", ("horizontal", "vertical"), doc="Defaults to horizontal for `row`, vertical otherwise"),
@@ -368,6 +465,8 @@ def stack(state: RenderState, element: dict) -> None:
     def render_child(idx, child, lay, stretch_size, main_size=None):
         """Render ``child`` on its own layer and crop it to its drawn extent: ``lay`` + img/w/h."""
         eff = positioned(child)
+        if not horizontal:  # a column's cross axis is the width: wrap long text to the slot
+            eff = _wrap_text_to(state, eff, inner_w - _cross_margins(lay, horizontal))
         sub_w, sub_h = max(1, inner_w), max(1, inner_h)
         if main_size is not None:  # a growing card: its box is the whole slot along the main axis
             eff = {**eff, main_key: main_size, ("x" if horizontal else "y"): 0}  # own main coordinate is ignored

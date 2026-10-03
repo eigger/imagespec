@@ -804,3 +804,254 @@ def test_growing_card_in_a_column_ignores_its_own_main_coordinate(ctx, y):
     }
     img = render([col], 60, 90, context=ctx)
     assert max(y for y in range(90) if img.getpixel((2, y)) == RED) == 89
+
+
+# --------------------------------------------------------------------------- #
+# long text in a column wraps to the slot instead of being clipped
+# --------------------------------------------------------------------------- #
+
+LONG = "alpha beta gamma delta epsilon zeta"
+
+
+def _ink(img):
+    return img.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+
+
+def test_long_text_in_a_column_wraps_inside_the_column(ctx):
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12}]}
+    left, top, right, bottom = _ink(render([col], 200, 120, context=ctx))
+    assert right <= 60 and bottom - top > 25  # several lines, all inside the 60px column
+
+
+def test_the_same_text_is_clipped_in_a_row_as_before(ctx):
+    row = {"type": "row", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12}]}
+    left, top, right, bottom = _ink(render([row], 200, 120, context=ctx))
+    assert right <= 60 and bottom - top < 16  # a single line: rows can't know their slot width
+
+
+def test_text_that_fits_is_untouched(ctx):
+    col = {"type": "column", "width": 150, "elements": [{"type": "text", "value": "short", "size": 12}]}
+    wrapped = render([col], 200, 60, context=ctx)
+    plain = render([{"type": "text", "x": 0, "y": 0, "value": "short", "size": 12}], 200, 60, context=ctx)
+    assert _ink(wrapped)[2:] and _ink(wrapped)[2] - _ink(wrapped)[0] == _ink(plain)[2] - _ink(plain)[0]
+
+
+def test_explicit_newlines_and_blank_lines_survive_wrapping(ctx):
+    from imagespec.elements.layout import _wrap_text_to
+
+    class _State:
+        context = ctx
+
+    child = {"type": "text", "value": "one\n\ntwo " + LONG, "size": 12}
+    lines = _wrap_text_to(_State, child, 60)["value"].split("\n")
+    assert lines[:3] == ["one", "", "two"] or lines[:3] == ["one", "", "two alpha"]
+    assert len(lines) > 4  # the long paragraph wrapped, the original breaks are all still there
+
+
+def test_whitespace_of_lines_that_fit_is_kept(ctx):
+    from imagespec.elements.layout import _wrap_text_to
+
+    class _State:
+        context = ctx
+
+    value = "  indented\nA  B\n" + LONG
+    lines = _wrap_text_to(_State, {"type": "text", "value": value, "size": 12}, 60)["value"].split("\n")
+    assert lines[0] == "  indented" and lines[1] == "A  B"  # only the overflowing paragraph is reflowed
+
+
+def test_a_failing_font_resolver_is_reported_with_the_child_path():
+    from imagespec import RenderContext, RenderError
+
+    def boom(name):
+        raise RuntimeError("no such font")
+
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12, "font": "x.ttf"}]}
+    with pytest.raises(RenderError) as exc:
+        render([col], 100, 100, context=RenderContext(palette="4", font_resolver=boom))
+    assert exc.value.path == "[0].elements[0]"
+
+
+def test_wrapping_measures_ink_only_near_the_slot_edge(ctx, monkeypatch):
+    import imagespec.elements.layout as layout
+
+    calls = []
+    real = layout.mono_draw
+    monkeypatch.setattr(layout, "mono_draw", lambda im: calls.append(1) or real(im))
+    words = " ".join(["lorem", "ipsum", "dolor", "sit", "amet"] * 80)
+    col = {"type": "column", "width": 300, "height": 2000, "elements": [{"type": "text", "value": words, "size": 10}]}
+    render([col], 320, 600, context=ctx)
+    assert len(calls) < 250  # 400 words: a drawn measurement for every trial would be >> this
+
+
+def test_explicit_max_width_is_left_alone(ctx):
+    col = {
+        "type": "column",
+        "width": 60,
+        "elements": [{"type": "text", "value": LONG, "size": 12, "max_width": 400}],
+    }
+    left, top, right, bottom = _ink(render([col], 400, 120, context=ctx))
+    assert bottom - top < 16  # the element's own max_width (400px) wins: one line, clipped by the column
+
+
+def test_rotated_text_is_not_wrapped_by_the_column(ctx):
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12, "rotation": 90}]}
+    left, top, right, bottom = _ink(render([col], 400, 400, context=ctx))
+    assert right - left < 16 and bottom - top > 100  # still one long rotated line
+
+
+def test_wrapped_text_respects_padding_and_margins(ctx):
+    col = {
+        "type": "column",
+        "width": 80,
+        "padding": 5,
+        "elements": [{"type": "text", "value": LONG, "size": 12, "layout": {"margin_x": 4}}],
+    }
+    left, top, right, bottom = _ink(render([col], 200, 200, context=ctx))
+    assert left >= 9 and right <= 80 - 9
+
+
+def test_text_wraps_inside_a_nested_card(ctx):
+    card = {
+        "type": "column",
+        "width": 70,
+        "padding": 4,
+        "background": "yellow",
+        "elements": [{"type": "text", "value": LONG, "size": 12}],
+    }
+    img = render([card], 200, 200, context=ctx)
+    text_ink = [(x, y) for x in range(200) for y in range(200) if img.getpixel((x, y)) == BLACK]
+    assert max(x for x, _ in text_ink) <= 70 - 4
+    assert max(y for _, y in text_ink) - min(y for _, y in text_ink) > 30  # wrapped onto several lines, not clipped
+
+
+@pytest.mark.parametrize("size", [8, 10, 12, 14, 16, 22, 30])
+@pytest.mark.parametrize("avail", list(range(40, 160, 7)))
+def test_wrapped_lines_never_overflow_the_slot_as_drawn(ctx, size, avail):
+    """Measured by really drawing each line in 1-bit (hinted glyphs are wider than getlength says)."""
+    from PIL import Image
+
+    from imagespec.elements.layout import _wrap_text_to
+    from imagespec.utils import mono_draw
+
+    class _State:  # only .context is used
+        context = ctx
+
+    child = {"type": "text", "value": "Living room temperature is 21.5 degrees and humidity 40 percent", "size": size}
+    wrapped = _wrap_text_to(_State, child, avail)["value"].split("\n")
+    font = ctx.font(None, size)
+    for line in wrapped:
+        scratch = Image.new("L", (avail * 3, size * 3), 0)
+        mono_draw(scratch).text((0, 0), line, fill=255, font=font)
+        right = scratch.getbbox()[2]
+        assert right <= avail or " " not in line, (line, right, avail)  # a single long word can't be split
+
+
+@pytest.mark.parametrize(
+    "text,size,avail",
+    [("room degrees humidity", 10, 70), ("degrees office humidity", 10, 72), ("degrees Ty quick", 10, 57)],
+)
+def test_wrapped_lines_never_clip_at_small_sizes_where_hinting_widens_glyphs(ctx, text, size, avail):
+    """Regression: 1-bit ink is up to ~25% wider than the advance for some words at 8-10px."""
+    assert _clipped_lines(ctx, text, size, avail) == []
+
+
+def _clipped_lines(ctx, text, size, avail):
+    from PIL import Image
+
+    from imagespec.elements.layout import _wrap_text_to
+    from imagespec.utils import mono_draw
+
+    class _State:
+        context = ctx
+
+    font = ctx.font(None, size)
+    out = []
+    for line in _wrap_text_to(_State, {"type": "text", "value": text, "size": size}, avail)["value"].split("\n"):
+        scratch = Image.new("L", (int(font.getlength(line) * 2) + 40, size * 3), 0)
+        mono_draw(scratch).text((0, 0), line, fill=255, font=font)
+        box = scratch.getbbox()
+        if box and box[2] > avail and " " in line.strip():  # a lone long word cannot be split
+            out.append((line, box[2], avail))
+    return out
+
+
+def test_wrapped_lines_never_clip_random_texts(ctx):
+    import random
+
+    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet".split()
+    words += "temperature living 21.5 percent WWW iii mmm a I".split()
+    rnd = random.Random(11)
+    bad = []
+    for _ in range(300):
+        size = rnd.choice([6, 8, 9, 10, 12, 16, 24])
+        text = " ".join(rnd.choice(words) for _ in range(rnd.randint(3, 12)))
+        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
+        bad += _clipped_lines(ctx, text, size, avail)
+    assert bad == []
+
+
+class _OptimisticFont:
+    """A font whose advances are under-reported by 25% (drawing is the real thing): the fast estimate is
+    then too optimistic on every platform, whatever its FreeType hinting does."""
+
+    def __init__(self, font):
+        self._font = font
+
+    def getlength(self, text, *args, **kwargs):
+        return self._font.getlength(text, *args, **kwargs) * 0.75
+
+    def __getattr__(self, name):
+        return getattr(self._font, name)
+
+
+def _sabotage_estimates(monkeypatch, ctx):
+    import imagespec.elements.layout as layout
+
+    real = ctx.font
+    monkeypatch.setattr(ctx, "font", lambda name, size: _OptimisticFont(real(name, size)))
+    monkeypatch.setattr(layout._InkRuler, "_word_excess", lambda self, word: 0.0)
+    monkeypatch.setattr(layout._InkRuler, "_DRIFT", 0.0)
+    monkeypatch.setattr(layout._InkRuler, "_MARGIN", 0)
+    return layout
+
+
+def _random_clips(ctx, seed=5, cases=150):
+    import random
+
+    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet 1 111 21.5 7 4".split()
+    rnd = random.Random(seed)
+    bad = []
+    for _ in range(cases):
+        size = rnd.choice([10, 12, 16])
+        text = " ".join(rnd.choice(words) for _ in range(rnd.randint(4, 14)))
+        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.5, 1.2)) + 1  # incl. "fits" cases
+        bad += _clipped_lines(ctx, text, size, avail)
+    return bad
+
+
+def test_every_line_is_verified_by_drawing_even_if_the_estimate_is_too_optimistic(ctx, monkeypatch):
+    _sabotage_estimates(monkeypatch, ctx)
+    assert _random_clips(ctx) == []
+
+
+def test_the_verification_is_what_catches_it(ctx, monkeypatch):
+    """Control: with the drawn check blinded, the same optimistic estimates clip (on every platform)."""
+    layout = _sabotage_estimates(monkeypatch, ctx)
+    monkeypatch.setattr(layout._InkRuler, "ink_right", lambda self, text: 0.0)
+    assert _random_clips(ctx)
+
+
+def test_a_paragraph_the_estimate_says_fits_but_whose_ink_does_not_is_wrapped(ctx, monkeypatch):
+    from imagespec.elements.layout import _wrap_text_to
+
+    _sabotage_estimates(monkeypatch, ctx)
+
+    class _State:
+        context = ctx
+
+    text, size = "degrees office humidity", 12
+    real_width = ctx.font(None, size)._font.getlength(text)
+    avail = int(real_width * 0.9)  # the optimistic advance (x0.75) fits; the real ink does not
+    out = _wrap_text_to(_State, {"type": "text", "value": text, "size": size}, avail)["value"]
+    assert "\n" in out
+    assert _clipped_lines(ctx, text, size, avail) == []

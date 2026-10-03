@@ -602,7 +602,7 @@ Container: children use coordinates relative to the group's top-left, are clippe
 
 ![stack preview](../examples/elements/stack.png)
 
-Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.
+Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them. Long `text` children of a `column` word-wrap to the column's width.
 
 | key | type | default | description |
 |---|---|---|---|

@@ -100,6 +100,7 @@ Container:
 - `padding`: int (all sides), or `padding_x` / `padding_y` / `padding_top` / `padding_right` / `padding_bottom` / `padding_left`
 - `justify` (main axis): `start` | `end` | `center` | `between` | `around` | `evenly`
 - `align` (cross axis): `start` | `end` | `center` | `stretch` (`group`, `stack`/`row`/`column`, `text_fit`, `sparkline`, `diagram` and `battery` children without an explicit cross-axis `width`/`height` fill it; other elements, and 90/270-rotated ones, stay at `start`)
+- long `text` children in a vertical stack (`column`) word-wrap to the stack's inner width (minus margins) instead of being clipped; in a `row` use `max_width` or `text_fit`
 - `x`, `y` (offset of the whole stack), `width`, `height` (box; default = canvas), `rotate` (90/180/270)
 
 Per child (set on the child dict, under a `layout:` sub-dict to avoid clashing
