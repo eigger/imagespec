@@ -752,3 +752,42 @@ def test_growing_card_respects_margins(ctx):
     img = render([row], 100, 30, context=ctx)
     red = _xs(img, RED, 2)
     assert min(red) == 5 and max(red) == 94
+
+
+def test_growing_card_rotated_90_is_left_alone(ctx):
+    row = {
+        "type": "row",
+        "width": 120,
+        "height": 60,
+        "elements": [_card("R", "red", rotate=90, layout={"grow": 1}), _card("Z", "yellow")],
+    }
+    base = {**row, "elements": [_card("R", "red", rotate=90), _card("Z", "yellow")]}
+    img, ref = render([row], 120, 60, context=ctx), render([base], 120, 60, context=ctx)
+    assert len(_xs(img, RED, 2)) == len(_xs(ref, RED, 2))  # unchanged size
+    assert min(_xs(img, YELLOW, 2)) > min(_xs(ref, YELLOW, 2))  # grow still pushes the sibling to the end
+
+
+@pytest.mark.parametrize("pos", [{"x": 30}, {"x": -10}, {"y": 20}])
+def test_growing_card_ignores_its_own_coordinates(ctx, pos):
+    row = {
+        "type": "row",
+        "width": 120,
+        "height": 30,
+        "gap": 6,
+        "elements": [_card("A", "yellow"), _card("B", "red", layout={"grow": 1}, **pos)],
+    }
+    img = render([row], 120, 30, context=ctx)
+    assert max(_xs(img, RED, 2)) == 119
+
+
+def test_growing_card_with_an_invisible_box_still_pushes_its_sibling(ctx):
+    ghost = {
+        "type": "row",
+        "outline": "black",
+        "width_outline": 0,
+        "elements": [{"type": "text", "value": "g", "size": 12}],
+        "layout": {"grow": 1},
+    }
+    row = {"type": "row", "width": 100, "height": 20, "elements": [ghost, _card("Z", "yellow")]}
+    img = render([row], 100, 20, context=ctx)
+    assert max(_xs(img, YELLOW, 2)) >= 98  # the slot was kept, so the sibling sits at the end

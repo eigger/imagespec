@@ -152,7 +152,12 @@ def _fills_slot(child: dict, main_key: str) -> bool:
     """A card (nested stack with ``background``/``outline``) with no explicit main-axis size: `grow` makes
     its box fill the slot. Unstyled stacks draw nothing for their empty space, so there is nothing to fill."""
     styled = child.get("background") is not None or child.get("outline") is not None
-    return styled and child.get("type") in ("stack", "row", "column") and child.get(main_key) is None
+    if not (styled and child.get("type") in ("stack", "row", "column") and child.get(main_key) is None):
+        return False
+    try:  # a 90/270 rotation swaps the axes, so width/height would grow the wrong way
+        return int(float(child.get("rotate") or 0)) % 180 == 0
+    except (TypeError, ValueError, OverflowError):
+        return False
 
 
 # Stretchable elements that can be rendered without a cross size (their width/height are optional).
@@ -365,7 +370,7 @@ def stack(state: RenderState, element: dict) -> None:
         eff = positioned(child)
         sub_w, sub_h = max(1, inner_w), max(1, inner_h)
         if main_size is not None:  # a growing card: its box is the whole slot along the main axis
-            eff = {**eff, main_key: main_size}
+            eff = {**eff, main_key: main_size, ("x" if horizontal else "y"): 0}  # own main coordinate is ignored
             if horizontal:
                 sub_w = max(sub_w, main_size)
             else:
@@ -483,8 +488,10 @@ def stack(state: RenderState, element: dict) -> None:
         # not just the empty space after it, takes the extra.
         for i, (c, t) in enumerate(zip(children, tiles, strict=True)):
             if grow_extra[i] > 0 and _fills_slot(c, main_key):
-                tiles[i] = render_child(i, c, t, t["stretch"], main_of(t) + grow_extra[i])
-                grow_extra[i] = 0
+                target = main_of(t) + grow_extra[i]
+                tiles[i] = render_child(i, c, t, t["stretch"], target)
+                # whatever the box did not take (e.g. an invisible fill) stays as slot space
+                grow_extra[i] = max(0, target - main_of(tiles[i]))
 
     leading, spacing = _justify_offsets(justify, free, n, gap)
 
