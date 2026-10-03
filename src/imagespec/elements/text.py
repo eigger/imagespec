@@ -312,7 +312,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
         ink = tmp.getbbox()
         if ink is None:
             return w, h
-        return max(w, ink[2] - ox), max(h, ink[3] - ink[1])
+        return max(w, ink[2] - ink[0]), max(h, ink[3] - ink[1])
 
     def settle(axis, limit):
         """Scaling by width/height lands on a fractional size that the font truncates to an int,

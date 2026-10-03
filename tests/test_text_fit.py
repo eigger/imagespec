@@ -182,15 +182,28 @@ def test_text_fit_when_start_is_below_min_size():
 
 
 @pytest.mark.parametrize("axis", ["width", "height"])
+@pytest.mark.parametrize("anchor", ["la", "mm", "rs"])
+@pytest.mark.parametrize("stroke_width", [0, 2])
 @pytest.mark.parametrize("value", ["Temperature 21.5", "Hello World", "WWWW iii"])
-def test_new_multiline_fit_never_overflows_the_target(axis, value):
+def test_new_multiline_fit_never_overflows_the_target(axis, anchor, stroke_width, value):
     """Fitting scales the size once and the font truncates it to an int (and 1-bit hinting widens glyphs),
-    which used to leave the drawn text a few px over the target."""
+    which used to leave the drawn text a few px over the target, for any anchor and stroke."""
     ctx = RenderContext(palette="bw", layout_engine=ImageFont.Layout.BASIC)
     text = value if axis == "width" else value.replace(" ", "\n")
-    for limit in range(37, 160, 7):
-        el = {"type": "new_multiline", "x": 0, "y": 0, "value": text, "size": 40, axis: limit, "fit": axis}
+    for limit in range(45, 160, 11):  # above the size-1 floor even with a stroke
+        el = {
+            "type": "new_multiline",
+            "x": 200,
+            "y": 150,
+            "value": text,
+            "size": 40,
+            "anchor": anchor,
+            "stroke_width": stroke_width,
+            "stroke_fill": "black",
+            axis: limit,
+            "fit": axis,
+        }
         ink = render([el], 400, 300, context=ctx).convert("L").point(lambda p: 255 if p < 128 else 0).getbbox()
         assert ink is not None
-        extent = ink[2] if axis == "width" else ink[3] - ink[1]
-        assert extent <= limit, (value, axis, limit, extent)
+        extent = ink[2] - ink[0] if axis == "width" else ink[3] - ink[1]
+        assert extent <= limit, (value, axis, anchor, stroke_width, limit, extent)
