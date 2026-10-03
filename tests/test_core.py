@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from PIL import Image, ImageDraw
 
 from imagespec import RenderError, render
 
@@ -17,6 +18,44 @@ def test_rotation_image_swaps_dims(ctx):
     # niimbot behaviour: drawing rotates, output dims swap
     assert render([], 200, 100, rotate=90, rotate_mode="image", context=ctx).size == (100, 200)
     assert render([], 200, 100, rotate=270, rotate_mode="image", context=ctx).size == (100, 200)
+
+
+@pytest.mark.parametrize("rotate", [90, 180, 270])
+@pytest.mark.parametrize("rotate_mode", ["canvas", "image"])
+def test_rotation_keeps_element_dither_overrides_aligned(ctx, rotate, rotate_mode):
+    width, height = 20, 12
+    work_size = (height, width) if rotate in (90, 270) and rotate_mode == "canvas" else (width, height)
+    mask = Image.new("L", work_size, 0)
+    ImageDraw.Draw(mask).rectangle((1, 2, 4, 6), fill=255)
+    mask = mask.rotate(-rotate, expand=True)
+    element = {
+        "type": "rectangle",
+        "x_start": 1,
+        "y_start": 2,
+        "x_end": 4,
+        "y_end": 6,
+        "fill": "#ff00a0",
+        "outline": None,
+        "dither": False,
+    }
+    flat = render([element], width, height, rotate=rotate, rotate_mode=rotate_mode, background="#123456", context=ctx)
+    dithered = render(
+        [element],
+        width,
+        height,
+        rotate=rotate,
+        rotate_mode=rotate_mode,
+        background="#123456",
+        dither="bayer8",
+        context=ctx,
+    )
+    assert dithered.size == mask.size
+    assert all(
+        dithered.getpixel((x, y)) == flat.getpixel((x, y))
+        for y in range(mask.height)
+        for x in range(mask.width)
+        if mask.getpixel((x, y))
+    )
 
 
 @pytest.mark.parametrize("rot", [0, 180])

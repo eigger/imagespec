@@ -27,8 +27,8 @@ from PIL import Image, ImageDraw
 from ..classutil import parse_class
 from ..dispatch import render_element
 from ..exceptions import RenderError
-from ..registry import element
-from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
+from ..registry import element, get_spec
+from ..spec import COMMON_FIELDS, LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
 from ..state import RenderState
 from ..utils import (
     blit,
@@ -226,6 +226,11 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
 
     A stack clips whatever overflows it, so a long text in a narrow column used to be cut off.
     """
+    spec = get_spec(child.get("type", ""))
+    try:
+        child = coerce_element(child, (*COMMON_FIELDS, *(spec.fields if spec else ())))
+    except Exception:  # noqa: BLE001 — bad fields are reported by the dispatcher
+        pass
     if child.get("type") != "text" or child.get("max_width") is not None or avail <= 0:
         return child
     try:
@@ -260,19 +265,26 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
     return {**child, "value": "\n".join(lines)}
 
 
-def _origin_padding(state: RenderState, child: dict, sub_w: int, sub_h: int) -> int:
-    """Room around (0, 0) to measure center-origin geometry without clipping ink."""
-    padding = max(sub_w, sub_h)
+def _origin_padding(state: RenderState, child: dict, sub_w: int, sub_h: int) -> tuple[int, int]:
+    """Room around (0, 0) for each axis, without making both pads follow the larger extent."""
+    spec = get_spec(child.get("type", ""))
+    try:
+        child = coerce_element(child, (*COMMON_FIELDS, *(spec.fields if spec else ())))
+    except Exception:  # noqa: BLE001 — the dispatcher will report invalid fields with element context
+        pass
+    pad_x, pad_y = sub_w, sub_h
     try:
         radius = float(child.get("radius", 0) or 0)
         stroke = float(child.get("width", 1) or 0)
-        padding = max(padding, math.ceil(max(0, radius + stroke + 2)))
+        radial_pad = math.ceil(max(0, radius + stroke + 2))
+        pad_x = max(pad_x, radial_pad)
+        pad_y = max(pad_y, radial_pad)
     except (TypeError, ValueError, OverflowError):
         pass  # the element handler will report malformed geometry
 
     etype = child.get("type")
     if etype not in ("text", "multiline", "new_multiline", "icon"):
-        return padding
+        return pad_x, pad_y
     try:
         size = float(child.get("size", 20))
         font = state.context.font(child.get("font"), size)
@@ -306,15 +318,28 @@ def _origin_padding(state: RenderState, child: dict, sub_w: int, sub_h: int) -> 
         else:
             boxes = [draw.textbbox((0, 0), value, font=font, anchor=anchor, stroke_width=stroke_width)]
         background_padding = float(child.get("background_padding", 0) or 0)
-        ink_extent = max((abs(edge) + background_padding for box in boxes for edge in box), default=0)
+        ink_x = max((abs(box[0]) + background_padding for box in boxes), default=0)
+        ink_x = max(ink_x, max((abs(box[2]) + background_padding for box in boxes), default=0))
+        ink_y = max((abs(box[1]) + background_padding for box in boxes), default=0)
+        ink_y = max(ink_y, max((abs(box[3]) + background_padding for box in boxes), default=0))
         rotation = abs(float(child.get("rotation", 0) or 0))
         if rotation % 360:
             width = max((box[2] - box[0] for box in boxes), default=0) + 2 * background_padding
             height = max((box[3] - box[1] for box in boxes), default=0) + 2 * background_padding
-            ink_extent = max(ink_extent, math.ceil(math.hypot(width, height) + stroke_width + 2))
-        return max(padding, math.ceil(ink_extent + stroke_width + 2))
+            radians = math.radians(rotation % 360)
+            rotated_width = abs(width * math.cos(radians)) + abs(height * math.sin(radians))
+            rotated_height = abs(width * math.sin(radians)) + abs(height * math.cos(radians))
+            # Preserve the full rotated bbox so cropping and tile normalization do not
+            # change with the stack canvas size. Keep each projected dimension separate:
+            # a quarter turn swaps a long line's width and height instead of making both
+            # axes as large as the diagonal.
+            ink_x = rotated_width
+            ink_y = rotated_height
+        pad_x = max(pad_x, math.ceil(ink_x + stroke_width + 2))
+        pad_y = max(pad_y, math.ceil(ink_y + stroke_width + 2))
     except Exception:  # noqa: BLE001 — let the element handler report invalid font/size/anchor
-        return padding
+        pass
+    return pad_x, pad_y
 
 
 def _cross_margins(lay: dict, horizontal: bool) -> int:
@@ -594,8 +619,7 @@ def stack(state: RenderState, element: dict) -> None:
         # Give anchor-based elements room to draw around x/y=0 (circle, gauge,
         # middle-anchored text, ...); the crop below turns their full ink bounds
         # into the tile origin before the stack positions the tile.
-        origin_pad = _origin_padding(state, child, sub_w, sub_h)
-        pad_x = pad_y = origin_pad
+        pad_x, pad_y = _origin_padding(state, eff, sub_w, sub_h)
         sub = Image.new("RGBA", (sub_w + 2 * pad_x, sub_h + 2 * pad_y), (0, 0, 0, 0))
         substate = RenderState(
             img=sub,
