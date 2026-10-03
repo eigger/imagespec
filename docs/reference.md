@@ -611,7 +611,7 @@ Flexbox-style auto-layout: children need no coordinates; they are measured and p
 | `gap` | number | `0` |  |
 | `justify` | `start` \| `end` \| `center` \| `between` \| `around` \| `evenly` | `"start"` |  |
 | `justify_content` | `start` \| `end` \| `center` \| `between` \| `around` \| `evenly` |  | Alias of `justify` |
-| `align` | `start` \| `end` \| `center` \| `stretch` | `"start"` | Cross-axis alignment of children. `stretch` sizes `group`, `stack`/`row`/`column`, `text_fit`, `sparkline` and `diagram` children that have no cross-axis `width`/`height` to fill it; other elements keep their size and sit at `start` |
+| `align` | `start` \| `end` \| `center` \| `stretch` | `"start"` | Cross-axis alignment of children. `stretch` sizes `group`, `stack`/`row`/`column`, `text_fit`, `sparkline`, `diagram` and `battery` children that have no cross-axis `width`/`height` to fill it; other elements (and 90/270-rotated ones) keep their size and sit at `start` |
 | `align_items` | `start` \| `end` \| `center` \| `stretch` |  | Alias of `align` |
 | `x` | number | `0` |  |
 | `y` | number | `0` |  |

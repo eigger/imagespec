@@ -277,3 +277,88 @@ def test_stretch_leaves_other_elements_alone(ctx):
     row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [_rect("black", 10, 5)]}
     ys = _black_rows(render([row], 40, 30, context=ctx), 1)
     assert ys == list(range(5))
+
+
+def test_class_tokens_drive_stretch(ctx):
+    chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8}
+    row = {"type": "row", "width": 40, "height": 30, "class": "items-stretch", "elements": [chip]}
+    assert _black_rows(render([row], 40, 30, context=ctx), 1)[-1] >= 28
+    row = {"type": "row", "width": 40, "height": 30, "elements": [{**chip, "class": "self-stretch"}]}
+    assert _black_rows(render([row], 40, 30, context=ctx), 1)[-1] >= 28
+
+
+def test_stretched_group_and_nested_stack_fill_the_cross_axis(ctx):
+    fill = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 9, "y_end": 4, "fill": "black"}
+    group = {"type": "group", "width": 12, "elements": [fill]}
+    img = render(
+        [{"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [group]}], 40, 30, context=ctx
+    )
+    assert img.getpixel((1, 1)) == BLACK  # group drawn; its box is now 30px high (content unchanged)
+    inner = {"type": "column", "width": 20, "justify": "end", "elements": [_chip_col()]}
+    outer = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [inner]}
+    ys = _black_rows(render([outer], 40, 30, context=ctx), 1)
+    assert ys[-1] >= 28 and ys[0] >= 18  # the stretched column spans 30px, so justify:end puts its chip at the bottom
+
+
+def _chip_col():
+    return {
+        "type": "text_fit",
+        "width": 20,
+        "height": 10,
+        "value": "a",
+        "background": "black",
+        "color": "white",
+        "size": 8,
+    }
+
+
+def test_stretch_ignores_the_childs_own_cross_coordinate(ctx):
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [_chip(y=5)]}
+    ys = _black_rows(render([row], 40, 30, context=ctx), 1)
+    assert ys[0] == 0 and ys[-1] >= 28
+
+
+def test_stretch_skips_rotated_children(ctx):
+    group = {"type": "group", "width": 10, "height": 10, "rotate": 90, "elements": [_rect("black", 10, 10)]}
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [group]}
+    ys = _black_rows(render([row], 40, 30, context=ctx), 1)
+    assert ys == list(range(10))
+
+
+def test_stretch_with_a_negative_cross_margin_still_fills(ctx):
+    chip = _chip(layout={"margin_y": -3})
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [chip]}
+    ys = _black_rows(render([row], 40, 30, context=ctx), 1)
+    assert ys[0] == 0 and ys[-1] >= 29
+
+
+def test_stretch_sizes_sparkline_diagram_and_battery_children(ctx):
+    spark = {"type": "sparkline", "width": 20, "values": [1, 3, 2], "fill": "black"}
+    battery = {"type": "battery", "width": 20, "level": 100}
+    for child in (spark, battery):
+        row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [child]}
+        assert render([row], 40, 30, context=ctx).size == (40, 30)
+
+
+def test_validate_accepts_an_omitted_cross_size_only_when_stretching():
+    from imagespec import validate
+
+    chip = {"type": "text_fit", "width": 20, "value": "a"}
+    stretching = {"type": "row", "align": "stretch", "elements": [chip]}
+    assert validate([stretching]) == []
+    assert validate([{"type": "column", "class": "items-stretch", "elements": [{**chip, "height": 5}]}]) == []
+    per_child = {"type": "row", "elements": [{**chip, "layout": {"align": "stretch"}}]}
+    assert validate([per_child]) == []
+    plain = {"type": "row", "elements": [chip]}
+    assert [i.path for i in validate([plain])] == ["[0].elements[0].height"]
+    # a column stretches the *width*, so a missing height is still an error there
+    col = {"type": "column", "align": "stretch", "elements": [chip]}
+    assert [i.path for i in validate([col])] == ["[0].elements[0].height"]
+    col_ok = {"type": "column", "align": "stretch", "elements": [{"type": "text_fit", "height": 5, "value": "a"}]}
+    assert validate([col_ok]) == []
+
+
+def test_strict_render_accepts_a_stretched_child_without_cross_size(ctx):
+    chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black"}
+    row = {"type": "row", "width": 40, "height": 30, "align": "stretch", "elements": [chip]}
+    assert render([row], 40, 30, strict=True, context=ctx).size == (40, 30)

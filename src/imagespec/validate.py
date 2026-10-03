@@ -26,6 +26,7 @@ from typing import Any
 
 from .colors import is_known_color
 from .dither import resolve_dither_method
+from .elements.layout import stretch_cross_key
 from .registry import get_spec, known_types
 from .spec import COMMON_FIELDS, POSITION_KEYS, Field
 from .utils import to_bool, to_dither, to_number
@@ -70,7 +71,9 @@ def _key_hint(key: str, fields: Iterable[str]) -> str:
     return f" ({hint})" if hint else ""
 
 
-def _check_element(element: Any, path: str, positioned: bool, issues: list[Issue]) -> None:
+def _check_element(
+    element: Any, path: str, positioned: bool, issues: list[Issue], stretch_key: str | None = None
+) -> None:
     if not isinstance(element, dict):
         issues.append(Issue(path, f"element must be a dict, got {type(element).__name__}"))
         return
@@ -91,7 +94,7 @@ def _check_element(element: Any, path: str, positioned: bool, issues: list[Issue
             issues.append(Issue(f"{path}.{key}", f"unknown key for {etype!r}{_key_hint(key, fields)}"))
     for f in spec.fields:
         # A stack/row/column supplies its children's x/y, so they are optional there.
-        supplied = not positioned and f.name in POSITION_KEYS
+        supplied = (not positioned and f.name in POSITION_KEYS) or f.name == stretch_key
         required = (f.required and not supplied) or _required_now(element, f, fields)
         _check_field(element, f, path, issues, etype, required=required)
     for f in COMMON_FIELDS:
@@ -123,10 +126,10 @@ def _check_field(
         if required:
             issues.append(Issue(key_path, f"missing required key for {etype!r}"))
         return
-    _check_value(container[f.name], f, key_path, issues, etype)
+    _check_value(container[f.name], f, key_path, issues, etype, owner=container)
 
 
-def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: str) -> None:
+def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: str, owner: dict | None = None) -> None:
     kind = f.kind
     if _matches_alt(value, f):
         return
@@ -161,7 +164,9 @@ def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: st
             issues.append(Issue(path, f"must be a list of elements, got {value!r}"))
         else:
             for i, child in enumerate(value):
-                _check_element(child, f"{path}[{i}]", f.positioned, issues)
+                # a stack that stretches this child supplies its cross-axis width/height
+                stretch = stretch_cross_key(owner, child) if owner is not None and not f.positioned else None
+                _check_element(child, f"{path}[{i}]", f.positioned, issues, stretch)
     elif kind == "dither":
         # Same contract as the schema: bool, 0/1, or a method name (template strings coerced).
         if isinstance(value, int) and not isinstance(value, bool) and value not in (0, 1):
