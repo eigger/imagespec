@@ -78,15 +78,15 @@ ctx = RenderContext(
     history_provider=my_history_lookup,  # optional, only for `plot`
 )
 
-# Optional: lint the payload first — typos, unknown colours, missing keys (with "did you mean" hints)
+# Optional: lint the payload first — typos, unknown colours, missing required keys (with "did you mean" hints)
 for issue in validate(payload):
     print(issue)  # e.g. "[2].colr: unknown key for 'text' (did you mean 'color'?)"
 
 try:
     image = render(payload, width=296, height=128, rotate=0, background="white", context=ctx)  # -> PIL.Image (RGB)
-    # render(..., strict=True) runs the same validation and raises instead of rendering leniently
+    # render(..., strict=True) runs the same validation first and raises one RenderError listing every issue
 except RenderError as err:
-    print(err.path, err.message)  # which element failed, e.g. "[1].elements[0]"
+    print(err)  # "[1].elements[0]: <message>" when one element failed (err.path / err.message separately)
 ```
 
 Run the smoke test (no fonts required):
