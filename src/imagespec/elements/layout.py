@@ -211,12 +211,17 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
     value = str(child.get("value", ""))
     paragraphs = value.split("\n")
     ruler = _InkRuler(font, avail)
-    if all(ruler.getlength(p) <= avail for p in paragraphs):
+
+    def fits(para: str) -> bool:
+        # the estimate says it fits; a paragraph is only kept whole once its drawn ink agrees
+        return ruler.getlength(para) <= avail and ruler.ink_right(para) <= avail
+
+    if all(fits(p) for p in paragraphs):
         return child
     strict = _InkRuler(font, avail, strict=True)
     lines: list[str] = []
     for para in paragraphs:
-        if ruler.getlength(para) <= avail or not para.strip():
+        if not para.strip() or fits(para):
             lines.append(para)  # fits (or blank): keep it as written, indentation included
             continue
         for line in wrap_words(para, ruler, avail):

@@ -990,43 +990,68 @@ def test_wrapped_lines_never_clip_random_texts(ctx):
     assert bad == []
 
 
-def _sabotage_estimates(monkeypatch):
-    """Make the fast accept path wildly optimistic, like a font whose hinting drifts past the estimate."""
+class _OptimisticFont:
+    """A font whose advances are under-reported by 25% (drawing is the real thing): the fast estimate is
+    then too optimistic on every platform, whatever its FreeType hinting does."""
+
+    def __init__(self, font):
+        self._font = font
+
+    def getlength(self, text, *args, **kwargs):
+        return self._font.getlength(text, *args, **kwargs) * 0.75
+
+    def __getattr__(self, name):
+        return getattr(self._font, name)
+
+
+def _sabotage_estimates(monkeypatch, ctx):
     import imagespec.elements.layout as layout
 
+    real = ctx.font
+    monkeypatch.setattr(ctx, "font", lambda name, size: _OptimisticFont(real(name, size)))
     monkeypatch.setattr(layout._InkRuler, "_word_excess", lambda self, word: 0.0)
     monkeypatch.setattr(layout._InkRuler, "_DRIFT", 0.0)
-    monkeypatch.setattr(layout._InkRuler, "_MARGIN", -4)
+    monkeypatch.setattr(layout._InkRuler, "_MARGIN", 0)
     return layout
 
 
-def test_every_wrapped_line_is_verified_by_drawing_even_if_the_estimate_is_too_optimistic(ctx, monkeypatch):
+def _random_clips(ctx, seed=5, cases=150):
     import random
 
-    _sabotage_estimates(monkeypatch)
     words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet 1 111 21.5 7 4".split()
-    rnd = random.Random(5)
+    rnd = random.Random(seed)
     bad = []
-    for _ in range(200):
-        size = rnd.choice([8, 10, 12, 16])
+    for _ in range(cases):
+        size = rnd.choice([10, 12, 16])
         text = " ".join(rnd.choice(words) for _ in range(rnd.randint(4, 14)))
-        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
+        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.5, 1.2)) + 1  # incl. "fits" cases
         bad += _clipped_lines(ctx, text, size, avail)
-    assert bad == []
+    return bad
 
 
-def test_the_verification_pass_is_what_catches_it(ctx, monkeypatch):
-    """Control: without the per-line drawn check, the same sabotaged estimates do clip."""
-    import random
+def test_every_line_is_verified_by_drawing_even_if_the_estimate_is_too_optimistic(ctx, monkeypatch):
+    _sabotage_estimates(monkeypatch, ctx)
+    assert _random_clips(ctx) == []
 
-    layout = _sabotage_estimates(monkeypatch)
-    monkeypatch.setattr(layout._InkRuler, "ink_right", lambda self, text: 0.0)  # verification sees nothing
-    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet 1 111 21.5 7 4".split()
-    rnd = random.Random(5)
-    bad = []
-    for _ in range(200):
-        size = rnd.choice([8, 10, 12, 16])
-        text = " ".join(rnd.choice(words) for _ in range(rnd.randint(4, 14)))
-        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
-        bad += _clipped_lines(ctx, text, size, avail)
-    assert bad  # proves the previous test would notice a missing verification
+
+def test_the_verification_is_what_catches_it(ctx, monkeypatch):
+    """Control: with the drawn check blinded, the same optimistic estimates clip (on every platform)."""
+    layout = _sabotage_estimates(monkeypatch, ctx)
+    monkeypatch.setattr(layout._InkRuler, "ink_right", lambda self, text: 0.0)
+    assert _random_clips(ctx)
+
+
+def test_a_paragraph_the_estimate_says_fits_but_whose_ink_does_not_is_wrapped(ctx, monkeypatch):
+    from imagespec.elements.layout import _wrap_text_to
+
+    _sabotage_estimates(monkeypatch, ctx)
+
+    class _State:
+        context = ctx
+
+    text, size = "degrees office humidity", 12
+    real_width = ctx.font(None, size)._font.getlength(text)
+    avail = int(real_width * 0.9)  # the optimistic advance (x0.75) fits; the real ink does not
+    out = _wrap_text_to(_State, {"type": "text", "value": text, "size": size}, avail)["value"]
+    assert "\n" in out
+    assert _clipped_lines(ctx, text, size, avail) == []
