@@ -8,7 +8,8 @@ import io
 import pytest
 from PIL import Image
 
-from imagespec import RenderError, render
+from imagespec import RenderContext, RenderError, render
+from imagespec.dither import dither_to_palette
 
 
 @pytest.fixture
@@ -355,41 +356,29 @@ def test_datamatrix_recolor(ctx):
 # ── direct compositing (no canvas-sized temp layer) ───────────────────────
 
 
-def _soft_png_url():
-    import base64
-    import io
-
-    from PIL import Image
-
+def _soft_png():
+    """A 6x6 soft-edged RGBA image and its PNG data URL."""
     img = Image.new("RGBA", (6, 6), (255, 0, 0, 120))
     img.putpixel((0, 0), (0, 0, 0, 255))
     buf = io.BytesIO()
     img.save(buf, "PNG")
-    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    return img, "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 @pytest.mark.parametrize("pos", [(0, 0), (7, 5), (-3, -2), (17, 14), (30, 30), (-20, 4)])
-def test_dlimg_matches_the_legacy_canvas_sized_composite(ctx, pos):
+def test_dlimg_matches_the_legacy_canvas_sized_composite(pos):
     """Soft-edged images keep exactly the pixels the full-canvas layer used to give, in or off canvas."""
-    from PIL import Image
-
-    from imagespec import RenderContext
-
+    ctx7 = RenderContext(palette="7")
+    src, url = _soft_png()
     x, y = pos
-    el = {"type": "dlimg", "x": x, "y": y, "url": _soft_png_url(), "xsize": 6, "ysize": 6}
-    got = render([{"type": "fill", "color": "white"}, el], 20, 20, context=RenderContext(palette="7"))
+    el = {"type": "dlimg", "x": x, "y": y, "url": url, "xsize": 6, "ysize": 6}
+    got = render([{"type": "fill", "color": "white"}, el], 20, 20, context=ctx7)
 
-    import base64
-    import io
-
-    src = Image.open(io.BytesIO(base64.b64decode(_soft_png_url().split(",", 1)[1]))).convert("RGBA")
     base = Image.new("RGBA", (20, 20), (255, 255, 255, 255))
     temp = Image.new("RGBA", base.size)
     temp.paste(src, (x, y), src)
     expected = Image.alpha_composite(base, temp).convert("RGB")
-    from imagespec.dither import dither_to_palette
-
-    assert got.tobytes() == dither_to_palette(expected, RenderContext(palette="7").palette, dither=False).tobytes()
+    assert got.tobytes() == dither_to_palette(expected, ctx7.palette, dither=False).tobytes()
 
 
 @pytest.mark.parametrize("pos", [(-30, 5), (5, -40), (90, 5), (5, 90)])

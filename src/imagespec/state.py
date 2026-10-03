@@ -15,9 +15,10 @@ class RenderState:
 
     Handlers mutate this in place:
 
-    * ``img`` may be *reassigned* (e.g. rotated text / ``dlimg`` composite into a
-      new image via ``Image.alpha_composite``), so always read/write
-      ``state.img`` rather than capturing a local reference.
+    * ``img`` is drawn on in place (rotated text and ``dlimg`` blit their tile into
+      it), but the dispatcher swaps in a fresh layer for per-element ``dither`` and a
+      handler may assign a new image, so always read/write ``state.img`` rather
+      than capturing a local reference.
     * ``pos_y`` tracks the running vertical cursor used by elements that flow
       (``line``/``text``/``multiline`` without an explicit ``y``).
 
