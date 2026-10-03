@@ -160,12 +160,14 @@ def _linear_size(width, height, value, max_lines, start=60, min_size=8):
 def test_text_fit_shrink_is_the_largest_fitting_size_even_when_fit_is_not_monotonic():
     """Hinted advances are not monotonic in size, so a size above a failing one can still fit.
 
-    With the bundled font, "Hi , iii Hi WWW Temperature WWW" in a 115x104 box wraps to 3 lines at 16
-    and 18 but 4 lines (too tall) at 17, so a bisection would pick 16 (or give up with min_size 17).
+    With the FreeType in current Pillow wheels, "Hi , iii Hi WWW Temperature WWW" in a 115x104 box wraps to
+    3 lines at 16 and 18 but 4 lines (too tall) at 17, so a bisection would pick 16 (or give up with
+    min_size 17). Older FreeType hints differently (min-deps CI picks 17), so the assertion is "equals the
+    brute-force scan" rather than a pinned size; it still guards the counterexample wherever it exists.
     """
     case = (115, 104, "Hi , iii Hi WWW Temperature WWW", 4)
-    assert _chosen_size(*case, start=20, min_size=2) == _linear_size(*case, start=20, min_size=2) == 18
-    assert _chosen_size(*case, start=20, min_size=17) == 18
+    for min_size in (2, 17):
+        assert _chosen_size(*case, start=20, min_size=min_size) == _linear_size(*case, start=20, min_size=min_size)
 
 
 @pytest.mark.parametrize("value", ["Hi", "Temperature 21.5", "wrap me please now"])
