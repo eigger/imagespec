@@ -186,6 +186,12 @@ LAYOUT_FIELDS: tuple[Field, ...] = (
         doc="Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with "
         "`background`/`outline` and no main-axis size) grows its box to fill it",
     ),
+    any_(
+        "basis",
+        doc="Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size "
+        "(`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` "
+        "and no main-axis size) is sized to it; any other child keeps its own size inside the slot",
+    ),
     enum("align", ("start", "end", "center", "stretch"), doc="Cross-axis alignment for this child only"),
     enum("self", ("start", "end", "center", "stretch"), doc="Alias of `align`"),
     num("margin", doc="All four margins (px)"),

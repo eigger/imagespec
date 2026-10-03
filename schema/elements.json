@@ -525,6 +525,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -732,6 +735,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -985,6 +991,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -1235,6 +1244,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -1471,6 +1483,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -1705,6 +1720,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -1953,6 +1971,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -2391,6 +2412,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -2620,6 +2644,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -2883,6 +2910,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -3088,6 +3118,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -3290,6 +3323,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -3497,6 +3533,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -3858,6 +3897,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -4214,6 +4256,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -4425,6 +4470,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -4654,6 +4702,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -4868,6 +4919,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -5079,6 +5133,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -5313,6 +5370,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -5505,6 +5565,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -5702,6 +5765,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -5916,6 +5982,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -6101,6 +6170,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -6353,6 +6425,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -6633,6 +6708,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -6858,6 +6936,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -7090,6 +7171,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -7455,6 +7539,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -7731,6 +7818,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -7982,6 +8072,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -8284,6 +8377,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -8583,6 +8679,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -8858,6 +8957,9 @@
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
             },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
+            },
             "align": {
               "type": [
                 "string",
@@ -9071,6 +9173,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [
@@ -9351,6 +9456,9 @@
               ],
               "description": "Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it",
               "default": 0
+            },
+            "basis": {
+              "description": "Starting main-axis size of this child's slot: px, or `\"N%\"` of the container's inner size (`0` + `grow: 1` makes equal-width columns). A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot"
             },
             "align": {
               "type": [

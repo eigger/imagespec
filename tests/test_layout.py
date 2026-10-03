@@ -1055,3 +1055,102 @@ def test_a_paragraph_the_estimate_says_fits_but_whose_ink_does_not_is_wrapped(ct
     out = _wrap_text_to(_State, {"type": "text", "value": text, "size": size}, avail)["value"]
     assert "\n" in out
     assert _clipped_lines(ctx, text, size, avail) == []
+
+
+# --------------------------------------------------------------------------- #
+# layout.basis
+# --------------------------------------------------------------------------- #
+
+
+def _widths(img, colors, y=2):
+    return [len(_xs(img, c, y)) for c in colors]
+
+
+def test_percentage_basis_sizes_cards(ctx):
+    row = {
+        "type": "row",
+        "width": 100,
+        "height": 20,
+        "elements": [_card("A", "yellow", layout={"basis": "30%"}), _card("B", "red", layout={"basis": "70%"})],
+    }
+    img = render([row], 100, 20, context=ctx)
+    y, r = _widths(img, (YELLOW, RED))
+    assert abs(y - 30) <= 2 and abs(r - 70) <= 2  # the 1px outline columns are not fill
+    assert max(_xs(img, RED, 2)) >= 97
+
+
+def test_zero_basis_with_grow_makes_equal_columns(ctx):
+    cards = [
+        _card(text, color, layout={"basis": 0, "grow": 1})
+        for text, color in (("a", "yellow"), ("A much longer label", "red"), ("c", "yellow"))
+    ]
+    img = render([{"type": "row", "width": 150, "height": 24, "elements": cards}], 150, 24, context=ctx)
+    red = _xs(img, RED, 12)
+    assert 49 <= min(red) <= 53 and 96 <= max(red) <= 100  # the middle third, whatever the content
+    yellow = _xs(img, YELLOW, 12)
+    assert min(yellow) <= 3 and max(yellow) >= 146  # the outer thirds reach the row's ends
+
+
+def test_basis_then_grow_shares_what_is_left(ctx):
+    row = {
+        "type": "row",
+        "width": 120,
+        "height": 20,
+        "elements": [
+            _card("A", "yellow", layout={"basis": 40}),
+            _card("B", "red", layout={"basis": 20, "grow": 1}),
+        ],
+    }
+    img = render([row], 120, 20, context=ctx)
+    y, r = _widths(img, (YELLOW, RED))
+    assert abs(y - 38) <= 3  # fixed 40 box
+    assert max(_xs(img, RED, 2)) >= 117  # the other one took the rest: 20 + 60 free
+
+
+def test_basis_in_a_column_sizes_the_height(ctx):
+    col = {
+        "type": "column",
+        "width": 40,
+        "height": 100,
+        "elements": [_card("A", "yellow", layout={"basis": "50%"}), _card("B", "red", layout={"basis": "25%"})],
+    }
+    img = render([col], 40, 100, context=ctx)
+    yellow_rows = [y for y in range(100) if img.getpixel((2, y)) == YELLOW]
+    red_rows = [y for y in range(100) if img.getpixel((2, y)) == RED]
+    assert abs(len(yellow_rows) - 48) <= 3 and abs(len(red_rows) - 23) <= 3
+
+
+def test_basis_on_a_plain_child_reserves_the_slot_without_resizing_it(ctx):
+    text = {"type": "text", "value": "A", "size": 12}
+    row = {"type": "row", "width": 100, "height": 20, "elements": [{**text, "layout": {"basis": 50}}, text]}
+    plain = {"type": "row", "width": 100, "height": 20, "elements": [text, text]}
+    a, b = render([row], 100, 20, context=ctx), render([plain], 100, 20, context=ctx)
+    xs = lambda im: [x for x in range(100) if any(im.getpixel((x, y)) == BLACK for y in range(20))]  # noqa: E731
+    assert min(xs(a)) == min(xs(b))  # first letter unmoved
+    assert max(xs(a)) - 50 >= min(xs(a)) and max(xs(a)) > max(xs(b)) + 30  # second letter pushed past the slot
+
+
+def test_basis_ignored_for_cards_with_an_explicit_size(ctx):
+    row = {
+        "type": "row",
+        "width": 100,
+        "height": 20,
+        "elements": [_card("A", "red", width=30, layout={"basis": "80%"})],
+    }
+    img = render([row], 100, 20, context=ctx)
+    assert max(_xs(img, RED, 2)) <= 31
+
+
+@pytest.mark.parametrize("bad", ["abc", "5x%", True, float("nan"), [1]])
+def test_bad_basis_is_reported_with_the_child_path(ctx, bad):
+    from imagespec import RenderError
+
+    row = {"type": "row", "width": 100, "height": 20, "elements": [_card("A", "red", layout={"basis": bad})]}
+    with pytest.raises(RenderError) as exc:
+        render([row], 100, 20, context=ctx)
+    assert exc.value.path.endswith(".elements[0].layout.basis")
+
+
+def test_negative_basis_is_clamped_to_zero(ctx):
+    row = {"type": "row", "width": 100, "height": 20, "elements": [_card("A", "red", layout={"basis": -30})]}
+    assert render([row], 100, 20, context=ctx).size == (100, 20)
