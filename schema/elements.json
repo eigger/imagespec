@@ -3682,14 +3682,14 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas width"
+          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized)"
         },
         "height": {
           "type": [
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas height"
+          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height"
         },
         "rotate": {
           "type": [
@@ -4042,14 +4042,14 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas width"
+          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized)"
         },
         "height": {
           "type": [
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas height"
+          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height"
         },
         "rotate": {
           "type": [

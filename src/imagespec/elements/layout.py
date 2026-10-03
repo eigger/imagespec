@@ -101,6 +101,14 @@ def _px(value) -> int:
     return int(round(float(value)))
 
 
+def _px_or(value, default: int = 0) -> int:
+    """:func:`_px`, but a non-finite value (``inf``/``nan``) gives ``default`` instead of raising."""
+    try:
+        return _px(value)
+    except (OverflowError, ValueError):
+        return default
+
+
 def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
     """Return ``(left, top, right, bottom)`` from explicit keys then ``class``.
 
@@ -263,8 +271,15 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
         enum("align_items", ("start", "end", "center", "stretch"), doc="Alias of `align`"),
         num("x", 0),
         num("y", 0),
-        num("width", doc="Defaults to the canvas width"),
-        num("height", doc="Defaults to the canvas height"),
+        num(
+            "width",
+            doc="Defaults to the canvas width — or, with `background`/`outline`, to the content width "
+            "(a card hugs its content unless sized)",
+        ),
+        num(
+            "height",
+            doc="Defaults to the canvas height — or, with `background`/`outline`, to the content height",
+        ),
         num("rotate", 0, doc="0/90/180/270, clockwise"),
         num("padding", doc="All sides"),
         num("padding_x"),
@@ -293,6 +308,11 @@ def stack(state: RenderState, element: dict) -> None:
     ox, oy = int_xy(element.get("x", 0) or 0, element.get("y", 0) or 0)  # rounded, like `group`
     cw = round(_first(element.get("width"), state.canvas_width))  # round, like `group`
     ch = round(_first(element.get("height"), state.canvas_height))
+    # A styled stack (a card) without an explicit size hugs its content instead of filling the
+    # parent: otherwise its background would cover the whole area and swallow its siblings.
+    styled = element.get("background") is not None or element.get("outline") is not None
+    hug_w = styled and element.get("width") is None
+    hug_h = styled and element.get("height") is None
     rotate = int(element.get("rotate", 0) or 0)
 
     pl, pt, pr, pb = _resolve_padding(element, cls)
@@ -352,7 +372,6 @@ def stack(state: RenderState, element: dict) -> None:
         tiles.append(lay)
 
     n = len(tiles)
-    inner_main = inner_w if horizontal else inner_h
 
     def main_of(t):
         return t["w"] if horizontal else t["h"]
@@ -375,6 +394,21 @@ def stack(state: RenderState, element: dict) -> None:
     content_main = sum(main_of(t) + m_main_lead(t) + m_main_trail(t) for t in tiles)
     if n > 1:
         content_main += gap * (n - 1)
+    if hug_w or hug_h:
+        content_cross = max((cross_of(t) + m_cross_lead(t) + m_cross_trail(t) for t in tiles), default=0)
+        hug_main, hug_cross = (hug_w, hug_h) if horizontal else (hug_h, hug_w)
+        extra_main = (pl + pr) if horizontal else (pt + pb)
+        extra_cross = (pt + pb) if horizontal else (pl + pr)
+        main_total = content_main + extra_main if hug_main else None
+        cross_total = content_cross + extra_cross if hug_cross else None
+        if horizontal:
+            cw, ch = main_total if main_total is not None else cw, cross_total if cross_total is not None else ch
+        else:
+            ch, cw = main_total if main_total is not None else ch, cross_total if cross_total is not None else cw
+        inner_w = max(0, cw - pl - pr)
+        inner_h = max(0, ch - pt - pb)
+        inner_cross = inner_h if horizontal else inner_w
+    inner_main = inner_w if horizontal else inner_h
     free = inner_main - content_main
 
     # Distribute leftover main-axis space to grow children; whatever they consume
@@ -397,13 +431,13 @@ def stack(state: RenderState, element: dict) -> None:
     leading, spacing = _justify_offsets(justify, free, n, gap)
 
     canvas = Image.new("RGBA", (max(1, cw), max(1, ch)), (0, 0, 0, 0))
-    if element.get("background") is not None or element.get("outline") is not None:
+    if styled and cw > 0 and ch > 0:
         mono_draw(canvas).rounded_rectangle(
-            [(0, 0), (max(1, cw) - 1, max(1, ch) - 1)],
+            [(0, 0), (cw - 1, ch - 1)],
             fill=state.context.color(element.get("background")),
             outline=state.context.color(element.get("outline")),
-            width=_px(element.get("width_outline", 1)),
-            radius=element.get("radius", 0),
+            width=max(0, _px_or(element.get("width_outline", 1), 1)),
+            radius=max(0, _px_or(element.get("radius", 0))),
         )
     cursor = leading
     for i, t in enumerate(tiles):

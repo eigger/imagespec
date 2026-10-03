@@ -420,9 +420,9 @@ SCENES: dict[str, dict] = {
             },
             {
                 "type": "row",
-                "x": 110,
+                "x": 100,
                 "y": 4,
-                "width": 70,
+                "width": 46,
                 "height": 30,
                 "padding_x": 4,
                 "align": "center",
@@ -433,7 +433,7 @@ SCENES: dict[str, dict] = {
             },
             {
                 "type": "stack",
-                "x": 110,
+                "x": 100,
                 "y": 40,
                 "width": 40,
                 "height": 24,
