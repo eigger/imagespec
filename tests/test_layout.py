@@ -988,3 +988,45 @@ def test_wrapped_lines_never_clip_random_texts(ctx):
         avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
         bad += _clipped_lines(ctx, text, size, avail)
     assert bad == []
+
+
+def _sabotage_estimates(monkeypatch):
+    """Make the fast accept path wildly optimistic, like a font whose hinting drifts past the estimate."""
+    import imagespec.elements.layout as layout
+
+    monkeypatch.setattr(layout._InkRuler, "_word_excess", lambda self, word: 0.0)
+    monkeypatch.setattr(layout._InkRuler, "_DRIFT", 0.0)
+    monkeypatch.setattr(layout._InkRuler, "_MARGIN", -4)
+    return layout
+
+
+def test_every_wrapped_line_is_verified_by_drawing_even_if_the_estimate_is_too_optimistic(ctx, monkeypatch):
+    import random
+
+    _sabotage_estimates(monkeypatch)
+    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet 1 111 21.5 7 4".split()
+    rnd = random.Random(5)
+    bad = []
+    for _ in range(200):
+        size = rnd.choice([8, 10, 12, 16])
+        text = " ".join(rnd.choice(words) for _ in range(rnd.randint(4, 14)))
+        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
+        bad += _clipped_lines(ctx, text, size, avail)
+    assert bad == []
+
+
+def test_the_verification_pass_is_what_catches_it(ctx, monkeypatch):
+    """Control: without the per-line drawn check, the same sabotaged estimates do clip."""
+    import random
+
+    layout = _sabotage_estimates(monkeypatch)
+    monkeypatch.setattr(layout._InkRuler, "ink_right", lambda self, text: 0.0)  # verification sees nothing
+    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet 1 111 21.5 7 4".split()
+    rnd = random.Random(5)
+    bad = []
+    for _ in range(200):
+        size = rnd.choice([8, 10, 12, 16])
+        text = " ".join(rnd.choice(words) for _ in range(rnd.randint(4, 14)))
+        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
+        bad += _clipped_lines(ctx, text, size, avail)
+    assert bad  # proves the previous test would notice a missing verification

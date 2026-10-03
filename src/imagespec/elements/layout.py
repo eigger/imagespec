@@ -151,9 +151,10 @@ class _InkRuler:
     _MARGIN = 3  # kerning/rounding across word boundaries (+ _DRIFT of the advance on long lines)
     _DRIFT = 0.03
 
-    def __init__(self, font, avail: float) -> None:
+    def __init__(self, font, avail: float, *, strict: bool = False) -> None:
         self._font = font
         self._avail = avail
+        self._strict = strict  # always draw: no estimate is trusted
         ascent, descent = font.getmetrics()
         self._height = ascent + descent + 8
         self._excess: dict[str, float] = {}
@@ -172,15 +173,24 @@ class _InkRuler:
             )
         return self._excess[word]
 
+    def ink_right(self, text: str) -> float:
+        """Right edge of the drawn ink of ``text`` (at least its advance), cached."""
+        if text not in self._cache:
+            advance = self._font.getlength(text)
+            self._cache[text] = max(advance, self._ink_right(text, advance))
+        return self._cache[text]
+
     def getlength(self, text: str) -> float:
         advance = self._font.getlength(text)
         if advance > self._avail:
             return advance  # clearly over
-        if advance * (1 + self._DRIFT) + self._MARGIN + sum(self._word_excess(w) for w in text.split()) <= self._avail:
+        if (
+            not self._strict
+            and advance * (1 + self._DRIFT) + self._MARGIN + sum(self._word_excess(w) for w in text.split())
+            <= self._avail
+        ):
             return advance  # fits even with every word's hinting overhang
-        if text not in self._cache:
-            self._cache[text] = max(advance, self._ink_right(text, advance))
-        return self._cache[text]
+        return self.ink_right(text)
 
 
 def _wrap_text_to(state, child: dict, avail: int) -> dict:
@@ -203,12 +213,19 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
     ruler = _InkRuler(font, avail)
     if all(ruler.getlength(p) <= avail for p in paragraphs):
         return child
+    strict = _InkRuler(font, avail, strict=True)
     lines: list[str] = []
     for para in paragraphs:
         if ruler.getlength(para) <= avail or not para.strip():
             lines.append(para)  # fits (or blank): keep it as written, indentation included
-        else:
-            lines.extend(wrap_words(para, ruler, avail))
+            continue
+        for line in wrap_words(para, ruler, avail):
+            # the estimates above can be a pixel or two short for some fonts: every line that
+            # was accepted without being drawn is checked once, and re-wrapped by drawing if over
+            if " " in line and ruler.ink_right(line) > avail:
+                lines.extend(wrap_words(line, strict, avail))
+            else:
+                lines.append(line)
     return {**child, "value": "\n".join(lines)}
 
 
