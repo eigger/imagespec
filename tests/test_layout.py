@@ -411,3 +411,29 @@ def test_stack_gap_and_child_margin_round_to_the_nearest_pixel(ctx, raw, expecte
     assert _first_ink(margin, ctx)[:2] == (expected, expected)
     side = {"type": "row", "elements": [{**_rect("black", 4, 4), "layout": {"margin_left": raw}}]}
     assert _first_ink(side, ctx)[0] == expected
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"layout": {"margin": "inf"}},
+        {"layout": {"margin": float("inf")}},
+        {"class": "m-inf"},
+        {"class": "gap-inf grow-inf p-nan ml-1e999"},
+        {"rotate": "inf"},
+        {"rotate": 10**400},
+    ],
+)
+@pytest.mark.parametrize("where", ["child", "container"])
+def test_validate_does_not_raise_on_infinite_layout_lengths(extra, where):
+    from imagespec import validate
+
+    child = {"type": "text_fit", "width": 5, "height": 5, "value": "a"}
+    row = {"type": "row", "align": "stretch", "elements": [child]}
+    (child if where == "child" else row).update(extra)
+    assert isinstance(validate([row]), list)  # must not raise OverflowError/ValueError
+
+
+def test_non_finite_class_tokens_are_ignored():
+    p = parse_class("m-inf gap-nan p-1e999 grow-inf px-[1e999px] p-2")
+    assert p == parse_class("p-2")

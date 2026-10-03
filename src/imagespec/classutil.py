@@ -30,6 +30,8 @@ per-child resolver can pick the ones they care about:
 
 from __future__ import annotations
 
+import math
+
 _STEP = 4  # px per spacing unit — Tailwind's 0.25rem at a 16px root
 
 _JUSTIFY = {"start", "end", "center", "between", "around", "evenly"}
@@ -57,10 +59,12 @@ _MAR = {
 
 
 def _to_float(s: str):
+    """A finite float, else ``None`` (``inf``/``nan``/``1e999`` tokens are ignored like any bad token)."""
     try:
-        return float(s)
+        n = float(s)
     except (TypeError, ValueError):
         return None
+    return n if math.isfinite(n) else None
 
 
 def _space(val: str):

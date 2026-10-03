@@ -135,7 +135,7 @@ def _stretched(child: dict, lay: dict, align: str) -> bool:
     swap the axes, so those are left alone) whose own or inherited alignment is ``stretch``."""
     try:
         rotated = int(float(child.get("rotate") or 0)) % 180 != 0
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         rotated = False
     return (lay["self"] or align) == "stretch" and child.get("type") in STRETCHABLE_TYPES and not rotated
 
@@ -154,7 +154,7 @@ def stretch_cross_key(owner: dict, child: dict) -> str | None:
     align = _first(owner.get("align"), owner.get("align_items"), cls.get("align"), "start")
     try:
         lay = _child_layout(child)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None  # a bad `layout` value is reported by the normal field check
     if not _stretched(child, lay, align):
         return None
