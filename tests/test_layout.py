@@ -564,17 +564,84 @@ def test_card_hugs_one_axis_and_honours_the_other(ctx):
 
 
 def test_card_with_align_stretch_in_a_column_fills_the_width(ctx):
+    col = {"type": "column", "width": 80, "height": 70, "align": "stretch", "elements": [_card("A", "yellow")]}
+    img = render([col], 80, 70, context=ctx)
+    run = [x for x in range(80) if img.getpixel((x, 2)) in (YELLOW, BLACK)]
+    assert min(run) == 0 and max(run) == 79  # a row child with no width is stretched across the column
+
+
+def _col_ink_height(img, x, color):
+    return len([y for y in range(img.height) if img.getpixel((x, y)) == color])
+
+
+def test_hugged_card_stretches_children_to_the_content_not_the_canvas(ctx):
+    """Flexbox: the cross size of a hugged card is its tallest non-stretched child."""
+    card = {
+        "type": "row",
+        "x": 5,
+        "y": 5,
+        "padding": 3,
+        "background": "yellow",
+        "outline": "black",
+        "align": "stretch",
+        "elements": [
+            {"type": "column", "background": "red", "elements": [{"type": "text", "value": "a", "size": 10}]},
+            {"type": "text", "value": "Hello", "size": 14},
+        ],
+    }
+    img = render([card], 120, 90, context=ctx)
+    plain = render([{**card, "align": "start"}], 120, 90, context=ctx)
+    height = lambda im: _col_ink_height(im, 6, YELLOW) + _col_ink_height(im, 6, BLACK)  # noqa: E731
+    assert height(img) < 40  # hugs "Hello" + padding, nowhere near the 85px left on the canvas
+    red_col = [y for y in range(90) if img.getpixel((10, y)) == RED]
+    assert len(red_col) > _col_ink_height(plain, 10, RED)  # and the red column was stretched up to it
+    assert max(red_col) < 40
+
+
+def test_hugged_column_of_cards_with_stretch_is_as_wide_as_the_widest_card(ctx):
     col = {
         "type": "column",
-        "width": 80,
-        "height": 70,
+        "x": 2,
+        "y": 2,
+        "padding": 2,
+        "gap": 3,
+        "background": "black",
         "align": "stretch",
-        "elements": [_card("A", "yellow", width=None)],
+        "elements": [_card("Hi", "yellow"), _card("A longer one", "red")],
     }
-    img = render([col], 80, 70, context=ctx)
-    assert img.getpixel((2, 2)) == YELLOW  # sanity: drawn
-    # a row is not size-stretchable only if explicit; cards given no width hug (documented), so just ensure no crash
-    assert img.size == (80, 70)
+    img = render([col], 200, 100, context=ctx)
+    wide = max(x for x in range(200) if img.getpixel((x, 3)) == BLACK)
+    assert wide < 100  # not canvas-wide
+    # both cards end at the same column: the narrow one was stretched to the wide one
+    right_edges = []
+    for color in (YELLOW, RED):
+        xs = [x for x in range(200) for y in range(100) if img.getpixel((x, y)) == color]
+        right_edges.append(max(xs))
+    assert abs(right_edges[0] - right_edges[1]) <= 1
+
+
+def test_stretched_size_required_children_follow_the_hugged_cross_size(ctx):
+    chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8}
+    card = {
+        "type": "row",
+        "padding": 2,
+        "background": "yellow",
+        "align": "stretch",
+        "elements": [chip, {"type": "text", "value": "Hello", "size": 16}],
+    }
+    img = render([card], 100, 80, context=ctx)
+    ys = [y for y in range(80) if img.getpixel((3, y)) == BLACK]
+    assert ys and max(ys) < 40
+
+
+def test_negative_margins_beyond_the_size_do_not_make_the_card_vanish(ctx):
+    card = {
+        "type": "row",
+        "padding": 0,
+        "background": "yellow",
+        "elements": [{**_rect("black", 10, 10), "layout": {"margin": -20}}],
+    }
+    assert render([card], 30, 30, context=ctx).size == (30, 30)
 
 
 def test_empty_card_hugs_to_padding_only(ctx):

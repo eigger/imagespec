@@ -138,6 +138,20 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
     )
 
 
+def _cross_margins(lay: dict, horizontal: bool) -> int:
+    """Cross-axis margins (top+bottom in a row, left+right in a column) of a child layout."""
+    return lay["mt"] + lay["mb"] if horizontal else lay["ml"] + lay["mr"]
+
+
+def _cross_extent(tile: dict, horizontal: bool) -> int:
+    """Cross-axis size of a built tile including its margins."""
+    return (tile["h"] if horizontal else tile["w"]) + _cross_margins(tile, horizontal)
+
+
+# Stretchable elements that can be rendered without a cross size (their width/height are optional).
+_MEASURABLE = frozenset({"group", "stack", "row", "column"})
+
+
 def _stretched(child: dict, lay: dict, align: str) -> bool:
     """``align: stretch`` applies to ``child``: a size-aware element (a 90/270 rotation would
     swap the axes, so those are left alone) whose own or inherited alignment is ``stretch``."""
@@ -175,8 +189,7 @@ def _stretch_size(child: dict, eff: dict, lay: dict, align: str, horizontal: boo
         return None
     if eff.get("height" if horizontal else "width") is not None:
         return None  # an explicit size wins
-    margins = (lay["mt"] + lay["mb"]) if horizontal else (lay["ml"] + lay["mr"])
-    return max(0, inner_cross - margins)
+    return max(0, inner_cross - _cross_margins(lay, horizontal))
 
 
 def _child_layout(child: dict) -> dict:
@@ -328,17 +341,17 @@ def stack(state: RenderState, element: dict) -> None:
     # stack alone controls where each tile lands.
     inner_cross = inner_h if horizontal else inner_w
     cross_key = "height" if horizontal else "width"
-    tiles = []
-    for idx, child in enumerate(children):
-        eff = child
-        if child.get("x") is None or child.get("y") is None:  # absent or an explicit null
-            eff = {**child}
-            for key in ("x", "y"):
-                if eff.get(key) is None:
-                    eff[key] = 0
-        lay = _child_layout(child)
-        # `align: stretch`: size-aware children without an explicit cross size fill the cross axis.
-        stretch_size = _stretch_size(child, eff, lay, align, horizontal, inner_cross)
+    hug_cross_axis = hug_h if horizontal else hug_w
+
+    def positioned(child):
+        """``child`` with the x/y every element requires defaulted to 0 (the stack places it)."""
+        if child.get("x") is not None and child.get("y") is not None:
+            return child
+        return {**child, **{k: 0 for k in ("x", "y") if child.get(k) is None}}
+
+    def render_child(idx, child, lay, stretch_size):
+        """Render ``child`` on its own layer and crop it to its drawn extent: ``lay`` + img/w/h."""
+        eff = positioned(child)
         sub_w, sub_h = max(1, inner_w), max(1, inner_h)
         if stretch_size is not None:
             # the child's own cross coordinate is ignored (like any stack child); a negative margin
@@ -368,8 +381,30 @@ def stack(state: RenderState, element: dict) -> None:
             bbox = (bbox[0], 0, bbox[2], stretch_size) if horizontal else (0, bbox[1], stretch_size, bbox[3])
         tile = rendered.crop(bbox) if bbox else None
         tw, th = tile.size if tile else (0, 0)
-        lay.update(img=tile, w=tw, h=th)
-        tiles.append(lay)
+        return {**lay, "img": tile, "w": tw, "h": th}
+
+    lays = [_child_layout(c) for c in children]
+    # `align: stretch`: size-aware children without an explicit cross size fill the cross axis.
+    stretches = [
+        _stretch_size(c, positioned(c), lay, align, horizontal, inner_cross)
+        for c, lay in zip(children, lays, strict=True)
+    ]
+    slots: list[dict | None] = [None] * len(children)
+    if hug_cross_axis and any(st is not None for st in stretches):
+        # The cross size is the content's (flexbox): measure what is not stretched first, then
+        # stretch the rest to that. Containers can be measured unstretched; size-required
+        # elements (text_fit, ...) have no intrinsic size, so they wait for the result.
+        for i, (c, lay) in enumerate(zip(children, lays, strict=True)):
+            if stretches[i] is None or c.get("type") in _MEASURABLE:
+                slots[i] = render_child(i, c, lay, None)
+        cross_inner = max((_cross_extent(t, horizontal) for t in slots if t is not None), default=inner_cross)
+        for i, (c, lay) in enumerate(zip(children, lays, strict=True)):
+            if stretches[i] is not None:
+                slots[i] = render_child(i, c, lay, max(0, cross_inner - _cross_margins(lay, horizontal)))
+    else:
+        for i, (c, lay) in enumerate(zip(children, lays, strict=True)):
+            slots[i] = render_child(i, c, lay, stretches[i])
+    tiles = [t for t in slots if t is not None]
 
     n = len(tiles)
 
@@ -399,8 +434,8 @@ def stack(state: RenderState, element: dict) -> None:
         hug_main, hug_cross = (hug_w, hug_h) if horizontal else (hug_h, hug_w)
         extra_main = (pl + pr) if horizontal else (pt + pb)
         extra_cross = (pt + pb) if horizontal else (pl + pr)
-        main_total = content_main + extra_main if hug_main else None
-        cross_total = content_cross + extra_cross if hug_cross else None
+        main_total = max(0, content_main + extra_main) if hug_main else None
+        cross_total = max(0, content_cross + extra_cross) if hug_cross else None
         if horizontal:
             cw, ch = main_total if main_total is not None else cw, cross_total if cross_total is not None else ch
         else:
