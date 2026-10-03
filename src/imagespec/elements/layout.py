@@ -141,27 +141,45 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
 class _InkRuler:
     """``getlength`` for wrapping that errs on the side of never clipping.
 
-    Hinted 1-bit glyphs can come out a few px wider than ``font.getlength`` / ``textbbox``
-    predict, which would leave wrapped lines clipped by the slot. Far from ``avail`` the plain
-    advance decides; within a small slack of it the line is really drawn and its ink measured.
+    Hinted 1-bit glyphs can come out much wider than ``font.getlength`` / ``textbbox`` predict
+    (a quarter wider for "degrees" at 10px), which would leave wrapped lines clipped by the slot.
+    Each word's own overhang (drawn ink minus advance) is measured once and added up: a line
+    whose advance plus that overhang still fits is accepted without drawing it, one whose advance
+    alone is over is rejected, and only the lines in between are really drawn and measured.
     """
+
+    _MARGIN = 3  # kerning/rounding across word boundaries (+ _DRIFT of the advance on long lines)
+    _DRIFT = 0.03
 
     def __init__(self, font, avail: float) -> None:
         self._font = font
         self._avail = avail
         ascent, descent = font.getmetrics()
         self._height = ascent + descent + 8
+        self._excess: dict[str, float] = {}
         self._cache: dict[str, float] = {}
+
+    def _ink_right(self, text: str, advance: float) -> float:
+        scratch = Image.new("L", (int(advance * 1.5) + 32, self._height), 0)
+        mono_draw(scratch).text((0, 0), text, fill=255, font=self._font)
+        ink = scratch.getbbox()
+        return float(ink[2]) if ink else 0.0
+
+    def _word_excess(self, word: str) -> float:
+        if word not in self._excess:
+            self._excess[word] = max(
+                0.0, self._ink_right(word, self._font.getlength(word)) - self._font.getlength(word)
+            )
+        return self._excess[word]
 
     def getlength(self, text: str) -> float:
         advance = self._font.getlength(text)
-        if advance > self._avail or advance < self._avail - (3 + 0.1 * advance):
-            return advance  # clearly over, or clearly (by more than any hinting overhang) under
+        if advance > self._avail:
+            return advance  # clearly over
+        if advance * (1 + self._DRIFT) + self._MARGIN + sum(self._word_excess(w) for w in text.split()) <= self._avail:
+            return advance  # fits even with every word's hinting overhang
         if text not in self._cache:
-            scratch = Image.new("L", (int(advance * 1.5) + 32, self._height), 0)
-            mono_draw(scratch).text((0, 0), text, fill=255, font=self._font)
-            ink = scratch.getbbox()
-            self._cache[text] = max(advance, float(ink[2])) if ink else advance
+            self._cache[text] = max(advance, self._ink_right(text, advance))
         return self._cache[text]
 
 

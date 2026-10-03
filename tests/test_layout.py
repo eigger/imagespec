@@ -944,3 +944,46 @@ def test_wrapped_lines_never_overflow_the_slot_as_drawn(ctx, size, avail):
         mono_draw(scratch).text((0, 0), line, fill=255, font=font)
         right = scratch.getbbox()[2]
         assert right <= avail or " " not in line, (line, right, avail)  # a single long word can't be split
+
+
+@pytest.mark.parametrize(
+    "text,size,avail",
+    [("room degrees humidity", 10, 70), ("degrees office humidity", 10, 72), ("degrees Ty quick", 10, 57)],
+)
+def test_wrapped_lines_never_clip_at_small_sizes_where_hinting_widens_glyphs(ctx, text, size, avail):
+    """Regression: 1-bit ink is up to ~25% wider than the advance for some words at 8-10px."""
+    assert _clipped_lines(ctx, text, size, avail) == []
+
+
+def _clipped_lines(ctx, text, size, avail):
+    from PIL import Image
+
+    from imagespec.elements.layout import _wrap_text_to
+    from imagespec.utils import mono_draw
+
+    class _State:
+        context = ctx
+
+    font = ctx.font(None, size)
+    out = []
+    for line in _wrap_text_to(_State, {"type": "text", "value": text, "size": size}, avail)["value"].split("\n"):
+        scratch = Image.new("L", (int(font.getlength(line) * 2) + 40, size * 3), 0)
+        mono_draw(scratch).text((0, 0), line, fill=255, font=font)
+        box = scratch.getbbox()
+        if box and box[2] > avail and " " in line.strip():  # a lone long word cannot be split
+            out.append((line, box[2], avail))
+    return out
+
+
+def test_wrapped_lines_never_clip_random_texts(ctx):
+    import random
+
+    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet temperature living 21.5 percent WWW iii mmm a I".split()
+    rnd = random.Random(11)
+    bad = []
+    for _ in range(300):
+        size = rnd.choice([6, 8, 9, 10, 12, 16, 24])
+        text = " ".join(rnd.choice(words) for _ in range(rnd.randint(3, 12)))
+        avail = int(ctx.font(None, size).getlength(text) * rnd.uniform(0.3, 1.0)) + 1
+        bad += _clipped_lines(ctx, text, size, avail)
+    assert bad == []
