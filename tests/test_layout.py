@@ -791,3 +791,16 @@ def test_growing_card_with_an_invisible_box_still_pushes_its_sibling(ctx):
     row = {"type": "row", "width": 100, "height": 20, "elements": [ghost, _card("Z", "yellow")]}
     img = render([row], 100, 20, context=ctx)
     assert max(_xs(img, YELLOW, 2)) >= 98  # the slot was kept, so the sibling sits at the end
+
+
+@pytest.mark.parametrize("y", [20, -10])
+def test_growing_card_in_a_column_ignores_its_own_main_coordinate(ctx, y):
+    col = {
+        "type": "column",
+        "width": 60,
+        "height": 90,
+        "gap": 4,
+        "elements": [_card("A", "yellow"), _card("B", "red", y=y, layout={"grow": 1})],
+    }
+    img = render([col], 60, 90, context=ctx)
+    assert max(y for y in range(90) if img.getpixel((2, y)) == RED) == 89
