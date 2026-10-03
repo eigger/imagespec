@@ -804,3 +804,103 @@ def test_growing_card_in_a_column_ignores_its_own_main_coordinate(ctx, y):
     }
     img = render([col], 60, 90, context=ctx)
     assert max(y for y in range(90) if img.getpixel((2, y)) == RED) == 89
+
+
+# --------------------------------------------------------------------------- #
+# long text in a column wraps to the slot instead of being clipped
+# --------------------------------------------------------------------------- #
+
+LONG = "alpha beta gamma delta epsilon zeta"
+
+
+def _ink(img):
+    return img.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+
+
+def test_long_text_in_a_column_wraps_inside_the_column(ctx):
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12}]}
+    left, top, right, bottom = _ink(render([col], 200, 120, context=ctx))
+    assert right <= 60 and bottom - top > 25  # several lines, all inside the 60px column
+
+
+def test_the_same_text_is_clipped_in_a_row_as_before(ctx):
+    row = {"type": "row", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12}]}
+    left, top, right, bottom = _ink(render([row], 200, 120, context=ctx))
+    assert right <= 60 and bottom - top < 16  # a single line: rows can't know their slot width
+
+
+def test_text_that_fits_is_untouched(ctx):
+    col = {"type": "column", "width": 150, "elements": [{"type": "text", "value": "short", "size": 12}]}
+    wrapped = render([col], 200, 60, context=ctx)
+    plain = render([{"type": "text", "x": 0, "y": 0, "value": "short", "size": 12}], 200, 60, context=ctx)
+    assert _ink(wrapped)[2:] and _ink(wrapped)[2] - _ink(wrapped)[0] == _ink(plain)[2] - _ink(plain)[0]
+
+
+def test_explicit_newlines_and_blank_lines_survive_wrapping(ctx):
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": "one\n\ntwo " + LONG, "size": 12}]}
+    nowrap = {"type": "column", "width": 600, "elements": [{"type": "text", "value": "one\n\ntwo", "size": 12}]}
+    tall = _ink(render([col], 200, 200, context=ctx))
+    short = _ink(render([nowrap], 700, 200, context=ctx))
+    assert tall[3] - tall[1] > short[3] - short[1]  # at least the 3 original lines (blank one included) plus wrapping
+
+
+def test_explicit_max_width_is_left_alone(ctx):
+    col = {
+        "type": "column",
+        "width": 60,
+        "elements": [{"type": "text", "value": LONG, "size": 12, "max_width": 400}],
+    }
+    left, top, right, bottom = _ink(render([col], 400, 120, context=ctx))
+    assert bottom - top < 16  # the element's own max_width (400px) wins: one line, clipped by the column
+
+
+def test_rotated_text_is_not_wrapped_by_the_column(ctx):
+    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12, "rotation": 90}]}
+    left, top, right, bottom = _ink(render([col], 400, 400, context=ctx))
+    assert right - left < 16 and bottom - top > 100  # still one long rotated line
+
+
+def test_wrapped_text_respects_padding_and_margins(ctx):
+    col = {
+        "type": "column",
+        "width": 80,
+        "padding": 5,
+        "elements": [{"type": "text", "value": LONG, "size": 12, "layout": {"margin_x": 4}}],
+    }
+    left, top, right, bottom = _ink(render([col], 200, 200, context=ctx))
+    assert left >= 9 and right <= 80 - 9
+
+
+def test_text_wraps_inside_a_nested_card(ctx):
+    card = {
+        "type": "column",
+        "width": 70,
+        "padding": 4,
+        "background": "yellow",
+        "elements": [{"type": "text", "value": LONG, "size": 12}],
+    }
+    img = render([card], 200, 200, context=ctx)
+    text_ink = [(x, y) for x in range(200) for y in range(200) if img.getpixel((x, y)) == BLACK]
+    assert max(x for x, _ in text_ink) <= 70 - 4
+
+
+@pytest.mark.parametrize("size", [10, 12, 16, 22])
+@pytest.mark.parametrize("avail", [45, 60, 77, 98, 140])
+def test_wrapped_lines_never_overflow_the_slot_as_drawn(ctx, size, avail):
+    """Measured by really drawing each line in 1-bit (hinted glyphs are wider than getlength says)."""
+    from PIL import Image
+
+    from imagespec.elements.layout import _wrap_text_to
+    from imagespec.utils import mono_draw
+
+    class _State:  # only .context is used
+        context = ctx
+
+    child = {"type": "text", "value": "Living room temperature is 21.5 degrees and humidity 40 percent", "size": size}
+    wrapped = _wrap_text_to(_State, child, avail)["value"].split("\n")
+    font = ctx.font(None, size)
+    for line in wrapped:
+        scratch = Image.new("L", (avail * 3, size * 3), 0)
+        mono_draw(scratch).text((0, 0), line, fill=255, font=font)
+        right = scratch.getbbox()[2]
+        assert right <= avail or " " not in line, (line, right, avail)  # a single long word can't be split

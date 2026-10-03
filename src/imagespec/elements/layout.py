@@ -28,7 +28,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
 from ..state import RenderState
-from ..utils import blit, coerce_element, int_xy, mono_draw, require
+from ..utils import blit, coerce_element, int_xy, mono_draw, require, wrap_words
 
 
 @element(
@@ -136,6 +136,54 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
         side("right", "padding_x", "pr"),
         side("bottom", "padding_y", "pb"),
     )
+
+
+class _InkRuler:
+    """``getlength`` as the text is really drawn: the right edge of the ink of a 1-bit render.
+
+    Hinted 1-bit glyphs can come out a few px wider than ``font.getlength`` / ``textbbox``
+    predict, which would leave wrapped lines clipped by the slot (what :func:`wrap_words` needs).
+    """
+
+    def __init__(self, font) -> None:
+        self._font = font
+        ascent, descent = font.getmetrics()
+        self._height = ascent + descent + 8
+        self._cache: dict[str, float] = {}
+
+    def getlength(self, text: str) -> float:
+        if text not in self._cache:
+            width = int(self._font.getlength(text) * 1.5) + 32
+            scratch = Image.new("L", (width, self._height), 0)
+            mono_draw(scratch).text((0, 0), text, fill=255, font=self._font)
+            ink = scratch.getbbox()
+            self._cache[text] = float(ink[2]) if ink else 0.0
+        return self._cache[text]
+
+
+def _wrap_text_to(state, child: dict, avail: int) -> dict:
+    """A ``text`` child whose lines are wider than ``avail`` px, word-wrapped to fit (explicit
+    ``\\n`` breaks kept); anything else (fits, ``max_width`` set, rotated, ...) comes back unchanged.
+
+    A stack clips whatever overflows it, so a long text in a narrow column used to be cut off.
+    """
+    if child.get("type") != "text" or child.get("max_width") is not None or avail <= 0:
+        return child
+    try:
+        if int(float(child.get("rotation") or 0)) % 360 != 0:
+            return child
+        font = state.context.font(child.get("font"), float(child.get("size", 20)))
+    except (TypeError, ValueError, OverflowError):
+        return child  # bad values are reported by the element itself
+    value = str(child.get("value", ""))
+    paragraphs = value.split("\n")
+    ruler = _InkRuler(font)
+    if all(ruler.getlength(p) <= avail for p in paragraphs):
+        return child
+    lines: list[str] = []
+    for para in paragraphs:
+        lines.extend(wrap_words(para, ruler, avail) if para.strip() else [""])
+    return {**child, "value": "\n".join(lines)}
 
 
 def _cross_margins(lay: dict, horizontal: bool) -> int:
@@ -278,7 +326,8 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
     "column",
     doc="Flexbox-style auto-layout: children need no coordinates; they are measured and packed along "
     "the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. "
-    "Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.",
+    "Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card "
+    "behind them. Long `text` children of a `column` word-wrap to the column's width.",
     fields=[
         elements(positioned=False, doc="Child elements; their `x`/`y` are ignored (the stack positions them)"),
         enum("direction", ("horizontal", "vertical"), doc="Defaults to horizontal for `row`, vertical otherwise"),
@@ -368,6 +417,8 @@ def stack(state: RenderState, element: dict) -> None:
     def render_child(idx, child, lay, stretch_size, main_size=None):
         """Render ``child`` on its own layer and crop it to its drawn extent: ``lay`` + img/w/h."""
         eff = positioned(child)
+        if not horizontal:  # a column's cross axis is the width: wrap long text to the slot
+            eff = _wrap_text_to(state, eff, inner_w - _cross_margins(lay, horizontal))
         sub_w, sub_h = max(1, inner_w), max(1, inner_h)
         if main_size is not None:  # a growing card: its box is the whole slot along the main axis
             eff = {**eff, main_key: main_size, ("x" if horizontal else "y"): 0}  # own main coordinate is ignored
