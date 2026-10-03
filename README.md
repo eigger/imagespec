@@ -24,9 +24,10 @@ rewritten and extended — see [`NOTICE`](https://github.com/eigger/imagespec/bl
 
 ## Status
 
-Used in production by the two integrations above. Every registered element is
-pinned by a golden-image test (the README previews below double as the
-goldens), alongside unit tests for palettes, rotation, dithering,
+Stable 1.0.0 release, used in production by the two integrations above. The
+public Python API and payload contract are stable within the 1.x series. Every
+registered element is pinned by a golden-image test (the README previews below
+double as the goldens), alongside unit tests for palettes, rotation, dithering,
 template-string coercion and error handling; CI runs the suite on Python
 3.13/3.14 and against the lowest supported dependency versions.
 
@@ -111,10 +112,11 @@ CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, mypy, t
 suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
 are present in the wheel.
 
-**Releasing**: add a version section to [`CHANGELOG.md`](CHANGELOG.md)
-(behaviour changes go under *Changed* with before/after), bump `version` in
-`pyproject.toml`, merge, then tag: pushing a `v*` tag triggers
-`.github/workflows/release.yml` to build and publish to PyPI (trusted publishing).
+**Releasing**: add a version section to [`CHANGELOG.md`](CHANGELOG.md), bump
+`version` in `pyproject.toml`, update `schema_version` when the payload
+contract changes, and merge. Then tag the matching commit `v<version>` and push
+the tag. The release workflow checks the tag against project metadata before
+building and publishing to PyPI with trusted publishing.
 
 The test matrix (`tests/test_elements.py`) asserts it covers *every* registered
 element type, so adding a new `@element(...)` without a sample fails the suite —

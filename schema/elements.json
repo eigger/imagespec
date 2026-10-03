@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/eigger/imagespec/main/schema/elements.json",
   "title": "imagespec payload",
   "description": "A list of elements rendered in order. Numeric and boolean keys also accept the string forms Home Assistant templates produce at render time; this schema describes the authored types.",
-  "schema_version": 2,
+  "schema_version": 3,
   "package": "imagespec",
   "types": [
     "arc",

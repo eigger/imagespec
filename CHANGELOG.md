@@ -1,13 +1,71 @@
 # Changelog
 
 All notable changes to imagespec. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project uses
-[Semantic Versioning](https://semver.org/) — until 1.0, a minor bump may carry
-a behaviour change, and every such change is listed under **Changed** with the
-old and new behaviour.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Starting with 1.0.0,
+the project follows [Semantic Versioning](https://semver.org/): the public
+Python API and payload contract stay backward compatible within a major
+version. The 1.0.0 release includes the behavior changes accumulated since the
+last beta release; they are listed under **Changed**.
 
 `schema_version` in `schema/elements.json` is bumped whenever the payload
 contract (keys, kinds, required-ness, `null` semantics) changes shape.
+
+## [1.0.0] — 2026-10-03
+
+First stable release. `imagespec` is used by the `hass-ble-esl` and
+`hass-niimbot` integrations; the public renderer API, payload contract, and
+schema are now declared stable for the 1.x series.
+
+### Added
+
+- **Stack layout** ([#30], [#38], [#39], [#42]): `stack`/`row`/`column` can
+  stretch size-aware children, draw styled cards with background/outline/radius,
+  grow nested cards into free space, and assign children a pixel or percentage
+  `layout.basis`.
+- **Validation and diagnostics** ([#26], [#27], [#28]): render errors include
+  element paths; `validate()` and strict rendering report unknown colours; key
+  and element type errors include suggestions.
+- **Font caching** ([#29]): the per-context font cache is bounded with LRU
+  eviction to keep long-running hosts from accumulating every font size used.
+- **Text layout** ([#40], [#41]): multiline text supports default anchors, and
+  long text in columns wraps to the available width instead of being clipped.
+- **Schema contract**: `schema_version` 3 includes the payload fields and
+  layout options added since 0.5.0.
+
+### Changed
+
+- **Layout measurements** ([#31], [#36]): stack offsets, padding, margins, and
+  gaps round to the nearest pixel instead of truncating fractional values.
+- **Text fitting and placement** ([#24], [#32], [#34], [#40]): rotated text
+  respects anchors and background padding; multiline text keeps consistent
+  placement; `new_multiline` fitting accounts for drawn glyph bounds.
+- **Column text** ([#41]): long paragraphs wrap to the column width; explicit
+  line breaks and lines that already fit are preserved.
+- **Dithering** ([#25], [#43]): palette-aligned images skip unnecessary error
+  diffusion, and per-element dither choices remain intact through global
+  dithering and image rotation.
+- **Stack sizing** ([#39], [#42]): `grow` fills a nested card's free main-axis
+  space, and `layout.basis` sets its starting slot size.
+
+### Fixed
+
+- **Validation and rendering edge cases** ([#37], [#43], [#45]): non-finite
+  layout values, invalid dash lengths, overlapping dither overrides, and
+  rotated protection masks are handled without crashing or changing unrelated
+  pixels.
+- **Text and stack bounds** ([#43], [#45]): long, wrapped, anchored, and rotated
+  text is measured without clipping, excessive square temporary layers, or
+  results that vary with the canvas size.
+- **Resolver concurrency** ([#43]): simultaneous cold font-cache lookups no
+  longer race while writing the same temporary file.
+- **Minimum dependency compatibility** ([#44]): tests support the oldest
+  declared Pillow API while keeping current Pillow deprecation checks enabled.
+
+### Compatibility
+
+- Python 3.13 or newer is required.
+- The schema version is 3. Consumers of the 0.5 payload schema should refresh
+  `schema/elements.json` and validate payloads against the new contract.
 
 ## [0.5.0] — 2026-09-21
 
@@ -122,6 +180,7 @@ guards, rendered element previews, and the initial port of the rendering core.
 See the git history.
 
 [0.5.0]: https://github.com/eigger/imagespec/compare/v0.4.1...v0.5.0
+[1.0.0]: https://github.com/eigger/imagespec/compare/v0.5.0...v1.0.0
 [0.4.1]: https://github.com/eigger/imagespec/compare/v0.4.0...v0.4.1
 [#6]: https://github.com/eigger/imagespec/pull/6
 [#9]: https://github.com/eigger/imagespec/pull/9
@@ -137,3 +196,23 @@ See the git history.
 [#19]: https://github.com/eigger/imagespec/pull/19
 [#20]: https://github.com/eigger/imagespec/pull/20
 [#21]: https://github.com/eigger/imagespec/pull/21
+[#24]: https://github.com/eigger/imagespec/pull/24
+[#25]: https://github.com/eigger/imagespec/pull/25
+[#26]: https://github.com/eigger/imagespec/pull/26
+[#27]: https://github.com/eigger/imagespec/pull/27
+[#28]: https://github.com/eigger/imagespec/pull/28
+[#29]: https://github.com/eigger/imagespec/pull/29
+[#30]: https://github.com/eigger/imagespec/pull/30
+[#31]: https://github.com/eigger/imagespec/pull/31
+[#32]: https://github.com/eigger/imagespec/pull/32
+[#34]: https://github.com/eigger/imagespec/pull/34
+[#36]: https://github.com/eigger/imagespec/pull/36
+[#37]: https://github.com/eigger/imagespec/pull/37
+[#38]: https://github.com/eigger/imagespec/pull/38
+[#39]: https://github.com/eigger/imagespec/pull/39
+[#40]: https://github.com/eigger/imagespec/pull/40
+[#41]: https://github.com/eigger/imagespec/pull/41
+[#42]: https://github.com/eigger/imagespec/pull/42
+[#43]: https://github.com/eigger/imagespec/pull/43
+[#44]: https://github.com/eigger/imagespec/pull/44
+[#45]: https://github.com/eigger/imagespec/pull/45
