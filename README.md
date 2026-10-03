@@ -114,9 +114,9 @@ are present in the wheel.
 
 **Releasing**: add a version section to [`CHANGELOG.md`](CHANGELOG.md), bump
 `version` in `pyproject.toml`, update `schema_version` when the payload
-contract changes, and merge. Then tag the matching commit `v<version>` and push
-the tag. The release workflow checks the tag against project metadata before
-building and publishing to PyPI with trusted publishing.
+contract changes, and merge. Then create and publish a GitHub Release for the
+matching `v<version>` tag. The release workflow checks the tag against project
+metadata before building and publishing to PyPI with trusted publishing.
 
 The test matrix (`tests/test_elements.py`) asserts it covers *every* registered
 element type, so adding a new `@element(...)` without a sample fails the suite —

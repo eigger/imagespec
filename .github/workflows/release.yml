@@ -1,6 +1,6 @@
 name: Release
 
-# Publishes to PyPI when a v* tag is pushed (e.g. `git tag v0.1.0 && git push --tags`).
+# Publishes to PyPI when a GitHub Release is published for a v* tag.
 #
 # Uses PyPI Trusted Publishing (OIDC) — no API token needed. Configure it once at
 # https://pypi.org/manage/project/imagespec/settings/publishing/ with:
@@ -9,8 +9,8 @@ name: Release
 # add `with: { password: ${{ secrets.PYPI_API_TOKEN }} }` to the publish step.
 
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
 
 jobs:
   build:
