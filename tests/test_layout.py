@@ -978,7 +978,8 @@ def _clipped_lines(ctx, text, size, avail):
 def test_wrapped_lines_never_clip_random_texts(ctx):
     import random
 
-    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet temperature living 21.5 percent WWW iii mmm a I".split()
+    words = "room degrees humidity office Ty quick lorem ipsum dolor sit amet".split()
+    words += "temperature living 21.5 percent WWW iii mmm a I".split()
     rnd = random.Random(11)
     bad = []
     for _ in range(300):
