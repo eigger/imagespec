@@ -437,3 +437,76 @@ def test_validate_does_not_raise_on_infinite_layout_lengths(extra, where):
 def test_non_finite_class_tokens_are_ignored():
     p = parse_class("m-inf gap-nan p-1e999 grow-inf px-[1e999px] p-2")
     assert p == parse_class("p-2")
+
+
+# --------------------------------------------------------------------------- #
+# container style: background / outline / radius
+# --------------------------------------------------------------------------- #
+
+YELLOW = (255, 255, 0)
+
+
+def test_stack_background_fills_the_whole_box_including_padding(ctx):
+    col = {
+        "type": "column",
+        "x": 5,
+        "y": 5,
+        "width": 20,
+        "height": 12,
+        "padding": 4,
+        "background": "yellow",
+        "elements": [],
+    }
+    img = render([col], 40, 30, context=ctx)
+    assert img.getpixel((5, 5)) == YELLOW and img.getpixel((24, 16)) == YELLOW  # corners of the box
+    assert img.getpixel((4, 5)) == WHITE and img.getpixel((25, 16)) == WHITE and img.getpixel((24, 17)) == WHITE
+
+
+def test_stack_background_sits_behind_the_children(ctx):
+    col = {"type": "column", "width": 20, "height": 20, "background": "yellow", "elements": [_rect("black", 6, 6)]}
+    img = render([col], 30, 30, context=ctx)
+    assert img.getpixel((2, 2)) == BLACK and img.getpixel((10, 10)) == YELLOW
+
+
+def test_stack_outline_width_and_radius(ctx):
+    col = {
+        "type": "column",
+        "width": 20,
+        "height": 20,
+        "outline": "red",
+        "width_outline": 2,
+        "radius": 6,
+        "elements": [],
+    }
+    img = render([col], 30, 30, context=ctx)
+    assert img.getpixel((10, 0)) == RED and img.getpixel((10, 1)) == RED  # 2px border on the top edge
+    assert img.getpixel((10, 2)) == WHITE  # not filled inside (no background)
+    assert img.getpixel((0, 0)) == WHITE  # rounded corner is cut away
+
+
+def test_stack_without_style_draws_nothing_extra(ctx):
+    plain = render([{"type": "row", "width": 20, "height": 20, "elements": [_rect("black")]}], 30, 30, context=ctx)
+    styled_none = render(
+        [{"type": "row", "width": 20, "height": 20, "background": None, "outline": None, "elements": [_rect("black")]}],
+        30,
+        30,
+        context=ctx,
+    )
+    assert plain.tobytes() == styled_none.tobytes()
+
+
+def test_stack_background_rotates_with_the_stack(ctx):
+    col = {"type": "column", "width": 20, "height": 10, "rotate": 90, "background": "yellow", "elements": []}
+    img = render([col], 30, 30, context=ctx)
+    xs = [x for x in range(30) if img.getpixel((x, 5)) == YELLOW]
+    ys = [y for y in range(30) if img.getpixel((5, y)) == YELLOW]
+    assert (len(xs), len(ys)) == (10, 20)  # a 20x10 box turned into 10 wide x 20 tall
+
+
+def test_stack_background_validates_and_flags_unknown_colors():
+    from imagespec import validate
+
+    ok = {"type": "row", "background": "yellow", "outline": "#000", "radius": 4, "elements": []}
+    assert validate([ok]) == []
+    bad = {"type": "row", "background": "yelow", "elements": []}
+    assert [i.path for i in validate([bad])] == ["[0].background"]

@@ -399,6 +399,51 @@ SCENES: dict[str, dict] = {
             },
         ],
     },
+    # stack as a card: background/outline/radius behind padded children, plus a rotated card
+    "stack_card_style": {
+        "payload": [
+            {
+                "type": "column",
+                "x": 4,
+                "y": 4,
+                "width": 90,
+                "height": 60,
+                "padding": 6,
+                "gap": 4,
+                "background": "yellow",
+                "outline": "black",
+                "radius": 8,
+                "elements": [
+                    {"type": "text", "value": "Temp", "size": 12},
+                    {"type": "text", "value": "21.5", "size": 20, "color": "red"},
+                ],
+            },
+            {
+                "type": "row",
+                "x": 110,
+                "y": 4,
+                "width": 70,
+                "height": 30,
+                "padding_x": 4,
+                "align": "center",
+                "background": "black",
+                "width_outline": 2,
+                "outline": "red",
+                "elements": [{"type": "text", "value": "OK", "size": 14, "color": "white"}],
+            },
+            {
+                "type": "stack",
+                "x": 110,
+                "y": 40,
+                "width": 40,
+                "height": 24,
+                "rotate": 90,
+                "background": "red",
+                "elements": [{"type": "text", "value": "up", "size": 12, "color": "white"}],
+            },
+        ],
+        "palette": "4",
+    },
     "group_rotated_and_clipped": {
         "payload": [
             {

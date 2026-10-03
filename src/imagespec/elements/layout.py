@@ -26,9 +26,9 @@ from ..classutil import parse_class
 from ..dispatch import render_element
 from ..exceptions import RenderError
 from ..registry import element
-from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, elements, enum, num
+from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
 from ..state import RenderState
-from ..utils import blit, coerce_element, int_xy, require
+from ..utils import blit, coerce_element, int_xy, mono_draw, require
 
 
 @element(
@@ -245,7 +245,7 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
     "column",
     doc="Flexbox-style auto-layout: children need no coordinates; they are measured and packed along "
     "the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. "
-    "Each child may carry `class` / `layout` hints.",
+    "Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.",
     fields=[
         elements(positioned=False, doc="Child elements; their `x`/`y` are ignored (the stack positions them)"),
         enum("direction", ("horizontal", "vertical"), doc="Defaults to horizontal for `row`, vertical otherwise"),
@@ -273,6 +273,10 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
         num("padding_top"),
         num("padding_right"),
         num("padding_bottom"),
+        color("background", doc="Fill the whole box (padding included) behind the children — a card"),
+        color("outline", doc="Border colour of the box"),
+        num("width_outline", 1, doc="Border width"),
+        num("radius", 0, doc="Corner radius of the box"),
     ],
 )
 def stack(state: RenderState, element: dict) -> None:
@@ -393,6 +397,14 @@ def stack(state: RenderState, element: dict) -> None:
     leading, spacing = _justify_offsets(justify, free, n, gap)
 
     canvas = Image.new("RGBA", (max(1, cw), max(1, ch)), (0, 0, 0, 0))
+    if element.get("background") is not None or element.get("outline") is not None:
+        mono_draw(canvas).rounded_rectangle(
+            [(0, 0), (max(1, cw) - 1, max(1, ch) - 1)],
+            fill=state.context.color(element.get("background")),
+            outline=state.context.color(element.get("outline")),
+            width=_px(element.get("width_outline", 1)),
+            radius=element.get("radius", 0),
+        )
     cursor = leading
     for i, t in enumerate(tiles):
         slot_main = main_of(t) + grow_extra[i]

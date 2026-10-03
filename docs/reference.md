@@ -602,7 +602,7 @@ Container: children use coordinates relative to the group's top-left, are clippe
 
 ![stack preview](../examples/elements/stack.png)
 
-Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints.
+Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.
 
 | key | type | default | description |
 |---|---|---|---|
@@ -625,6 +625,10 @@ Flexbox-style auto-layout: children need no coordinates; they are measured and p
 | `padding_top` | number |  |  |
 | `padding_right` | number |  |  |
 | `padding_bottom` | number |  |  |
+| `background` | color |  | Fill the whole box (padding included) behind the children — a card |
+| `outline` | color |  | Border colour of the box |
+| `width_outline` | number | `1` | Border width |
+| `radius` | number | `0` | Corner radius of the box |
 
 ## Widgets
 
