@@ -1281,6 +1281,35 @@ def test_stack_measures_rotated_right_anchored_multiline_text(ctx):
     assert narrow.tobytes() == wide.crop((0, 0, 30, 40)).tobytes()
 
 
+def test_stack_rotated_text_bbox_does_not_depend_on_canvas_size(ctx):
+    text = {"type": "text", "value": "HHHHHHHHHH", "size": 30, "rotation": 15, "anchor": "lt"}
+    narrow = render([{"type": "row", "width": 30, "height": 40, "elements": [text]}], 30, 40, context=ctx)
+    wide = render([{"type": "row", "width": 500, "height": 400, "elements": [text]}], 500, 400, context=ctx)
+    assert narrow.tobytes() == wide.crop((0, 0, 30, 40)).tobytes()
+
+
+@pytest.mark.parametrize("stroke_width", ["0", "2"])
+def test_stack_text_measurement_coerces_template_numeric_strings(ctx, stroke_width):
+    text = {
+        "type": "text",
+        "value": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        "size": 20,
+        "anchor": "rs",
+        "stroke_width": stroke_width,
+    }
+    narrow = render([{"type": "row", "width": 100, "height": 40, "elements": [text]}], 100, 40, context=ctx)
+    wide = render([{"type": "row", "width": 500, "height": 40, "elements": [text]}], 500, 40, context=ctx)
+    assert narrow.tobytes() == wide.crop((0, 0, 100, 40)).tobytes()
+
+
+def test_column_wrapping_treats_null_font_size_as_omitted(ctx):
+    text = {"type": "text", "value": "one two three four five six seven eight nine"}
+    column = {"type": "column", "width": 100, "height": 100}
+    omitted = render([{**column, "elements": [text]}], 100, 100, context=ctx)
+    null_size = render([{**column, "elements": [{**text, "size": None}]}], 100, 100, context=ctx)
+    assert null_size.tobytes() == omitted.tobytes()
+
+
 @pytest.mark.parametrize("rotation", [0, 45])
 def test_stack_text_measurement_includes_background_padding(ctx, rotation):
     text = {
@@ -1297,3 +1326,18 @@ def test_stack_text_measurement_includes_background_padding(ctx, rotation):
     narrow = render([{"type": "row", "width": 60, "height": 60, "elements": [text]}], 60, 60, context=ctx)
     wide = render([{"type": "row", "width": 500, "height": 400, "elements": [text]}], 500, 400, context=ctx)
     assert narrow.tobytes() == wide.crop((0, 0, 60, 60)).tobytes()
+
+
+@pytest.mark.parametrize(("stack_type", "rotation"), [("row", 0), ("column", 0), ("row", 90)])
+def test_stack_long_text_uses_bounded_temporary_layer(ctx, stack_type, rotation, monkeypatch):
+    text = {"type": "text", "x": 0, "y": 0, "value": "W" * 500, "size": 20, "rotation": rotation}
+
+    image_new = Image.new
+
+    def bounded_new(mode, size, *args, **kwargs):
+        assert size[0] * size[1] < 25_000_000
+        return image_new(mode, size, *args, **kwargs)
+
+    monkeypatch.setattr(Image, "new", bounded_new)
+    img = render([{"type": stack_type, "width": 200, "height": 50, "elements": [text]}], 200, 50, context=ctx)
+    assert img.size == (200, 50)

@@ -123,9 +123,12 @@ def render(
             raise RenderError(f"error rendering element #{idx} (type '{etype}'): {exc}", path=f"[{idx}]") from exc
 
     img = state.img
+    protect_mask = state.dither_protected
     if rotate in (90, 180, 270):
         img = img.rotate(-rotate, expand=True)
+        if protect_mask is not None:
+            protect_mask = protect_mask.rotate(-rotate, expand=True)
     result = img.convert("RGB")
     # Elements are drawn in true color; map the whole image to the device palette
     # once here — method selected by `dither` (bool or algorithm name).
-    return dither_to_palette(result, context.palette, dither=dither, protect_mask=state.dither_protected)
+    return dither_to_palette(result, context.palette, dither=dither, protect_mask=protect_mask)
