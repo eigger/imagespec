@@ -665,3 +665,12 @@ def test_zero_or_negative_card_size_draws_nothing(ctx, size):
 def test_odd_radius_and_outline_widths_do_not_raise(ctx, extra):
     card = {"type": "column", "width": 20, "height": 20, "outline": "black", "elements": [], **extra}
     assert render([card], 30, 30, context=ctx).size == (30, 30)
+
+
+def test_card_of_only_size_required_stretched_children_falls_back_to_the_available_cross_size(ctx):
+    """Pinned: with nothing measurable the cross size is the available space (documented on width/height)."""
+    chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8}
+    card = {"type": "row", "x": 5, "y": 5, "background": "yellow", "align": "stretch", "elements": [chip]}
+    img = render([card], 60, 50, context=ctx)
+    ys = [y for y in range(50) if img.getpixel((6, y)) == BLACK]
+    assert min(ys) == 5 and max(ys) == 49

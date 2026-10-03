@@ -287,7 +287,8 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
         num(
             "width",
             doc="Defaults to the canvas width — or, with `background`/`outline`, to the content width "
-            "(a card hugs its content unless sized)",
+            "(a card hugs its content unless sized; a card holding only `text_fit`-style children, which "
+            "have no intrinsic size, needs an explicit cross size)",
         ),
         num(
             "height",

@@ -615,7 +615,7 @@ Flexbox-style auto-layout: children need no coordinates; they are measured and p
 | `align_items` | `start` \| `end` \| `center` \| `stretch` |  | Alias of `align` |
 | `x` | number | `0` |  |
 | `y` | number | `0` |  |
-| `width` | number |  | Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized) |
+| `width` | number |  | Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized; a card holding only `text_fit`-style children, which have no intrinsic size, needs an explicit cross size) |
 | `height` | number |  | Defaults to the canvas height — or, with `background`/`outline`, to the content height |
 | `rotate` | number | `0` | 0/90/180/270, clockwise |
 | `padding` | number |  | All sides |

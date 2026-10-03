@@ -3682,7 +3682,7 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized)"
+          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized; a card holding only `text_fit`-style children, which have no intrinsic size, needs an explicit cross size)"
         },
         "height": {
           "type": [
@@ -4042,7 +4042,7 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized)"
+          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized; a card holding only `text_fit`-style children, which have no intrinsic size, needs an explicit cross size)"
         },
         "height": {
           "type": [
