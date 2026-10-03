@@ -362,7 +362,7 @@ def test_global_dither_preserves_already_quantized_palette_pixels(method):
         "dither": False,
     }
     img = render([el], 16, 16, background="white", dither=method, context=ctx)
-    assert set(img.get_flattened_data()) == {(0, 128, 0)}
+    assert {color for _, color in img.getcolors(maxcolors=1 << 24)} == {(0, 128, 0)}
 
 
 @pytest.mark.parametrize("method", ["floyd", "bayer8"])
@@ -388,7 +388,8 @@ def test_global_dither_preserves_per_element_override_next_to_other_colors(metho
         "dither": False,
     }
     img = render([left, right], 16, 16, background="white", dither=method, context=ctx)
-    assert set(img.crop((8, 0, 16, 16)).get_flattened_data()) == {(255, 0, 0)}
+    cropped = img.crop((8, 0, 16, 16))
+    assert {color for _, color in cropped.getcolors(maxcolors=1 << 24)} == {(255, 0, 0)}
 
 
 def test_later_same_color_element_replaces_an_earlier_dither_override():
@@ -427,7 +428,7 @@ def test_nested_override_replaces_an_overlapping_outer_override(container):
         else {"type": "column", "x": 0, "y": 0, "width": 16, "height": 16, "elements": [green]}
     )
     img = render([red, nested], 16, 16, dither="bayer8", context=ctx)
-    assert set(img.get_flattened_data()) == {(0, 128, 0)}
+    assert {color for _, color in img.getcolors(maxcolors=1 << 24)} == {(0, 128, 0)}
 
 
 def test_later_overlapping_stack_child_clears_an_earlier_override_mask():

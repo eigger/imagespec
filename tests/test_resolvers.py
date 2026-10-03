@@ -92,9 +92,7 @@ def test_caching_resolver_allows_concurrent_cold_downloads(tmp_path):
             barrier.wait(timeout=2)
             return Response()
 
-    resolver = caching_resolver(
-        str(tmp_path), {"font.ttf": "https://example.test/font.ttf"}, session=Session()
-    )
+    resolver = caching_resolver(str(tmp_path), {"font.ttf": "https://example.test/font.ttf"}, session=Session())
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(resolver, ["font.ttf", "font.ttf"]))
     assert results == [str(tmp_path / "font.ttf")] * 2
