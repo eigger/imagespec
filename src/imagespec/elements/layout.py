@@ -336,12 +336,38 @@ def _child_layout(child: dict) -> dict:
 
     return {
         "grow": grow,
+        "basis": lay.get("basis") if lay.get("basis") is not None else cls.get("basis"),
         "self": self_align,
         "ml": margin("left", "margin_x", "ml"),
         "mt": margin("top", "margin_y", "mt"),
         "mr": margin("right", "margin_x", "mr"),
         "mb": margin("bottom", "margin_y", "mb"),
     }
+
+
+def _resolve_basis(raw, inner_main: int) -> int | None:
+    """``layout.basis`` in px: a number, a numeric string, or ``"N%"`` of ``inner_main``; ``None`` if unset."""
+    if raw is None:
+        return None
+    try:
+        if isinstance(raw, str) and raw.strip().endswith("%"):
+            value = inner_main * float(raw.strip()[:-1]) / 100
+        elif isinstance(raw, bool):
+            raise ValueError(raw)
+        else:
+            value = float(raw)
+        return max(0, _px(value))
+    except (TypeError, ValueError, OverflowError):
+        raise RenderError(f"layout.basis must be a number or a percentage like '50%', got {raw!r}") from None
+
+
+def basis_error(raw) -> str | None:
+    """Why ``raw`` is not a usable ``layout.basis`` (``None`` if it is, or is unset); for ``validate()``."""
+    try:
+        _resolve_basis(raw, 100)
+    except RenderError as exc:
+        return exc.message
+    return None
 
 
 def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float, float]:
@@ -464,6 +490,8 @@ def stack(state: RenderState, element: dict) -> None:
 
     def render_child(idx, child, lay, stretch_size, main_size=None):
         """Render ``child`` on its own layer and crop it to its drawn extent: ``lay`` + img/w/h."""
+        if main_size is None and bases[idx] is not None and _fills_slot(child, main_key):
+            main_size = bases[idx]  # a card is as large as its basis
         eff = positioned(child)
         if not horizontal:  # a column's cross axis is the width: wrap long text to the slot
             eff = _wrap_text_to(state, eff, inner_w - _cross_margins(lay, horizontal))
@@ -502,9 +530,16 @@ def stack(state: RenderState, element: dict) -> None:
             bbox = (bbox[0], 0, bbox[2], stretch_size) if horizontal else (0, bbox[1], stretch_size, bbox[3])
         tile = rendered.crop(bbox) if bbox else None
         tw, th = tile.size if tile else (0, 0)
-        return {**lay, "img": tile, "w": tw, "h": th, "stretch": stretch_size}
+        return {**lay, "img": tile, "w": tw, "h": th, "stretch": stretch_size, "basis": bases[idx] or 0}
 
     lays = [_child_layout(c) for c in children]
+    inner_main_now = inner_w if horizontal else inner_h  # (pre-hug: the space available)
+    bases: list[int | None] = []
+    for i, lay in enumerate(lays):
+        try:
+            bases.append(_resolve_basis(lay.get("basis"), inner_main_now))
+        except RenderError as exc:
+            raise exc.at(f".elements[{source_idx[i]}].layout.basis") from None
     # `align: stretch`: size-aware children without an explicit cross size fill the cross axis.
     stretches = [
         _stretch_size(c, positioned(c), lay, align, horizontal, inner_cross)
@@ -530,7 +565,8 @@ def stack(state: RenderState, element: dict) -> None:
     n = len(tiles)
 
     def main_of(t):
-        return t["w"] if horizontal else t["h"]
+        # a child's slot is at least its basis (the child itself keeps its drawn size inside it)
+        return max(t["w"] if horizontal else t["h"], t["basis"])
 
     def cross_of(t):
         return t["h"] if horizontal else t["w"]

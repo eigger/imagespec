@@ -106,6 +106,7 @@ Container:
 Per child (set on the child dict, under a `layout:` sub-dict to avoid clashing
 with the element's own keys):
 - `layout: { grow: 1 }` — take a share of leftover main-axis space (push siblings apart); a card (a nested stack with `background`/`outline` and no `width`/`height` on the main axis) grows its box to fill its share
+- `layout: { basis: "30%" }` (or px) — starting main-axis size of the child's slot; on a card it sizes the box. `basis: 0` + `grow: 1` on each card gives equal-width columns (content is clipped to the column; with no free space a basis-0 card collapses). Class tokens: `basis-1/2`, `basis-[30%]`, `basis-N` (N × 4 px), `basis-full`; a percentage of a container that hugs its content is taken of the space its parent offers
 - `layout: { align: center }` — override the container's cross-axis alignment for this child
 - `layout: { margin: 4 }` or `margin_x` / `margin_top` / ... — extra space around this child (may be negative to nudge)
 

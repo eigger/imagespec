@@ -27,6 +27,7 @@ See [`elements.md`](elements.md) for a rendered YAML example of every element an
 | `class` | string |  | Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column |
 | `layout` | object |  | Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand) |
 | `layout.grow` | number | `0` | Share of leftover main-axis space this child takes (flex-grow); a card (a nested stack with `background`/`outline` and no main-axis size) grows its box to fill it |
+| `layout.basis` | any |  | Starting main-axis size of this child's slot: px, or `"N%"` of the container's inner size (for a container that hugs its content, of the space its parent offers). `0` + `grow: 1` makes equal-width columns: the content is clipped to the column and a card gets no room at all when nothing is left over. A card (a nested stack with `background`/`outline` and no main-axis size) is sized to it; any other child keeps its own size inside the slot. Class: `basis-1/2`, `basis-[30%]`, `basis-N` (N x 4 px), `basis-full` |
 | `layout.align` | `start` \| `end` \| `center` \| `stretch` |  | Cross-axis alignment for this child only |
 | `layout.self` | `start` \| `end` \| `center` \| `stretch` |  | Alias of `align` |
 | `layout.margin` | number |  | All four margins (px) |

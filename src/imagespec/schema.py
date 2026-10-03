@@ -41,7 +41,8 @@ def _field_schema(f: Field) -> dict[str, Any]:
         if f.enum is not None:
             s["enum"] = list(f.enum)
     elif f.kind == "any":
-        s = {}
+        # `basis` is px or "N%"
+        s = {"anyOf": [{"type": "number"}, {"type": "string"}]} if f.name == "basis" else {}
     elif f.kind == "object":
         s = _object_schema(f.fields)
     elif f.kind == "array":
