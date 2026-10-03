@@ -96,6 +96,11 @@ def _norm_dir(value) -> str:
     return "vertical"
 
 
+def _px(value) -> int:
+    """A pixel length rounded to the nearest int (``2.6`` -> 3), matching how x/y offsets are rounded."""
+    return int(round(float(value)))
+
+
 def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
     """Return ``(left, top, right, bottom)`` from explicit keys then ``class``.
 
@@ -107,14 +112,14 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
     def side(name: str, axis_key: str, cls_key: str) -> int:
         v = element.get(f"padding_{name}")
         if v is not None:
-            return int(v)
+            return _px(v)
         av = element.get(axis_key)
         if av is not None:
-            return int(av)
+            return _px(av)
         if pad_all is not None:
-            return int(pad_all)
+            return _px(pad_all)
         if cls_key in cls:
-            return int(cls[cls_key])
+            return _px(cls[cls_key])
         return 0
 
     return (
@@ -190,14 +195,14 @@ def _child_layout(child: dict) -> dict:
     def margin(name: str, axis_key: str, cls_key: str) -> int:
         v = lay.get(f"margin_{name}")
         if v is not None:
-            return int(v)
+            return _px(v)
         av = lay.get(axis_key)
         if av is not None:
-            return int(av)
+            return _px(av)
         if m_all is not None:
-            return int(m_all)
+            return _px(m_all)
         if cls_key in cls:
-            return int(cls[cls_key])
+            return _px(cls[cls_key])
         return 0
 
     return {
@@ -277,7 +282,7 @@ def stack(state: RenderState, element: dict) -> None:
     default_dir = "horizontal" if etype == "row" else "vertical"
     horizontal = _norm_dir(_first(element.get("direction"), cls.get("direction"), default_dir)) == "horizontal"
 
-    gap = int(_first(element.get("gap"), cls.get("gap"), 0))
+    gap = _px(_first(element.get("gap"), cls.get("gap"), 0))
     justify = _first(element.get("justify"), element.get("justify_content"), cls.get("justify"), "start")
     align = _first(element.get("align"), element.get("align_items"), cls.get("align"), "start")
 
