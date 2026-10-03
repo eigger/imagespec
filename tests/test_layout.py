@@ -411,3 +411,14 @@ def test_stack_gap_and_child_margin_round_to_the_nearest_pixel(ctx, raw, expecte
     assert _first_ink(margin, ctx)[:2] == (expected, expected)
     side = {"type": "row", "elements": [{**_rect("black", 4, 4), "layout": {"margin_left": raw}}]}
     assert _first_ink(side, ctx)[0] == expected
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [{"layout": {"margin": "inf"}}, {"layout": {"margin": float("inf")}}, {"class": "m-inf"}, {"class": "gap-inf"}],
+)
+def test_validate_does_not_raise_on_infinite_layout_lengths(extra):
+    from imagespec import validate
+
+    child = {"type": "text_fit", "width": 5, "height": 5, "value": "a", **extra}
+    validate([{"type": "row", "align": "stretch", "elements": [child]}])  # must not raise OverflowError
