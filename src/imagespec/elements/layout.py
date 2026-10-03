@@ -135,7 +135,7 @@ def _stretched(child: dict, lay: dict, align: str) -> bool:
     swap the axes, so those are left alone) whose own or inherited alignment is ``stretch``."""
     try:
         rotated = int(float(child.get("rotate") or 0)) % 180 != 0
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         rotated = False
     return (lay["self"] or align) == "stretch" and child.get("type") in STRETCHABLE_TYPES and not rotated
 
