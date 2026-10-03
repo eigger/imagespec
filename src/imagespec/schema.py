@@ -13,7 +13,7 @@ from .dither import DITHER_METHODS
 from .registry import specs
 from .spec import COMMON_FIELDS, POSITION_KEYS, STRETCHABLE_TYPES, UNSET, ElementSpec, Field
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 SCHEMA_ID = "https://raw.githubusercontent.com/eigger/imagespec/main/schema/elements.json"
 
 # Display order of categories in the reference (matches the README table).

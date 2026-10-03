@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imagespec"
-version = "0.5.0"
+version = "1.0.0"
 description = "Render images from a declarative YAML/dict spec — shapes, text, charts, QR/barcodes — for e-paper ESL tags and label printers."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -13,7 +13,7 @@ license-files = ["LICENSE", "LICENSE-APACHE-2.0", "NOTICE"]
 authors = [{ name = "eigger" }]
 keywords = ["image", "render", "yaml", "spec", "e-paper", "esl", "label", "pillow"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
