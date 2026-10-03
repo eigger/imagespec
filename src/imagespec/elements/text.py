@@ -123,7 +123,8 @@ def text(state: RenderState, element: dict) -> None:
             spacing=spacing,
             stroke_width=stroke_width,
         )
-        akt_pos_y += akt_pos_y - edge[1 if anchor[1] == "a" else 3]
+        if text_rotation == 0:  # the rotated tile is placed by its own box (see below)
+            akt_pos_y += akt_pos_y - edge[1 if anchor[1] == "a" else 3]
 
     # Extent of the (unrotated) text at its anchor: drives the background box
     # and the flow cursor. textbbox ignores image content, so one call serves both.

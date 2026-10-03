@@ -277,3 +277,15 @@ def test_text_box_and_new_multiline_and_plot_legend_accept_newlines(ctx):
     box = {"type": "text_box", "x": 5, "y": 5, "value": "a\nb"}
     nm = {"type": "new_multiline", "x": 5, "y": 5, "value": "a\nb", "anchor": "lt"}
     assert render([box, nm], 80, 80, context=ctx).size == (80, 80)
+
+
+@pytest.mark.parametrize("rotation", [90, 180, 45])
+@pytest.mark.parametrize("anchor", [None, "lt", "mt", "lb", "rb"])
+def test_rotated_multiline_text_lands_where_rotated_single_line_text_does(ctx, rotation, anchor):
+    base = {"type": "text", "x": 100, "y": 100, "size": 20, "rotation": rotation}
+    if anchor:
+        base["anchor"] = anchor
+    one = _ink_bbox(render([{**base, "value": "Hab"}], 220, 220, context=ctx))
+    two = _ink_bbox(render([{**base, "value": "Hab\nHab"}], 220, 220, context=ctx))
+    edge = 3 if anchor and anchor[1] == "b" else 1
+    assert abs(one[edge] - two[edge]) <= 2
