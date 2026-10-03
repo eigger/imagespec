@@ -377,3 +377,16 @@ def test_validate_reports_bad_layout_values_instead_of_raising(child):
 
     issues = validate([{"type": "row", "align": "stretch", "elements": [{**child, "layout": {"margin": "abc"}}]}])
     assert [i.path for i in issues] == ["[0].elements[0].layout.margin"]
+
+
+@pytest.mark.parametrize("x,y", [(5.6, 3.4), (5.5, 2.5), (-0.6, 7.2)])
+def test_stack_and_group_round_a_fractional_offset_the_same_way(ctx, x, y):
+    def tile_box(container):
+        img = render([container], 40, 30, context=ctx)
+        bbox = img.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+        return bbox
+
+    rect = _rect("black", 4, 4)
+    group = {"type": "group", "x": x, "y": y, "elements": [rect]}
+    stack = {"type": "stack", "x": x, "y": y, "elements": [rect]}
+    assert tile_box(stack) == tile_box(group)
