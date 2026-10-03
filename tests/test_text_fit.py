@@ -193,8 +193,8 @@ def test_new_multiline_fit_never_overflows_the_target(axis, anchor, stroke_width
     for limit in range(45, 160, 11):  # above the size-1 floor even with a stroke
         el = {
             "type": "new_multiline",
-            "x": 200,
-            "y": 150,
+            "x": 400,
+            "y": 400,
             "value": text,
             "size": 40,
             "anchor": anchor,
@@ -203,7 +203,7 @@ def test_new_multiline_fit_never_overflows_the_target(axis, anchor, stroke_width
             axis: limit,
             "fit": axis,
         }
-        ink = render([el], 400, 300, context=ctx).convert("L").point(lambda p: 255 if p < 128 else 0).getbbox()
-        assert ink is not None
+        ink = render([el], 800, 800, context=ctx).convert("L").point(lambda p: 255 if p < 128 else 0).getbbox()
+        assert ink is not None  # canvas leaves room on every side, so nothing is clipped
         extent = ink[2] - ink[0] if axis == "width" else ink[3] - ink[1]
         assert extent <= limit, (value, axis, anchor, stroke_width, limit, extent)
