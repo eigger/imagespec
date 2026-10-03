@@ -7,6 +7,8 @@ fixed box by shrinking the font and/or truncating with an ellipsis.
 
 from __future__ import annotations
 
+import math
+
 from PIL import Image
 
 from ..exceptions import RenderError
@@ -293,6 +295,36 @@ def new_multiline(state: RenderState, element: dict) -> None:
         return x2 - x1, y2 - y1
 
     font = state.context.font(element.get("font"), size)
+
+    def drawn_size(font, spacing):
+        """Extent the text really covers. In 1-bit mode ``textbbox`` can come out a few px
+        narrower than the glyphs ``multiline_text`` then draws, so measure by drawing."""
+        w, h = rendered_size(font, spacing)
+        bx1, by1, bx2, by2 = d.textbbox(
+            (0, 0), value, font=font, anchor=anchor, spacing=spacing, align=align, stroke_width=stroke_width
+        )
+        margin = 8
+        tmp = Image.new("L", (math.ceil(bx2 - bx1) + 2 * margin + 16, math.ceil(by2 - by1) + 2 * margin + 16), 0)
+        ox, oy = margin - bx1, margin - by1
+        mono_draw(tmp).multiline_text(
+            (ox, oy), value, fill=255, font=font, anchor=anchor, spacing=spacing, align=align, stroke_width=stroke_width
+        )
+        ink = tmp.getbbox()
+        if ink is None:
+            return w, h
+        return max(w, ink[2] - ink[0]), max(h, ink[3] - ink[1])
+
+    def settle(axis, limit):
+        """Scaling by width/height lands on a fractional size that the font truncates to an int,
+        and hinting makes the drawn text a pixel or so larger than the scale predicts:
+        step down until it fits."""
+        nonlocal size, spacing, font
+        while drawn_size(font, spacing)[axis] > limit and int(size) > 1:
+            smaller = int(size) - 1
+            spacing = spacing * (smaller / size)
+            size = smaller
+            font = state.context.font(element.get("font"), size)
+
     if element.get("fit_width") or element.get("fit") in ["width", True]:
         try:
             width = float(element["width"])
@@ -307,6 +339,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
             size = size * (width / rendered_width)
             spacing = spacing * (width / rendered_width)
             font = state.context.font(element.get("font"), size)
+            settle(0, width)
     if element.get("fit_height") or element.get("fit") in ["height", True]:
         try:
             height = float(element["height"])
@@ -321,6 +354,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
             size = size * (height / rendered_height)
             spacing = spacing * (height / rendered_height)
             font = state.context.font(element.get("font"), size)
+            settle(1, height)
 
     d.multiline_text(
         (element["x"], element["y"]),

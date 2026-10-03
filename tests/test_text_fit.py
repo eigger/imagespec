@@ -179,3 +179,31 @@ def test_text_fit_picks_the_largest_fitting_size(value, max_lines, width, height
 
 def test_text_fit_when_start_is_below_min_size():
     assert _chosen_size(100, 40, "abc", 1, start=6, min_size=10) == 10
+
+
+@pytest.mark.parametrize("axis", ["width", "height"])
+@pytest.mark.parametrize("anchor", ["la", "mm", "rs"])
+@pytest.mark.parametrize("stroke_width", [0, 2])
+@pytest.mark.parametrize("value", ["Temperature 21.5", "Hello World", "WWWW iii"])
+def test_new_multiline_fit_never_overflows_the_target(axis, anchor, stroke_width, value):
+    """Fitting scales the size once and the font truncates it to an int (and 1-bit hinting widens glyphs),
+    which used to leave the drawn text a few px over the target, for any anchor and stroke."""
+    ctx = RenderContext(palette="bw", layout_engine=ImageFont.Layout.BASIC)
+    text = value if axis == "width" else value.replace(" ", "\n")
+    for limit in range(45, 160, 11):  # above the size-1 floor even with a stroke
+        el = {
+            "type": "new_multiline",
+            "x": 400,
+            "y": 400,
+            "value": text,
+            "size": 40,
+            "anchor": anchor,
+            "stroke_width": stroke_width,
+            "stroke_fill": "black",
+            axis: limit,
+            "fit": axis,
+        }
+        ink = render([el], 800, 800, context=ctx).convert("L").point(lambda p: 255 if p < 128 else 0).getbbox()
+        assert ink is not None  # canvas leaves room on every side, so nothing is clipped
+        extent = ink[2] - ink[0] if axis == "width" else ink[3] - ink[1]
+        assert extent <= limit, (value, axis, anchor, stroke_width, limit, extent)
