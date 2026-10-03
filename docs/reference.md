@@ -199,7 +199,7 @@ Text. Without `y` it flows below the previous text/line (`y_padding` gap) and ad
 | `size` | number | `20` | Font size in px |
 | `font` | string |  | Font file name; resolved by the host, else the bundled default |
 | `color` | color | `"black"` |  |
-| `anchor` | string | `"lt"` | Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width` |
+| `anchor` | string | `"lt"` | Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`. Multi-line text maps `t`/`b` to the ascender/descender line (`a`/`d`) |
 | `align` | `left` \| `center` \| `right` | `"left"` | Line alignment for multi-line text |
 | `spacing` | number | `5` | Extra px between lines |
 | `stroke_width` | number | `0` |  |

@@ -60,7 +60,12 @@ def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
         num("size", 20, doc="Font size in px"),
         string("font", doc="Font file name; resolved by the host, else the bundled default"),
         color("color", "black"),
-        string("anchor", "lt", doc="Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`"),
+        string(
+            "anchor",
+            "lt",
+            doc="Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`. Multi-line text maps "
+            "`t`/`b` to the ascender/descender line (`a`/`d`)",
+        ),
         enum("align", ("left", "center", "right"), "left", doc="Line alignment for multi-line text"),
         num("spacing", 5, doc="Extra px between lines"),
         num("stroke_width", 0),
@@ -102,6 +107,10 @@ def text(state: RenderState, element: dict) -> None:
         anchor = None
     else:
         value = str(element["value"])
+    if anchor and "\n" in value and anchor[1:2] in ("t", "b"):
+        # Pillow has no top/bottom anchor for multi-line text (the default `lt` raised): use the
+        # ascender / descender line, the nearest equivalents
+        anchor = anchor[0] + {"t": "a", "b": "d"}[anchor[1]] + anchor[2:]
 
     # Extent of the (unrotated) text at its anchor: drives the background box
     # and the flow cursor. textbbox ignores image content, so one call serves both.
