@@ -292,7 +292,8 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
         ),
         num(
             "height",
-            doc="Defaults to the canvas height — or, with `background`/`outline`, to the content height",
+            doc="Defaults to the canvas height — or, with `background`/`outline`, to the content height "
+            "(see `width` for the size-required-children caveat)",
         ),
         num("rotate", 0, doc="0/90/180/270, clockwise"),
         num("padding", doc="All sides"),

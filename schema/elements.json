@@ -3689,7 +3689,7 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height"
+          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat)"
         },
         "rotate": {
           "type": [
@@ -4049,7 +4049,7 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height"
+          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat)"
         },
         "rotate": {
           "type": [
