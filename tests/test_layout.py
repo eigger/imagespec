@@ -437,3 +437,240 @@ def test_validate_does_not_raise_on_infinite_layout_lengths(extra, where):
 def test_non_finite_class_tokens_are_ignored():
     p = parse_class("m-inf gap-nan p-1e999 grow-inf px-[1e999px] p-2")
     assert p == parse_class("p-2")
+
+
+# --------------------------------------------------------------------------- #
+# container style: background / outline / radius
+# --------------------------------------------------------------------------- #
+
+YELLOW = (255, 255, 0)
+
+
+def test_stack_background_fills_the_whole_box_including_padding(ctx):
+    col = {
+        "type": "column",
+        "x": 5,
+        "y": 5,
+        "width": 20,
+        "height": 12,
+        "padding": 4,
+        "background": "yellow",
+        "elements": [],
+    }
+    img = render([col], 40, 30, context=ctx)
+    assert img.getpixel((5, 5)) == YELLOW and img.getpixel((24, 16)) == YELLOW  # corners of the box
+    assert img.getpixel((4, 5)) == WHITE and img.getpixel((25, 16)) == WHITE and img.getpixel((24, 17)) == WHITE
+
+
+def test_stack_background_sits_behind_the_children(ctx):
+    col = {"type": "column", "width": 20, "height": 20, "background": "yellow", "elements": [_rect("black", 6, 6)]}
+    img = render([col], 30, 30, context=ctx)
+    assert img.getpixel((2, 2)) == BLACK and img.getpixel((10, 10)) == YELLOW
+
+
+def test_stack_outline_width_and_radius(ctx):
+    col = {
+        "type": "column",
+        "width": 20,
+        "height": 20,
+        "outline": "red",
+        "width_outline": 2,
+        "radius": 6,
+        "elements": [],
+    }
+    img = render([col], 30, 30, context=ctx)
+    assert img.getpixel((10, 0)) == RED and img.getpixel((10, 1)) == RED  # 2px border on the top edge
+    assert img.getpixel((10, 2)) == WHITE  # not filled inside (no background)
+    assert img.getpixel((0, 0)) == WHITE  # rounded corner is cut away
+
+
+def test_stack_without_style_draws_nothing_extra(ctx):
+    plain = render([{"type": "row", "width": 20, "height": 20, "elements": [_rect("black")]}], 30, 30, context=ctx)
+    styled_none = render(
+        [{"type": "row", "width": 20, "height": 20, "background": None, "outline": None, "elements": [_rect("black")]}],
+        30,
+        30,
+        context=ctx,
+    )
+    assert plain.tobytes() == styled_none.tobytes()
+
+
+def test_stack_background_rotates_with_the_stack(ctx):
+    col = {"type": "column", "width": 20, "height": 10, "rotate": 90, "background": "yellow", "elements": []}
+    img = render([col], 30, 30, context=ctx)
+    xs = [x for x in range(30) if img.getpixel((x, 5)) == YELLOW]
+    ys = [y for y in range(30) if img.getpixel((5, y)) == YELLOW]
+    assert (len(xs), len(ys)) == (10, 20)  # a 20x10 box turned into 10 wide x 20 tall
+
+
+def test_stack_background_validates_and_flags_unknown_colors():
+    from imagespec import validate
+
+    ok = {"type": "row", "background": "yellow", "outline": "#000", "radius": 4, "elements": []}
+    assert validate([ok]) == []
+    bad = {"type": "row", "background": "yelow", "elements": []}
+    assert [i.path for i in validate([bad])] == ["[0].background"]
+
+
+def _card(text, bg, **extra):
+    return {
+        "type": "row",
+        "padding": 4,
+        "background": bg,
+        "elements": [{"type": "text", "value": text, "size": 12}],
+        **extra,
+    }
+
+
+def test_card_without_size_hugs_its_content(ctx):
+    img = render([_card("Hi", "yellow", x=5, y=5)], 100, 60, context=ctx)
+    xs = [x for x in range(100) if img.getpixel((x, 10)) == YELLOW or img.getpixel((x, 10)) == BLACK]
+    ys = [y for y in range(60) if img.getpixel((7, y)) == YELLOW]
+    assert 5 in xs and max(xs) < 40  # nowhere near the 100px canvas width
+    assert min(ys) == 5 and max(ys) < 30
+
+
+def test_cards_in_a_column_do_not_swallow_each_other(ctx):
+    col = {
+        "type": "column",
+        "width": 80,
+        "height": 70,
+        "padding": 3,
+        "gap": 5,
+        "background": "black",
+        "elements": [_card("A", "yellow"), _card("B", "white")],
+    }
+    img = render([col], 80, 70, context=ctx)
+    colors_down_the_middle = [img.getpixel((5, y)) for y in range(70)]
+    assert YELLOW in colors_down_the_middle and WHITE in colors_down_the_middle  # both cards drawn
+    assert colors_down_the_middle.index(YELLOW) < colors_down_the_middle.index(WHITE)
+
+
+def test_cards_in_a_row_sit_side_by_side_with_the_gap(ctx):
+    row = {"type": "row", "width": 120, "height": 30, "gap": 6, "elements": [_card("A", "yellow"), _card("B", "red")]}
+    img = render([row], 120, 30, context=ctx)
+    y = 2
+    yellow_x = [x for x in range(120) if img.getpixel((x, y)) == YELLOW]
+    red_x = [x for x in range(120) if img.getpixel((x, y)) == RED]
+    assert yellow_x and red_x and max(yellow_x) < min(red_x)
+    assert min(red_x) - max(yellow_x) - 1 == 6
+
+
+def test_card_hugs_one_axis_and_honours_the_other(ctx):
+    img = render([_card("Hi", "yellow", width=60)], 100, 60, context=ctx)
+    assert img.getpixel((59, 3)) == YELLOW and img.getpixel((60, 3)) == WHITE  # fixed width
+    ys = [y for y in range(60) if img.getpixel((2, y)) == YELLOW]
+    assert max(ys) < 30  # hugged height
+
+
+def test_card_with_align_stretch_in_a_column_fills_the_width(ctx):
+    col = {"type": "column", "width": 80, "height": 70, "align": "stretch", "elements": [_card("A", "yellow")]}
+    img = render([col], 80, 70, context=ctx)
+    run = [x for x in range(80) if img.getpixel((x, 2)) in (YELLOW, BLACK)]
+    assert min(run) == 0 and max(run) == 79  # a row child with no width is stretched across the column
+
+
+def _col_ink_height(img, x, color):
+    return len([y for y in range(img.height) if img.getpixel((x, y)) == color])
+
+
+def test_hugged_card_stretches_children_to_the_content_not_the_canvas(ctx):
+    """Flexbox: the cross size of a hugged card is its tallest non-stretched child."""
+    card = {
+        "type": "row",
+        "x": 5,
+        "y": 5,
+        "padding": 3,
+        "background": "yellow",
+        "outline": "black",
+        "align": "stretch",
+        "elements": [
+            {"type": "column", "background": "red", "elements": [{"type": "text", "value": "a", "size": 10}]},
+            {"type": "text", "value": "Hello", "size": 14},
+        ],
+    }
+    img = render([card], 120, 90, context=ctx)
+    plain = render([{**card, "align": "start"}], 120, 90, context=ctx)
+    height = lambda im: _col_ink_height(im, 6, YELLOW) + _col_ink_height(im, 6, BLACK)  # noqa: E731
+    assert height(img) < 40  # hugs "Hello" + padding, nowhere near the 85px left on the canvas
+    red_col = [y for y in range(90) if img.getpixel((10, y)) == RED]
+    assert len(red_col) > _col_ink_height(plain, 10, RED)  # and the red column was stretched up to it
+    assert max(red_col) < 40
+
+
+def test_hugged_column_of_cards_with_stretch_is_as_wide_as_the_widest_card(ctx):
+    col = {
+        "type": "column",
+        "x": 2,
+        "y": 2,
+        "padding": 2,
+        "gap": 3,
+        "background": "black",
+        "align": "stretch",
+        "elements": [_card("Hi", "yellow"), _card("A longer one", "red")],
+    }
+    img = render([col], 200, 100, context=ctx)
+    wide = max(x for x in range(200) if img.getpixel((x, 3)) == BLACK)
+    assert wide < 100  # not canvas-wide
+    # both cards end at the same column: the narrow one was stretched to the wide one
+    right_edges = []
+    for color in (YELLOW, RED):
+        xs = [x for x in range(200) for y in range(100) if img.getpixel((x, y)) == color]
+        right_edges.append(max(xs))
+    assert abs(right_edges[0] - right_edges[1]) <= 1
+
+
+def test_stretched_size_required_children_follow_the_hugged_cross_size(ctx):
+    chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8}
+    card = {
+        "type": "row",
+        "padding": 2,
+        "background": "yellow",
+        "align": "stretch",
+        "elements": [chip, {"type": "text", "value": "Hello", "size": 16}],
+    }
+    img = render([card], 100, 80, context=ctx)
+    ys = [y for y in range(80) if img.getpixel((3, y)) == BLACK]
+    assert ys and max(ys) < 40
+
+
+def test_negative_margins_beyond_the_size_do_not_make_the_card_vanish(ctx):
+    card = {
+        "type": "row",
+        "padding": 0,
+        "background": "yellow",
+        "elements": [{**_rect("black", 10, 10), "layout": {"margin": -20}}],
+    }
+    assert render([card], 30, 30, context=ctx).size == (30, 30)
+
+
+def test_empty_card_hugs_to_padding_only(ctx):
+    card = {"type": "row", "x": 2, "y": 2, "padding": 3, "background": "yellow", "elements": []}
+    img = render([card], 30, 30, context=ctx)
+    ys = [y for y in range(30) if img.getpixel((3, y)) == YELLOW]
+    xs = [x for x in range(30) if img.getpixel((x, 3)) == YELLOW]
+    assert (len(xs), len(ys)) == (6, 6)
+
+
+@pytest.mark.parametrize("size", [{"width": 0}, {"height": 0}, {"width": -5}])
+def test_zero_or_negative_card_size_draws_nothing(ctx, size):
+    card = {"type": "column", "outline": "black", "elements": [], **size}
+    img = render([card], 30, 30, context=ctx)
+    assert img.getcolors() == [(900, WHITE)]
+
+
+@pytest.mark.parametrize(
+    "extra", [{"radius": -5}, {"radius": float("inf")}, {"width_outline": float("nan")}, {"width_outline": -2}]
+)
+def test_odd_radius_and_outline_widths_do_not_raise(ctx, extra):
+    card = {"type": "column", "width": 20, "height": 20, "outline": "black", "elements": [], **extra}
+    assert render([card], 30, 30, context=ctx).size == (30, 30)
+
+
+def test_card_of_only_size_required_stretched_children_falls_back_to_the_available_cross_size(ctx):
+    """Pinned: with nothing measurable the cross size is the available space (documented on width/height)."""
+    chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8}
+    card = {"type": "row", "x": 5, "y": 5, "background": "yellow", "align": "stretch", "elements": [chip]}
+    img = render([card], 60, 50, context=ctx)
+    ys = [y for y in range(50) if img.getpixel((6, y)) == BLACK]
+    assert min(ys) == 5 and max(ys) == 49

@@ -3421,7 +3421,7 @@
     },
     "stack": {
       "type": "object",
-      "description": "Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints.",
+      "description": "Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.",
       "properties": {
         "type": {
           "enum": [
@@ -3682,14 +3682,14 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas width"
+          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized; a card holding only `text_fit`-style children, which have no intrinsic size, needs an explicit cross size)"
         },
         "height": {
           "type": [
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas height"
+          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat)"
         },
         "rotate": {
           "type": [
@@ -3741,6 +3741,36 @@
             "number",
             "null"
           ]
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Fill the whole box (padding included) behind the children — a card (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Border colour of the box (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "width_outline": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Border width",
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Corner radius of the box",
+          "default": 0
         }
       },
       "required": [
@@ -3751,7 +3781,7 @@
     },
     "stack_stack_child": {
       "type": "object",
-      "description": "Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints.",
+      "description": "Flexbox-style auto-layout: children need no coordinates; they are measured and packed along the main axis with `gap`, padding, `justify` and `align`. `row` and `column` fix the direction. Each child may carry `class` / `layout` hints. `background` / `outline` / `radius` draw a card behind them.",
       "properties": {
         "type": {
           "enum": [
@@ -4012,14 +4042,14 @@
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas width"
+          "description": "Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized; a card holding only `text_fit`-style children, which have no intrinsic size, needs an explicit cross size)"
         },
         "height": {
           "type": [
             "number",
             "null"
           ],
-          "description": "Defaults to the canvas height"
+          "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat)"
         },
         "rotate": {
           "type": [
@@ -4071,6 +4101,36 @@
             "number",
             "null"
           ]
+        },
+        "background": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Fill the whole box (padding included) behind the children — a card (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "outline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Border colour of the box (colour name or #RGB/#RRGGBB; quantized to the device palette)"
+        },
+        "width_outline": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Border width",
+          "default": 1
+        },
+        "radius": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Corner radius of the box",
+          "default": 0
         }
       },
       "required": [
