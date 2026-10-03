@@ -390,3 +390,24 @@ def test_stack_and_group_round_a_fractional_offset_the_same_way(ctx, x, y):
     group = {"type": "group", "x": x, "y": y, "elements": [rect]}
     stack = {"type": "stack", "x": x, "y": y, "elements": [rect]}
     assert tile_box(stack) == tile_box(group)
+
+
+def _first_ink(el, ctx, w=60, h=40):
+    img = render([el], w, h, context=ctx)
+    return img.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+
+
+@pytest.mark.parametrize("raw,expected", [(2.4, 2), (2.6, 3), (3.0, 3), ("2.6", 3)])
+def test_stack_padding_rounds_to_the_nearest_pixel(ctx, raw, expected):
+    row = {"type": "row", "padding": raw, "elements": [_rect("black", 4, 4)]}
+    assert _first_ink(row, ctx)[:2] == (expected, expected)
+
+
+@pytest.mark.parametrize("raw,expected", [(2.4, 2), (2.6, 3)])
+def test_stack_gap_and_child_margin_round_to_the_nearest_pixel(ctx, raw, expected):
+    gap = {"type": "row", "gap": raw, "elements": [_rect("black", 4, 4), _rect("black", 4, 4)]}
+    assert _first_ink(gap, ctx)[2] == 4 + expected + 4
+    margin = {"type": "row", "elements": [{**_rect("black", 4, 4), "layout": {"margin": raw}}]}
+    assert _first_ink(margin, ctx)[:2] == (expected, expected)
+    side = {"type": "row", "elements": [{**_rect("black", 4, 4), "layout": {"margin_left": raw}}]}
+    assert _first_ink(side, ctx)[0] == expected
