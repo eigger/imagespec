@@ -228,3 +228,64 @@ def test_rotated_text_background_padding(ctx):
     b0, b10 = box(0), box(10)
     assert (b10[2] - b10[0]) - (b0[2] - b0[0]) == 20
     assert (b10[3] - b10[1]) - (b0[3] - b0[1]) == 20
+
+
+@pytest.mark.parametrize("anchor", [None, "lt", "mt", "rt", "lb", "mb", "rb", "la", "mm", "rs"])
+def test_multiline_text_renders_with_every_anchor(ctx, anchor):
+    """`\\n` in `value` is documented, but the default `lt` anchor raised for multi-line text."""
+    el = {"type": "text", "x": 60, "y": 40, "value": "ab\ncd", "size": 14}
+    if anchor:
+        el["anchor"] = anchor
+    img = render([el], 120, 80, context=ctx)
+    top, bottom = _ink_bbox(img)[1], _ink_bbox(img)[3]
+    assert bottom - top > 14  # two lines
+
+
+def test_multiline_text_default_anchor_is_top_left(ctx):
+    el = {"type": "text", "x": 30, "y": 20, "value": "ab\ncd", "size": 14}
+    left, top, right, bottom = _ink_bbox(render([el], 120, 80, context=ctx))
+    assert 28 <= left <= 36 and 18 <= top <= 24  # starts at the point, not centred on it
+
+
+def test_multiline_text_with_background_and_rotation(ctx):
+    for extra in ({"background": "yellow"}, {"rotation": 90}, {"background": "yellow", "rotation": 90, "anchor": "mb"}):
+        el = {"type": "text", "x": 40, "y": 40, "value": "ab\ncd", "size": 14, **extra}
+        assert render([el], 100, 80, context=ctx).size == (100, 80)
+
+
+def test_single_line_text_anchor_is_unchanged(ctx):
+    one = {"type": "text", "x": 30, "y": 20, "value": "ab", "size": 14}
+    assert _ink_bbox(render([one], 120, 80, context=ctx)) == _ink_bbox(
+        render([{**one, "anchor": "lt"}], 120, 80, context=ctx)
+    )
+
+
+@pytest.mark.parametrize("anchor", [None, "lt", "mt", "rt", "lb", "mb", "rb"])
+def test_multiline_text_lands_where_the_single_line_text_does(ctx, anchor):
+    """A templated value that sometimes contains a newline must not jump: the top (or, for b-anchors,
+    bottom) edge of multi-line text sits where the same text on one line puts it."""
+    base = {"type": "text", "x": 60, "y": 40, "size": 20}
+    if anchor:
+        base["anchor"] = anchor
+    one = _ink_bbox(render([{**base, "value": "Hab"}], 160, 100, context=ctx))
+    two = _ink_bbox(render([{**base, "value": "Hab\nHab"}], 160, 100, context=ctx))
+    edge = 3 if anchor and anchor[1] == "b" else 1
+    assert abs(one[edge] - two[edge]) <= 2
+
+
+def test_text_box_and_new_multiline_and_plot_legend_accept_newlines(ctx):
+    box = {"type": "text_box", "x": 5, "y": 5, "value": "a\nb"}
+    nm = {"type": "new_multiline", "x": 5, "y": 5, "value": "a\nb", "anchor": "lt"}
+    assert render([box, nm], 80, 80, context=ctx).size == (80, 80)
+
+
+@pytest.mark.parametrize("rotation", [90, 180, 45])
+@pytest.mark.parametrize("anchor", [None, "lt", "mt", "lb", "rb"])
+def test_rotated_multiline_text_lands_where_rotated_single_line_text_does(ctx, rotation, anchor):
+    base = {"type": "text", "x": 100, "y": 100, "size": 20, "rotation": rotation}
+    if anchor:
+        base["anchor"] = anchor
+    one = _ink_bbox(render([{**base, "value": "Hab"}], 220, 220, context=ctx))
+    two = _ink_bbox(render([{**base, "value": "Hab\nHab"}], 220, 220, context=ctx))
+    edge = 3 if anchor and anchor[1] == "b" else 1
+    assert abs(one[edge] - two[edge]) <= 2

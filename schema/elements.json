@@ -6481,7 +6481,7 @@
             "string",
             "null"
           ],
-          "description": "Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`",
+          "description": "Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`. Multi-line text maps `t`/`b` to the ascender/descender line (`a`/`d`)",
           "default": "lt"
         },
         "align": {

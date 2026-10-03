@@ -15,7 +15,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import any_, array, boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import blit, int_xy, mono_draw, require, wrap_words
+from ..utils import blit, int_xy, mono_draw, multiline_anchor, require, wrap_words
 from .media import resolve_icon
 
 
@@ -60,7 +60,12 @@ def fit_lines(text: str, font, max_width: float, max_lines: int, ellipsis: str):
         num("size", 20, doc="Font size in px"),
         string("font", doc="Font file name; resolved by the host, else the bundled default"),
         color("color", "black"),
-        string("anchor", "lt", doc="Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`"),
+        string(
+            "anchor",
+            "lt",
+            doc="Pillow text anchor (`lt`, `mm`, `rs`, ...); ignored with `max_width`. Multi-line text maps "
+            "`t`/`b` to the ascender/descender line (`a`/`d`)",
+        ),
         enum("align", ("left", "center", "right"), "left", doc="Line alignment for multi-line text"),
         num("spacing", 5, doc="Extra px between lines"),
         num("stroke_width", 0),
@@ -102,6 +107,24 @@ def text(state: RenderState, element: dict) -> None:
         anchor = None
     else:
         value = str(element["value"])
+    multiline_anchor_used = anchor != multiline_anchor(anchor, value)
+    if multiline_anchor_used:
+        # Pillow has no top/bottom anchor for multi-line text (the default `lt` raised): use the
+        # ascender / descender line, then shift so the text's top/bottom edge still lands on
+        # (x, y) like the same text on one line (a templated value that sometimes has a `\n`
+        # must not jump).
+        anchor = multiline_anchor(anchor, value) or "la"
+        edge = d.textbbox(
+            (element["x"], akt_pos_y),
+            value,
+            font=font,
+            anchor=anchor,
+            align=align,
+            spacing=spacing,
+            stroke_width=stroke_width,
+        )
+        if text_rotation == 0:  # the rotated tile is placed by its own box (see below)
+            akt_pos_y += akt_pos_y - edge[1 if anchor[1] == "a" else 3]
 
     # Extent of the (unrotated) text at its anchor: drives the background box
     # and the flow cursor. textbbox ignores image content, so one call serves both.
@@ -199,7 +222,13 @@ def text_box(state: RenderState, element: dict) -> None:
     d.rounded_rectangle(
         [(box_x0, box_y0), (box_x1, box_y1)], fill=fill_color, outline=outline_color, width=outline_width, radius=radius
     )
-    d.text((element["x"] + padding, element["y"] + padding), value, fill=text_color, font=font, anchor="lt")
+    d.text(
+        (element["x"] + padding, element["y"] + padding),
+        value,
+        fill=text_color,
+        font=font,
+        anchor=multiline_anchor("lt", value),
+    )
 
 
 @element(
@@ -275,7 +304,7 @@ def new_multiline(state: RenderState, element: dict) -> None:
     value = str(element["value"])
     d = mono_draw(state.img)
     color = element.get("color", "black")
-    anchor = element.get("anchor", "la")
+    anchor = multiline_anchor(element.get("anchor", "la"), value, always=True)
     size = element.get("size", 20)
     spacing = element.get("spacing", size)
     align = element.get("align", "left")
