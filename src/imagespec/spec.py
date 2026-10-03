@@ -171,6 +171,10 @@ def elements(
 # Keys a non-positioning container fills in for its children.
 POSITION_KEYS = frozenset({"x", "y"})
 
+# Elements whose `width`/`height` are plain box sizes: inside a stack with `align: stretch` the
+# cross-axis one may be omitted and is filled in by the layout (see elements/layout.py).
+STRETCHABLE_TYPES = frozenset({"group", "stack", "row", "column", "text_fit", "sparkline", "diagram", "battery"})
+
 
 # ── shared field groups ────────────────────────────────────────────────────
 

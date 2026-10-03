@@ -26,7 +26,7 @@ from ..classutil import parse_class
 from ..dispatch import render_element
 from ..exceptions import RenderError
 from ..registry import element
-from ..spec import LAYOUT_FIELDS, elements, enum, num
+from ..spec import LAYOUT_FIELDS, STRETCHABLE_TYPES, elements, enum, num
 from ..state import RenderState
 from ..utils import coerce_element, int_xy, require
 
@@ -123,6 +123,47 @@ def _resolve_padding(element: dict, cls: dict) -> tuple[int, int, int, int]:
         side("right", "padding_x", "pr"),
         side("bottom", "padding_y", "pb"),
     )
+
+
+def _stretched(child: dict, lay: dict, align: str) -> bool:
+    """``align: stretch`` applies to ``child``: a size-aware element (a 90/270 rotation would
+    swap the axes, so those are left alone) whose own or inherited alignment is ``stretch``."""
+    try:
+        rotated = int(float(child.get("rotate") or 0)) % 180 != 0
+    except (TypeError, ValueError):
+        rotated = False
+    return (lay["self"] or align) == "stretch" and child.get("type") in STRETCHABLE_TYPES and not rotated
+
+
+def stretch_cross_key(owner: dict, child: dict) -> str | None:
+    """``"height"``/``"width"`` when ``owner`` (a stack/row/column) stretches ``child`` across its
+    cross axis, else ``None``. Used by ``validate()``/the schema, where that key may be omitted."""
+    etype = owner.get("type")
+    if etype not in ("stack", "row", "column") or not isinstance(child, dict):
+        return None
+    if child.get("type") not in STRETCHABLE_TYPES:
+        return None
+    cls = parse_class(owner.get("class"))
+    default_dir = "horizontal" if etype == "row" else "vertical"
+    horizontal = _norm_dir(_first(owner.get("direction"), cls.get("direction"), default_dir)) == "horizontal"
+    align = _first(owner.get("align"), owner.get("align_items"), cls.get("align"), "start")
+    try:
+        lay = _child_layout(child)
+    except (TypeError, ValueError):
+        return None  # a bad `layout` value is reported by the normal field check
+    if not _stretched(child, lay, align):
+        return None
+    return "height" if horizontal else "width"
+
+
+def _stretch_size(child: dict, eff: dict, lay: dict, align: str, horizontal: bool, inner_cross: int) -> int | None:
+    """Cross-axis size for an `align: stretch` child (``None`` = not stretched)."""
+    if not _stretched(child, lay, align):
+        return None
+    if eff.get("height" if horizontal else "width") is not None:
+        return None  # an explicit size wins
+    margins = (lay["mt"] + lay["mb"]) if horizontal else (lay["ml"] + lay["mr"])
+    return max(0, inner_cross - margins)
 
 
 def _child_layout(child: dict) -> dict:
@@ -223,7 +264,14 @@ def _blit(canvas: Image.Image, tile: Image.Image, x: int, y: int) -> None:
         num("gap", 0),
         enum("justify", ("start", "end", "center", "between", "around", "evenly"), "start"),
         enum("justify_content", ("start", "end", "center", "between", "around", "evenly"), doc="Alias of `justify`"),
-        enum("align", ("start", "end", "center", "stretch"), "start", doc="Cross-axis alignment of children"),
+        enum(
+            "align",
+            ("start", "end", "center", "stretch"),
+            "start",
+            doc="Cross-axis alignment of children. `stretch` sizes `group`, `stack`/`row`/`column`, `text_fit`, "
+            "`sparkline`, `diagram` and `battery` children that have no cross-axis `width`/`height` to fill it; "
+            "other elements (and 90/270-rotated ones) keep their size and sit at `start`",
+        ),
         enum("align_items", ("start", "end", "center", "stretch"), doc="Alias of `align`"),
         num("x", 0),
         num("y", 0),
@@ -267,6 +315,8 @@ def stack(state: RenderState, element: dict) -> None:
     # extent (alpha bbox). Children need no coordinates — default x/y to 0 for the
     # elements that require them; the bbox crop then normalises position so the
     # stack alone controls where each tile lands.
+    inner_cross = inner_h if horizontal else inner_w
+    cross_key = "height" if horizontal else "width"
     tiles = []
     for idx, child in enumerate(children):
         eff = child
@@ -275,8 +325,20 @@ def stack(state: RenderState, element: dict) -> None:
             for key in ("x", "y"):
                 if eff.get(key) is None:
                     eff[key] = 0
-        sub = Image.new("RGBA", (max(1, inner_w), max(1, inner_h)), (0, 0, 0, 0))
-        substate = RenderState(img=sub, canvas_width=inner_w, canvas_height=inner_h, context=state.context)
+        lay = _child_layout(child)
+        # `align: stretch`: size-aware children without an explicit cross size fill the cross axis.
+        stretch_size = _stretch_size(child, eff, lay, align, horizontal, inner_cross)
+        sub_w, sub_h = max(1, inner_w), max(1, inner_h)
+        if stretch_size is not None:
+            # the child's own cross coordinate is ignored (like any stack child); a negative margin
+            # can make the slot larger than the stack, so give the layer room for it
+            eff = {**eff, cross_key: stretch_size, ("y" if horizontal else "x"): 0}
+            if horizontal:
+                sub_h = max(sub_h, stretch_size)
+            else:
+                sub_w = max(sub_w, stretch_size)
+        sub = Image.new("RGBA", (sub_w, sub_h), (0, 0, 0, 0))
+        substate = RenderState(img=sub, canvas_width=sub_w, canvas_height=sub_h, context=state.context)
         ctype = child.get("type", "")
         try:
             render_element(substate, eff)
@@ -290,15 +352,16 @@ def stack(state: RenderState, element: dict) -> None:
             ) from exc
         rendered = substate.img
         bbox = rendered.getbbox()
+        if bbox and stretch_size is not None:
+            # keep the whole stretched slot on the cross axis (valign/background stay where drawn)
+            bbox = (bbox[0], 0, bbox[2], stretch_size) if horizontal else (0, bbox[1], stretch_size, bbox[3])
         tile = rendered.crop(bbox) if bbox else None
         tw, th = tile.size if tile else (0, 0)
-        lay = _child_layout(child)
         lay.update(img=tile, w=tw, h=th)
         tiles.append(lay)
 
     n = len(tiles)
     inner_main = inner_w if horizontal else inner_h
-    inner_cross = inner_h if horizontal else inner_w
 
     def main_of(t):
         return t["w"] if horizontal else t["h"]
@@ -354,7 +417,7 @@ def stack(state: RenderState, element: dict) -> None:
                 cross_pos = m_cross_lead(t) + max(0, cfree)
             elif a == "center":
                 cross_pos = m_cross_lead(t) + max(0, cfree) / 2
-            else:  # start / stretch (pixels can't stretch) -> start
+            else:  # start / stretch (a stretched child already spans the cross axis) -> start
                 cross_pos = m_cross_lead(t)
             if horizontal:
                 pos = (pl + round(main_pos), pt + round(cross_pos))

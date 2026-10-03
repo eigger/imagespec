@@ -11,7 +11,7 @@ from typing import Any
 
 from .dither import DITHER_METHODS
 from .registry import specs
-from .spec import COMMON_FIELDS, POSITION_KEYS, UNSET, ElementSpec, Field
+from .spec import COMMON_FIELDS, POSITION_KEYS, STRETCHABLE_TYPES, UNSET, ElementSpec, Field
 
 SCHEMA_VERSION = 2
 SCHEMA_ID = "https://raw.githubusercontent.com/eigger/imagespec/main/schema/elements.json"
@@ -139,6 +139,10 @@ def _required_when_schema(f: Field) -> dict[str, Any]:
     }
 
 
+def _stack_child_name(spec: ElementSpec) -> str:
+    return f"{spec.name}_stack_child" if spec.name in STRETCHABLE_TYPES else spec.name
+
+
 def _positioned_ref(spec: ElementSpec) -> dict[str, Any]:
     pos = [f.name for f in spec.fields if f.required and f.name in POSITION_KEYS]
     ref = {"$ref": f"#/$defs/{spec.name}"}
@@ -155,11 +159,17 @@ def build_json_schema() -> dict[str, Any]:
         },
         "stack_child": {
             "description": "Any element inside a stack/row/column, which positions it (`x`/`y` optional).",
-            "oneOf": [{"$ref": f"#/$defs/{s.name}"} for s in all_specs],
+            "oneOf": [{"$ref": f"#/$defs/{_stack_child_name(s)}"} for s in all_specs],
         },
     }
     for s in all_specs:
         defs[s.name] = _element_schema(s)
+        if s.name in STRETCHABLE_TYPES:
+            # `align: stretch` fills the cross-axis size, so a stack child may omit width/height
+            # (the schema cannot see the parent's `align`, so it allows it for any stack child)
+            variant = _element_schema(s)
+            variant["required"] = [k for k in variant["required"] if k not in ("width", "height")]
+            defs[_stack_child_name(s)] = variant
     types = sorted(name for s in all_specs for name in s.names)
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
