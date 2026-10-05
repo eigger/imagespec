@@ -6,68 +6,16 @@
 [![License](https://img.shields.io/badge/License-MIT%20AND%20Apache--2.0-yellow.svg)](LICENSE)
 
 Render images from a declarative **YAML/dict spec** — shapes, text, charts,
-QR/barcodes — for e-paper ESL tags and label printers.
+QR/barcodes.
 
 ![imagespec Showcase](https://raw.githubusercontent.com/eigger/imagespec/main/examples/showcase.png)
 
-`imagespec` is the rendering core behind
-[`hass-ble-esl`](https://github.com/eigger/hass-ble-esl) (BLE e-paper shelf
-labels) and [`hass-niimbot`](https://github.com/eigger/hass-niimbot) (label
-printers): both Home Assistant integrations depend on it from PyPI and keep
-only a thin adapter of their own (see
-[`docs/integrating.md`](docs/integrating.md)). The library has no
-framework dependency, so it can be used and tested standalone. The rendering
-engine was originally adapted from
-[OpenEPaperLink's Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration)
-(`imagegen` module, Apache License 2.0) and has since been substantially
-rewritten and extended — see [`NOTICE`](https://github.com/eigger/imagespec/blob/main/NOTICE) for the full attribution.
-
-## Status
-
-Stable 1.0.0 release, used in production by the two integrations above. The
-public Python API and payload contract are stable within the 1.x series. Every
-registered element is pinned by a golden-image test (the README previews below
-double as the goldens), alongside unit tests for palettes, rotation, dithering,
-template-string coercion and error handling; CI runs the suite on Python
-3.13/3.14 and against the lowest supported dependency versions.
-
-## Design
-
-- **No framework dependency.** The core never imports Home Assistant. Anything
-  host-specific is injected through `RenderContext`:
-  - `font_resolver(name) -> path | None` — e.g. an integration's
-    `hass.config.path("www/fonts")` lookup.
-  - `history_provider(entity_ids, start, end) -> states` — for the `plot`
-    element (HA recorder). Optional.
-  - `palette` — the device's supported colors (see below).
-- **Registry dispatch.** Each element `type` is a handler registered with
-  `@element("type")` in `imagespec/elements/`, replacing the original giant
-  `if/elif` chain. Adding an element = adding a function.
-- **`RenderState`.** Threaded through handlers; holds the (reassignable) `img`
-  and the `pos_y` flow cursor.
-- **Device-dependent palette** (`RenderContext.palette`), *not* unified — panels
-  support different colors. Define it as a **list of the colors the device
-  supports** (names, HEX, or RGBA tuples):
-
-  ```python
-  RenderContext(palette=["black", "white", "red"])  # names
-  RenderContext(palette=["#000000", "#ffffff", "#ff0000"])  # HEX
-  RenderContext(palette=[(0, 0, 0), (255, 255, 255)])  # RGBA tuples
-  ```
-
-  Shorthand names are optional convenience for common panels: `"2"`/`"bw"`,
-  `"3"`/`"bwr"`, `"4"`, `"7"`/`"acep"`. Any requested color in a payload is then
-  quantized to the nearest color in this list — on a 2-color device `red`
-  becomes black; on 4-color a blue `#1e90ff` becomes white; on 7-color it stays
-  blue. Elements are drawn in full color and this mapping is applied to the whole
-  image once at the end of `render()` (dithered or flat, per `dither` — see
-  *Dithering*).
-- **Device-dependent rotation** (`rotate_mode`), *not* unified — the two
-  behaviours are physically different:
-  - `"canvas"` (fixed-resolution e-ink panels, e.g. ble-esl): the drawing
-    surface rotates; output stays `width×height`.
-  - `"image"` (variable-size label printers, e.g. niimbot): the drawing rotates;
-    output dimensions swap.
+`imagespec` is a standalone image-rendering library with no dependency on a
+specific application, framework, or device integration. Other projects can
+use it as their rendering core by installing it from PyPI and supplying
+host-specific resources through `RenderContext` (see
+[`docs/integrating.md`](docs/integrating.md)). It can also be used directly in
+Python scripts.
 
 ## Usage
 
@@ -96,64 +44,6 @@ Run the smoke test (no fonts required):
 pip install -e .
 python examples/smoke_test.py
 ```
-
-## Development & testing
-
-```bash
-pip install -e ".[dev,datamatrix]"   # dev pulls in numpy, so both dither paths are exercised
-pytest                 # unit + golden-image tests: every element, palettes, rotation, dither, errors
-pytest --update-golden # rewrite the golden PNGs after an intentional rendering change
-ruff check . && ruff format --check .   # lint + format
-mypy                   # type-check src/ (the package ships py.typed)
-python -m build        # build sdist + wheel (bundles fonts/icons)
-```
-
-CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, mypy, the test
-suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
-are present in the wheel.
-
-**Releasing**: add a version section to [`CHANGELOG.md`](CHANGELOG.md), bump
-`version` in `pyproject.toml`, update `schema_version` when the payload
-contract changes, and merge. Then create and publish a GitHub Release for the
-matching `v<version>` tag. The release workflow checks the tag against project
-metadata before building and publishing to PyPI with trusted publishing.
-
-The test matrix (`tests/test_elements.py`) asserts it covers *every* registered
-element type, so adding a new `@element(...)` without a sample fails the suite —
-keeping coverage exhaustive by construction.
-
-**Golden images** (`tests/test_golden.py`) pin the actual pixels: each element
-preview in `examples/elements/` is re-rendered from
-`examples/generate_element_previews.py` and compared exactly, and
-`tests/golden/` holds targeted scenes (every dither method, per-element dither
-phase, rotation modes, less-common handler options). A rendering change that is
-intended is committed by running `pytest --update-golden` and checking in the
-PNGs; an unintended one fails CI with the pixel count and a diff image.
-Text in the goldens is laid out with Pillow's `BASIC` engine
-(`RenderContext(layout_engine=...)`) so the same Pillow release renders them
-identically on every OS; set `IMAGESPEC_GOLDEN_TOLERANCE=0.05` to allow 5 % of
-pixels to differ under a different Pillow/FreeType or python-barcode release.
-
-**Robustness built in:**
-
-- Each handler error is wrapped with element context — you get
-  `error rendering element #3 (type 'text'): ...`, not a raw PIL traceback.
-- `render()` validates `rotate`/`rotate_mode`/size and rejects non-dict elements;
-  unknown element types are warned-and-skipped. Unknown *keys* are ignored
-  unless you pass `strict=True` (or call `imagespec.validate()` yourself).
-- `dlimg` only allows `http(s)`/`data:` URLs by default; local paths require
-  `RenderContext(allow_local_images=True)`. Network failures become `RenderError`.
-  Downloads are streamed and abort past `max_image_bytes` (20 MB default);
-  `image_cache_ttl=<seconds>` reuses a fetched image across renders (off by
-  default so camera snapshots are never served stale), and `image_fetcher`
-  lets the host supply its own `url -> bytes`.
-- Clear errors for missing required args, invalid barcode symbology, malformed
-  `polygon` points, and a `diagram` too small for its bars.
-- Template-friendly input: numeric keys (`x`, `size`, `progress`, ...) accept
-  strings (`"42"`, `"3.5"`) and boolean flags (`visible`, `show_percentage`, ...)
-  accept `"False"`/`"off"`/`"0"`, as Home Assistant templates produce them. A
-  non-numeric string fails with `'x' must be a number, got 'oops'` naming the
-  element.
 
 ## Elements
 
@@ -208,7 +98,7 @@ Payloads are specified as a list (sequence) of dictionary elements, which can be
 > **self-contained authoring guide** you can paste straight into an AI's context. It
 > covers the output contract, the layout decision model (`stack`/`row`/`column` vs
 > `group` vs absolute coordinates), the Tailwind-like `class` shorthand, common
-> pitfalls (e.g. the YAML "one key per line" trap), device canvas sizes, and full
+> pitfalls (e.g. the YAML "one key per line" trap), canvas sizes, and full
 > worked examples — every example verified by actually rendering it.
 
 ### Element reference & JSON Schema
@@ -237,7 +127,7 @@ did not declare. The web payload editor in
 supported subset in `schema/editor_types.json`.
 
 ### Common attributes
-- **Colors**: names (`black`, `white`, `red`, `green`, `blue`, `orange`, `yellow`, any CSS name) or HEX (`#FF0000`, `#f00`); quantized to the device palette at the end of `render()`.
+- **Colors**: names (`black`, `white`, `red`, `green`, `blue`, `orange`, `yellow`, any CSS name) or HEX (`#FF0000`, `#f00`); quantized to the configured palette at the end of `render()`.
 - **Coordinates**: pixels from the top-left corner `(0, 0)`.
 - **Numbers and booleans** also accept the string forms Home Assistant templates produce.
 - **`visible`**, **`dither`**, **`class`** / **`layout`** are accepted by every element (see the reference).
@@ -246,7 +136,7 @@ supported subset in `schema/editor_types.json`.
 
 `imagespec` can dither full-color content onto limited palettes (2-color B/W,
 3-color BWR, 7-color ACeP, …). Besides flat nearest-color mapping (`none`), it
-ships **15 e-ink-oriented dither algorithms** (Floyd–Steinberg, Atkinson,
+ships **15 dither algorithms** (Floyd–Steinberg, Atkinson,
 Jarvis, Stucki, Burkes, Sierra family, Stevenson–Arce, Bayer 2/4/8/16,
 clustered-dot 4/8).
 
@@ -272,11 +162,11 @@ Dithering creates a natural halftone pattern that simulates smooth shading and e
 
 #### 2. Font Rendering (Anti-aliasing vs. Dithering)
 > [!IMPORTANT]
-> **Guidelines for Text:** Avoid dithering on text layers. Dithering anti-aliased font edges creates tiny dot noise, which severely degrades readability on low-resolution e-ink screens. For sharp text, use direct quantization or disable anti-aliasing (`fontmode = "1"`). The built-in `text` element enforces `fontmode = "1"` for this reason.
+> **Guidelines for Text:** Avoid dithering on text layers. Dithering anti-aliased font edges creates tiny dot noise, which can degrade readability in low-resolution images. For sharp text, use direct quantization or disable anti-aliasing (`fontmode = "1"`). The built-in `text` element enforces `fontmode = "1"` for this reason.
 ![Font Dithering Comparison](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_comparison_font.png)
 
 #### 3. Charts & Solid Fills
-Dithering is useful when you have solid color regions (like pie slices or bar diagrams) in colors outside your device palette (e.g. orange on a black/white screen). Dithering simulates these colors with dot patterns to help distinguish segments, though it introduces some edge noise.
+Dithering is useful when you have solid color regions (like pie slices or bar diagrams) in colors outside your configured palette (e.g. orange in a black/white image). Dithering simulates these colors with dot patterns to help distinguish segments, though it introduces some edge noise.
 ![Chart Dithering Comparison](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_comparison_chart.png)
 
 #### How palette mapping works
@@ -330,18 +220,18 @@ argument. (QR/barcode and black text are pure palette colors, so they stay crisp
 under the global flag anyway — set `dither: false` only for *off-palette* content
 you want kept solid.)
 
-#### Device samples
-Both labels below mix crisp content (text, QR, barcode) with charts authored in
+#### Palette samples
+Both images below mix crisp content (text, QR, barcode) with charts authored in
 off-palette colors and marked `dither: true` — the charts become halftones so
 their segments stay distinguishable, while everything else stays sharp.
 
-**Electronic shelf label — 3-color (black / white / red):**
+**3-color palette (black / white / red):**
 
-![ESL 3-color dithering sample](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_esl_3color.png)
+![3-color dithering sample](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_esl_3color.png)
 
-**Label printer — 2-color (black / white):**
+**2-color palette (black / white):**
 
-![Label printer 2-color dithering sample](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_label_2color.png)
+![2-color dithering sample](https://raw.githubusercontent.com/eigger/imagespec/main/examples/dither_label_2color.png)
 
 Regenerate them with:
 ```bash
@@ -384,7 +274,115 @@ served by the host (e.g. Home Assistant's `www/fonts`) through `font_resolver`.
 Only fonts with a verifiable license are bundled — see *Licensing & attribution*
 below.
 
-### Licensing & attribution
+## Design
+
+- **No framework dependency.** The core never imports Home Assistant. Anything
+  host-specific is injected through `RenderContext`:
+  - `font_resolver(name) -> path | None` — e.g. an integration's
+    `hass.config.path("www/fonts")` lookup.
+  - `history_provider(entity_ids, start, end) -> states` — for the `plot`
+    element (HA recorder). Optional.
+  - `palette` — the output image's colors (see below).
+- **Registry dispatch.** Each element `type` is a handler registered with
+  `@element("type")` in `imagespec/elements/`, replacing the original giant
+  `if/elif` chain. Adding an element = adding a function.
+- **`RenderState`.** Threaded through handlers; holds the (reassignable) `img`
+  and the `pos_y` flow cursor.
+- **Configurable palette** (`RenderContext.palette`). Define it as a **list of
+  colors for the output image** (names, HEX, or RGBA tuples):
+
+  ```python
+  RenderContext(palette=["black", "white", "red"])  # names
+  RenderContext(palette=["#000000", "#ffffff", "#ff0000"])  # HEX
+  RenderContext(palette=[(0, 0, 0), (255, 255, 255)])  # RGBA tuples
+  ```
+
+  Shorthand names are optional convenience for common palettes: `"2"`/`"bw"`,
+  `"3"`/`"bwr"`, `"4"`, `"7"`/`"acep"`. Any requested color in a payload is then
+  quantized to the nearest color in this list — with a 2-color palette `red`
+  becomes black; on 4-color a blue `#1e90ff` becomes white; on 7-color it stays
+  blue. Elements are drawn in full color and this mapping is applied to the whole
+  image once at the end of `render()` (dithered or flat, per `dither` — see
+  *Dithering*).
+- **Configurable rotation** (`rotate_mode`):
+  - `"canvas"`: the drawing
+    surface rotates; output stays `width×height`.
+  - `"image"`: the drawing rotates;
+    output dimensions swap.
+
+## Integrating into a host
+
+Build a `RenderContext` (palette, font lookup, history provider), call
+`render()`, translate `RenderError` into the host's error type — about 60 lines.
+[`docs/integrating.md`](docs/integrating.md) walks through it with a Home
+Assistant adapter.
+
+## Development & testing
+
+```bash
+pip install -e ".[dev,datamatrix]"   # dev pulls in numpy, so both dither paths are exercised
+pytest                 # unit + golden-image tests: every element, palettes, rotation, dither, errors
+pytest --update-golden # rewrite the golden PNGs after an intentional rendering change
+ruff check . && ruff format --check .   # lint + format
+mypy                   # type-check src/ (the package ships py.typed)
+python -m build        # build sdist + wheel (bundles fonts/icons)
+```
+
+### Test coverage
+
+Every registered element is pinned by a golden-image test (the README previews below
+double as the goldens), alongside unit tests for palettes, rotation, dithering,
+template-string coercion and error handling; CI runs the suite on Python
+3.13/3.14 and against the lowest supported dependency versions.
+
+CI runs on every push/PR (`.github/workflows/ci.yml`): ruff lint+format, mypy, the test
+suite on Python 3.13/3.14 (plus a lowest-pinned-dependencies job), and a build that asserts the bundled fonts/icons
+are present in the wheel.
+
+**Releasing**: add a version section to [`CHANGELOG.md`](CHANGELOG.md), bump
+`version` in `pyproject.toml`, update `schema_version` when the payload
+contract changes, and merge. Then create and publish a GitHub Release for the
+matching `v<version>` tag. The release workflow checks the tag against project
+metadata before building and publishing to PyPI with trusted publishing.
+
+The test matrix (`tests/test_elements.py`) asserts it covers *every* registered
+element type, so adding a new `@element(...)` without a sample fails the suite —
+keeping coverage exhaustive by construction.
+
+**Golden images** (`tests/test_golden.py`) pin the actual pixels: each element
+preview in `examples/elements/` is re-rendered from
+`examples/generate_element_previews.py` and compared exactly, and
+`tests/golden/` holds targeted scenes (every dither method, per-element dither
+phase, rotation modes, less-common handler options). A rendering change that is
+intended is committed by running `pytest --update-golden` and checking in the
+PNGs; an unintended one fails CI with the pixel count and a diff image.
+Text in the goldens is laid out with Pillow's `BASIC` engine
+(`RenderContext(layout_engine=...)`) so the same Pillow release renders them
+identically on every OS; set `IMAGESPEC_GOLDEN_TOLERANCE=0.05` to allow 5 % of
+pixels to differ under a different Pillow/FreeType or python-barcode release.
+
+**Robustness built in:**
+
+- Each handler error is wrapped with element context — you get
+  `error rendering element #3 (type 'text'): ...`, not a raw PIL traceback.
+- `render()` validates `rotate`/`rotate_mode`/size and rejects non-dict elements;
+  unknown element types are warned-and-skipped. Unknown *keys* are ignored
+  unless you pass `strict=True` (or call `imagespec.validate()` yourself).
+- `dlimg` only allows `http(s)`/`data:` URLs by default; local paths require
+  `RenderContext(allow_local_images=True)`. Network failures become `RenderError`.
+  Downloads are streamed and abort past `max_image_bytes` (20 MB default);
+  `image_cache_ttl=<seconds>` reuses a fetched image across renders (off by
+  default so camera snapshots are never served stale), and `image_fetcher`
+  lets the host supply its own `url -> bytes`.
+- Clear errors for missing required args, invalid barcode symbology, malformed
+  `polygon` points, and a `diagram` too small for its bars.
+- Template-friendly input: numeric keys (`x`, `size`, `progress`, ...) accept
+  strings (`"42"`, `"3.5"`) and boolean flags (`visible`, `show_percentage`, ...)
+  accept `"False"`/`"off"`/`"0"`, as Home Assistant templates produce them. A
+  non-numeric string fails with `'x' must be a number, got 'oops'` naming the
+  element.
+
+## Licensing & attribution
 
 `imagespec` is **MIT AND Apache-2.0** (see the `license` field in
 `pyproject.toml`) — not pure MIT — because it's a combined work:
@@ -397,8 +395,10 @@ below.
 | `icons/fontawesome-free-*.otf` (+ metadata) | SIL OFL 1.1 (fonts) / CC BY 4.0 (icons) | [Font Awesome Free](https://github.com/FortAwesome/Font-Awesome) |
 | `fonts/NotoSansKR-Regular.ttf` | SIL Open Font License 1.1 | [Google Noto Fonts](https://fonts.google.com/noto/specimen/Noto+Sans+KR) |
 
-The engine was originally adapted from OpenEPaperLink's code and has since been
-substantially rewritten and extended (palette/color model, device-aware
+The engine was originally adapted from the `imagegen` module in
+[OpenEPaperLink's Home Assistant Integration](https://github.com/OpenEPaperLink/Home_Assistant_Integration)
+(Apache License 2.0) and has since been
+substantially rewritten and extended (palette/color model, configurable
 rotation, dithering, new elements, ...); [`NOTICE`](https://github.com/eigger/imagespec/blob/main/NOTICE) documents this per
 the Apache License's redistribution terms. Full license texts ship in the
 package: [`LICENSE-APACHE-2.0`](https://github.com/eigger/imagespec/blob/main/LICENSE-APACHE-2.0) (covers the engine origin
@@ -406,10 +406,3 @@ and the MDI font), [`icons/LICENSE`](https://github.com/eigger/imagespec/blob/ma
 copy for the icons directory), [`icons/LICENSE-FONTAWESOME`](https://github.com/eigger/imagespec/blob/main/src/imagespec/icons/LICENSE-FONTAWESOME)
 (Font Awesome Free — also notes brand-icon trademark restrictions), and
 [`fonts/OFL.txt`](https://github.com/eigger/imagespec/blob/main/src/imagespec/fonts/OFL.txt).
-
-## Integrating into a host
-
-Build a `RenderContext` (palette, font lookup, history provider), call
-`render()`, translate `RenderError` into the host's error type — about 60 lines.
-[`docs/integrating.md`](docs/integrating.md) walks through it with a Home
-Assistant adapter.
