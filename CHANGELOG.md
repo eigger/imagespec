@@ -10,6 +10,13 @@ last beta release; they are listed under **Changed**.
 `schema_version` in `schema/elements.json` is bumped whenever the payload
 contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
+## [1.0.1] — 2026-10-05
+
+### Fixed
+
+- **`dlimg` photo orientation**: apply EXIF orientation metadata so phone
+  photos render upright by default; explicit `rotate` is applied afterward.
+
 ## [1.0.0] — 2026-10-03
 
 First stable release. `imagespec` is used by the `hass-ble-esl` and
