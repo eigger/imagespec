@@ -10,7 +10,7 @@ import os
 import urllib.parse
 
 import requests
-from PIL import Image, ImageChops, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 
 from ..exceptions import RenderError
 from ..registry import element
@@ -290,6 +290,10 @@ def dlimg(state: RenderState, element: dict) -> None:
             )
         imgdl = Image.open(url)
 
+    # Apply camera orientation metadata before the explicit element rotation.
+    # Without this, phone photos with EXIF Orientation=6/8 appear sideways
+    # because their pixels are stored in landscape orientation.
+    imgdl = ImageOps.exif_transpose(imgdl)
     if rotate2 != 0:
         imgdl = imgdl.rotate(-rotate2, expand=True)
     imgdl = _resize_image(imgdl, xsize, ysize, fit_mode).convert("RGBA")
