@@ -85,6 +85,12 @@ def test_template_strings_and_nulls_are_tolerated():
     assert validate(payload) == []
 
 
+def test_generic_rotation_validates_quarter_turns_and_preserves_dlimg_angles():
+    assert validate([{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 2, "y_end": 1, "rotate": "90"}]) == []
+    assert validate([{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 2, "y_end": 1, "rotate": 45}])
+    assert validate([{"type": "dlimg", "x": 0, "y": 0, "url": "u", "xsize": 1, "ysize": 1, "rotate": 45}]) == []
+
+
 def test_conditionally_required_keys():
     base = {"type": "new_multiline", "x": 0, "y": 0, "value": "a"}
     assert validate([base]) == []

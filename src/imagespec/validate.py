@@ -97,8 +97,9 @@ def _check_element(
         supplied = (not positioned and f.name in POSITION_KEYS) or f.name == stretch_key
         required = (f.required and not supplied) or _required_now(element, f, fields)
         _check_field(element, f, path, issues, etype, required=required)
+    element_field_names = {f.name for f in spec.fields}
     for f in COMMON_FIELDS:
-        if f.name != "type":
+        if f.name != "type" and f.name not in element_field_names:
             _check_field(element, f, path, issues, etype)
 
 
@@ -142,6 +143,10 @@ def _check_value(value: Any, f: Field, path: str, issues: list[Issue], etype: st
     if kind in ("number", "integer"):
         if not _is_numberish(value, kind):
             issues.append(Issue(path, f"must be {_SCALAR_LABELS[kind]}{alt}, got {value!r}"))
+        elif f.enum is not None:
+            numeric_value = to_number(value, f.name)
+            if numeric_value not in f.enum:
+                issues.append(Issue(path, f"must be one of {', '.join(map(repr, f.enum))}{alt}, got {value!r}"))
     elif kind == "boolean":
         if not isinstance(value, (bool, int, float, str)):
             issues.append(Issue(path, f"must be a boolean{alt}, got {value!r}"))

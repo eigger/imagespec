@@ -216,6 +216,13 @@ COMMON_FIELDS: tuple[Field, ...] = (
         doc='`false` (or `null`, or a template string such as `"False"`, `"off"`, `"0"`) skips the element',
     ),
     _f(
+        "number",
+        "rotate",
+        0,
+        enum=(0, 90, 180, 270),
+        doc="Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+    ),
+    _f(
         "dither",
         "dither",
         doc="Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as "

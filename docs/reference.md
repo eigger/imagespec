@@ -23,6 +23,7 @@ See [`elements.md`](elements.md) for a rendered YAML example of every element an
 |---|---|---|---|
 | `type` | string | **required** | Element type |
 | `visible` | boolean | `true` | `false` (or `null`, or a template string such as `"False"`, `"off"`, `"0"`) skips the element |
+| `rotate` | `0` \| `90` \| `180` \| `270` | `0` | Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning |
 | `dither` | bool \| 0/1 \| method name |  | Per-element palette mapping: `true`/`false` (also `1`/`0` or a template string such as `"False"`) or a dither method name; overrides the render-wide setting for this element only. `null` = no override |
 | `class` | string |  | Tailwind-like layout classes (`gap-2 items-center grow -ml-1 ...`), read by an enclosing stack/row/column |
 | `layout` | object |  | Explicit per-child layout hints for an enclosing stack (same keys as the `class` shorthand) |

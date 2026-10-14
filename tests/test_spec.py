@@ -213,7 +213,8 @@ def test_optional_keys_are_not_read_unguarded(spec):
 def test_spec_fields_are_unique_and_well_formed(spec):
     names = [f.name for f in spec.fields]
     assert len(names) == len(set(names)), f"{spec.name}: duplicate field names"
-    assert not set(names) & {f.name for f in COMMON_FIELDS}, f"{spec.name}: redeclares a common field"
+    collisions = set(names) & {f.name for f in COMMON_FIELDS}
+    assert collisions <= {"rotate"}, f"{spec.name}: redeclares common fields {sorted(collisions)}"
     for path, f in walk_fields(spec.fields):
         assert f.kind in KINDS, path
         if f.enum is not None:

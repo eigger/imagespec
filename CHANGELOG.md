@@ -10,6 +10,14 @@ last beta release; they are listed under **Changed**.
 `schema_version` in `schema/elements.json` is bumped whenever the payload
 contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
+## [Unreleased]
+
+### Added
+
+- **Element rotation**: elements without a type-specific `rotate` field can turn
+  clockwise in 90-degree increments with `rotate: 0`, `90`, `180`, or `270`.
+- **Schema contract**: `schema_version` 4 adds the common element `rotate` field.
+
 ## [1.0.1] — 2026-10-05
 
 ### Fixed

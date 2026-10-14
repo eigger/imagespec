@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/eigger/imagespec/main/schema/elements.json",
   "title": "imagespec payload",
   "description": "A list of elements rendered in order. Numeric and boolean keys also accept the string forms Home Assistant templates produce at render time; this schema describes the authored types.",
-  "schema_version": 3,
+  "schema_version": 4,
   "package": "imagespec",
   "types": [
     "arc",
@@ -695,6 +695,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -922,6 +937,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -1195,6 +1225,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -1465,6 +1510,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -1721,6 +1781,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -1975,6 +2050,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -2237,6 +2327,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -2689,6 +2794,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -2938,6 +3058,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -3221,6 +3356,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -3446,6 +3596,14 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "0/90/180/270, clockwise",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -3632,14 +3790,6 @@
             "null"
           ],
           "description": "Defaults to the canvas height"
-        },
-        "rotate": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "description": "0/90/180/270, clockwise",
-          "default": 0
         }
       },
       "required": [
@@ -3663,6 +3813,14 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "0/90/180/270, clockwise",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -3849,14 +4007,6 @@
             "null"
           ],
           "description": "Defaults to the canvas height"
-        },
-        "rotate": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "description": "0/90/180/270, clockwise",
-          "default": 0
         }
       },
       "required": [
@@ -3883,6 +4033,14 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "0/90/180/270, clockwise",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -4150,14 +4308,6 @@
             "null"
           ],
           "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat)"
-        },
-        "rotate": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "description": "0/90/180/270, clockwise",
-          "default": 0
         },
         "padding": {
           "type": [
@@ -4258,6 +4408,14 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "0/90/180/270, clockwise",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -4525,14 +4683,6 @@
           ],
           "description": "Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat)"
         },
-        "rotate": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "description": "0/90/180/270, clockwise",
-          "default": 0
-        },
         "padding": {
           "type": [
             "number",
@@ -4627,6 +4777,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -4860,6 +5025,14 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Degrees clockwise, applied before resizing",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -5035,14 +5208,6 @@
           "type": "number",
           "description": "Target height"
         },
-        "rotate": {
-          "type": [
-            "number",
-            "null"
-          ],
-          "description": "Degrees clockwise, applied before resizing",
-          "default": 0
-        },
         "mode": {
           "type": [
             "string",
@@ -5107,6 +5272,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -5336,6 +5516,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -5561,6 +5756,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -5809,6 +6019,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -6022,6 +6247,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -6232,6 +6472,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -6460,6 +6715,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -6659,6 +6929,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -6931,6 +7216,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -7228,6 +7528,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -7473,6 +7788,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -7722,6 +8052,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -8107,6 +8452,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -8403,6 +8763,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -8674,6 +9049,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -8996,6 +9386,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -9315,6 +9720,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -9610,6 +10030,21 @@
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
         },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
+        },
         "dither": {
           "anyOf": [
             {
@@ -9843,6 +10278,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [
@@ -10143,6 +10593,21 @@
           ],
           "description": "`false` (or `null`, or a template string such as `\"False\"`, `\"off\"`, `\"0\"`) skips the element",
           "default": true
+        },
+        "rotate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
+          "description": "Clockwise element rotation in 90-degree steps; elements with their own `rotate` field keep its meaning",
+          "default": 0
         },
         "dither": {
           "anyOf": [

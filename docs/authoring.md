@@ -103,6 +103,16 @@ Container:
 - long `text` children in a vertical stack (`column`) word-wrap to the stack's inner width (minus margins) instead of being clipped; in a `row` use `max_width` or `text_fit`
 - `x`, `y` (offset of the whole stack), `width`, `height` (box; default = canvas), `rotate` (90/180/270)
 
+### Element rotation
+
+Elements whose type does not already define `rotate` can be turned clockwise with
+`rotate: 90`, `rotate: 180`, or `rotate: 270`. Omit the key or use `0` for no rotation.
+The renderer rotates the element's visible output around its visible-bounds center; keep
+the element inside the canvas so the drawing surface does not clip it before rotation.
+`group` and stack containers keep their existing `rotate` behavior, and `dlimg.rotate`
+continues to rotate the source image before resizing. The top-level `render()` rotation
+turns the canvas and remains separate from this per-element key.
+
 Per child (set on the child dict, under a `layout:` sub-dict to avoid clashing
 with the element's own keys):
 - `layout: { grow: 1 }` — take a share of leftover main-axis space (push siblings apart); a card (a nested stack with `background`/`outline` and no `width`/`height` on the main axis) grows its box to fill its share
