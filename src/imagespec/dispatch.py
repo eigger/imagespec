@@ -13,7 +13,7 @@ from PIL import Image, ImageChops
 
 from .registry import get_handler, get_spec
 from .spec import COMMON_FIELDS
-from .utils import coerce_element, should_show
+from .utils import blit, coerce_element, merge_mask, should_show, subtract_mask
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +65,91 @@ def _draw_isolated(state, element, handler, dither) -> None:
     state.dither_protected.paste(protected, (ox, oy))
 
 
+def _draw_rotated(state, element, handler, rotation: int, dither) -> None:
+    """Render one element on a transparent layer, quarter-turn its ink, then composite.
+
+    Rotation is around the center of the element's visible alpha bounds. The source
+    layer uses the current drawing surface, so pixels clipped before rotation cannot
+    be recovered; the destination composite clips the rotated result as usual.
+    """
+    from .dither import ORDERED_ORIGIN_ALIGN, dither_to_palette
+
+    base = state.img
+    old_protected = state.dither_protected
+    old_pos_y = state.pos_y
+    state.img = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    state.dither_protected = Image.new("L", base.size, 0)
+    try:
+        handler(state, element)
+        layer = state.img.convert("RGBA")
+        additions = state.dither_protected
+        new_pos_y = state.pos_y
+    except Exception:
+        state.img = base
+        state.dither_protected = old_protected
+        state.pos_y = old_pos_y
+        raise
+    state.img = base
+
+    bbox = layer.getchannel("A").getbbox()
+    if bbox is None:
+        state.dither_protected = old_protected
+        return
+
+    left, top, right, bottom = bbox
+    source = layer.crop(bbox)
+    source_mask = additions.crop(bbox)
+    transpose = {
+        90: Image.Transpose.ROTATE_270,
+        180: Image.Transpose.ROTATE_180,
+        270: Image.Transpose.ROTATE_90,
+    }[rotation]
+    tile = source.transpose(transpose)
+    tile_mask = source_mask.transpose(transpose)
+    center_x, center_y = (left + right) / 2, (top + bottom) / 2
+    dest_x = round(center_x - tile.width / 2)
+    dest_y = round(center_y - tile.height / 2)
+
+    if dither is not None:
+        # Align the quantization crop to the global ordered-screen origin after
+        # rotation, then retain the final alpha so transparent pixels stay transparent.
+        ox = dest_x // ORDERED_ORIGIN_ALIGN * ORDERED_ORIGIN_ALIGN
+        oy = dest_y // ORDERED_ORIGIN_ALIGN * ORDERED_ORIGIN_ALIGN
+        quant_input = Image.new("RGBA", (dest_x + tile.width - ox, dest_y + tile.height - oy), (0, 0, 0, 0))
+        quant_input.alpha_composite(tile, (dest_x - ox, dest_y - oy))
+        alpha = quant_input.getchannel("A")
+        quant = dither_to_palette(
+            quant_input,
+            state.context.palette,
+            dither=dither,
+            origin=(ox, oy),
+        ).convert("RGBA")
+        quant.putalpha(alpha)
+        blit(base, quant, ox, oy)
+        protected = old_protected.copy() if old_protected is not None else Image.new("L", base.size, 0)
+        subtract_mask(protected, alpha, ox, oy)
+        merge_mask(protected, alpha.point(lambda p: 255 if p else 0), ox, oy)
+        state.dither_protected = protected
+    else:
+        blit(base, tile, dest_x, dest_y)
+        coverage = tile.getchannel("A").point(lambda p: 255 if p else 0)
+        if old_protected is not None:
+            surviving = old_protected.copy()
+            subtract_mask(surviving, coverage, dest_x, dest_y)
+            state.dither_protected = surviving
+        else:
+            state.dither_protected = Image.new("L", base.size, 0)
+        merge_mask(state.dither_protected, tile_mask, dest_x, dest_y)
+
+    # These handlers own the flow cursor even when they intentionally write its
+    # current value (for example, an explicit-y line). Do not infer ownership by
+    # comparing values: the cursor may already equal the value they assign.
+    if element.get("type") in {"line", "text", "multiline", "table"}:
+        state.pos_y = dest_y + tile.height
+    else:
+        state.pos_y = new_pos_y
+
+
 def render_element(state, element: dict) -> None:
     """Dispatch a single element: visibility, handler lookup, coercion, per-element dither.
 
@@ -81,6 +166,14 @@ def render_element(state, element: dict) -> None:
         return
     spec = get_spec(etype)
     element = coerce_element(element, (*COMMON_FIELDS, *(spec.fields if spec else ())))
+    owns_rotation = spec is not None and any(field.name == "rotate" for field in spec.fields)
+    rotation_value = element.get("rotate", 0) if not owns_rotation else 0
+    if not owns_rotation and (isinstance(rotation_value, bool) or rotation_value not in (0, 90, 180, 270)):
+        raise ValueError(f"rotate must be 0/90/180/270 for '{etype}', got {rotation_value!r}")
+    rotation = int(rotation_value)
+    if rotation:
+        _draw_rotated(state, element, handler, rotation, element.get("dither"))
+        return
     # `dither: null` means "no per-element override" (inherit the render-wide
     # setting), the same as omitting the key — not "flat" for this element.
     if element.get("dither") is not None:

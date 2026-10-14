@@ -20,6 +20,58 @@ def test_rotation_image_swaps_dims(ctx):
     assert render([], 200, 100, rotate=270, rotate_mode="image", context=ctx).size == (100, 200)
 
 
+def test_element_rotation_turns_its_visible_frame_clockwise(bw_ctx):
+    base = {
+        "type": "rectangle",
+        "x_start": 10,
+        "y_start": 10,
+        "x_end": 20,
+        "y_end": 14,
+        "fill": "black",
+    }
+    original = render([base], 40, 30, background="white", context=bw_ctx)
+    turned = render([{**base, "rotate": 90}], 40, 30, background="white", context=bw_ctx)
+
+    def black_bounds(image):
+        mask = image.convert("L").point(lambda pixel: 255 if pixel == 0 else 0)
+        return mask.getbbox()
+
+    left, top, right, bottom = black_bounds(original)
+    turned_left, turned_top, turned_right, turned_bottom = black_bounds(turned)
+    assert (right - left, bottom - top) == (11, 5)
+    assert (turned_right - turned_left, turned_bottom - turned_top) == (5, 11)
+    assert (turned_left + turned_right) == (left + right)
+    assert (turned_top + turned_bottom) == (top + bottom)
+
+
+def test_element_rotation_rejects_non_quarter_turn_and_boolean(bw_ctx):
+    base = {"type": "rectangle", "x_start": 1, "y_start": 1, "x_end": 5, "y_end": 4, "fill": "black"}
+    for rotation in (45, 90.5, True):
+        with pytest.raises(RenderError, match="rotate must be 0/90/180/270"):
+            render([{**base, "rotate": rotation}], 10, 10, context=bw_ctx)
+
+
+def test_existing_dlimg_rotation_keeps_its_arbitrary_angle_contract(ctx, data_url):
+    element = {"type": "dlimg", "x": 2, "y": 2, "url": data_url, "xsize": 10, "ysize": 6, "rotate": 45}
+    assert render([element], 20, 20, context=ctx).size == (20, 20)
+
+
+def test_rotated_element_dither_override_stays_protected(ctx):
+    element = {
+        "type": "rectangle",
+        "x_start": 5,
+        "y_start": 4,
+        "x_end": 17,
+        "y_end": 8,
+        "fill": "#ff00a0",
+        "rotate": 90,
+        "dither": "bayer8",
+    }
+    flat = render([element], 30, 20, background="white", dither=False, context=ctx)
+    global_dither = render([element], 30, 20, background="white", dither="floyd", context=ctx)
+    assert flat.tobytes() == global_dither.tobytes()
+
+
 @pytest.mark.parametrize("rotate", [90, 180, 270])
 @pytest.mark.parametrize("rotate_mode", ["canvas", "image"])
 def test_rotation_keeps_element_dither_overrides_aligned(ctx, rotate, rotate_mode):
@@ -72,6 +124,19 @@ def test_output_is_rgb(ctx):
 def test_invalid_rotate_raises(ctx):
     with pytest.raises(ValueError):
         render([], 10, 10, rotate=45, context=ctx)
+
+
+def test_rotated_explicit_flow_line_updates_cursor_even_when_cursor_did_not_change(ctx):
+    from imagespec.dispatch import render_element
+    from imagespec.state import RenderState
+
+    state = RenderState(Image.new("RGBA", (100, 100)), 100, 100, ctx)
+    state.pos_y = 30
+    render_element(
+        state,
+        {"type": "line", "x_start": 10, "x_end": 40, "y_start": 30, "rotate": 90},
+    )
+    assert state.pos_y == 46
 
 
 def test_invalid_rotate_mode_raises(ctx):

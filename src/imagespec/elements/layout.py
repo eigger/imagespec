@@ -234,7 +234,7 @@ def _wrap_text_to(state, child: dict, avail: int) -> dict:
     if child.get("type") != "text" or child.get("max_width") is not None or avail <= 0:
         return child
     try:
-        if int(float(child.get("rotation") or 0)) % 360 != 0:
+        if int(float(child.get("rotation") or 0)) % 360 != 0 or int(float(child.get("rotate") or 0)) % 360 != 0:
             return child
         font = state.context.font(child.get("font"), float(child.get("size", 20)))
     except Exception:  # noqa: BLE001 — bad size/rotation/font: the element itself reports it
@@ -322,19 +322,33 @@ def _origin_padding(state: RenderState, child: dict, sub_w: int, sub_h: int) -> 
         ink_x = max(ink_x, max((abs(box[2]) + background_padding for box in boxes), default=0))
         ink_y = max((abs(box[1]) + background_padding for box in boxes), default=0)
         ink_y = max(ink_y, max((abs(box[3]) + background_padding for box in boxes), default=0))
-        rotation = abs(float(child.get("rotation", 0) or 0))
-        if rotation % 360:
-            width = max((box[2] - box[0] for box in boxes), default=0) + 2 * background_padding
-            height = max((box[3] - box[1] for box in boxes), default=0) + 2 * background_padding
-            radians = math.radians(rotation % 360)
-            rotated_width = abs(width * math.cos(radians)) + abs(height * math.sin(radians))
-            rotated_height = abs(width * math.sin(radians)) + abs(height * math.cos(radians))
-            # Preserve the full rotated bbox so cropping and tile normalization do not
-            # change with the stack canvas size. Keep each projected dimension separate:
-            # a quarter turn swaps a long line's width and height instead of making both
-            # axes as large as the diagonal.
-            ink_x = rotated_width
-            ink_y = rotated_height
+        # Keep enough room for the source draw, text's legacy rotation, and the
+        # generic post-render rotation. Text's legacy field is counter-clockwise;
+        # generic element rotation is clockwise and is applied afterward.
+        width = max((box[2] - box[0] for box in boxes), default=0) + 2 * background_padding
+        height = max((box[3] - box[1] for box in boxes), default=0) + 2 * background_padding
+        legacy_rotation = float(child.get("rotation", 0) or 0)
+        generic_rotation = float(child.get("rotate", 0) or 0)
+
+        def projected_extent(angle: float) -> tuple[float, float]:
+            radians = math.radians(angle % 360)
+            return (
+                abs(width * math.cos(radians)) + abs(height * math.sin(radians)),
+                abs(width * math.sin(radians)) + abs(height * math.cos(radians)),
+            )
+
+        if generic_rotation:
+            # Generic rotation happens after the handler has drawn. Preserve the
+            # intermediate and final bounds even when they have opposite aspect
+            # ratios, or the temporary stack surface would clip one transform.
+            source_x, source_y = projected_extent(legacy_rotation) if legacy_rotation else (ink_x, ink_y)
+            final_x, final_y = projected_extent(legacy_rotation - generic_rotation)
+            ink_x = max(source_x, final_x)
+            ink_y = max(source_y, final_y)
+        elif legacy_rotation % 360:
+            # A legacy-only text rotation is performed in the handler's own
+            # tight tile; only its final frame needs stack padding.
+            ink_x, ink_y = projected_extent(legacy_rotation)
         pad_x = max(pad_x, math.ceil(ink_x + stroke_width + 2))
         pad_y = max(pad_y, math.ceil(ink_y + stroke_width + 2))
     except Exception:  # noqa: BLE001 — let the element handler report invalid font/size/anchor

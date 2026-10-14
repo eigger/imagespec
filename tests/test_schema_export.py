@@ -54,6 +54,19 @@ def test_elements_json_structure():
     assert set(data["$defs"]) >= known_types() - {"row", "column"} | {"element", "stack_child"}
 
 
+def test_type_owned_rotate_overrides_generic_schema(validator):
+    legacy_dlimg = {
+        "type": "dlimg",
+        "x": 0,
+        "y": 0,
+        "url": "https://example.invalid/a.png",
+        "xsize": 1,
+        "ysize": 1,
+        "rotate": 45,
+    }
+    assert validator.is_valid([legacy_dlimg])
+
+
 # ── the schema is usable ───────────────────────────────────────────────────
 
 
@@ -96,6 +109,7 @@ REJECTS = [
     ("unknown element type", [{"type": "sprite", "x": 0, "y": 0}]),
     ("wrong scalar type", [{"type": "circle", "x": "left", "y": 1, "radius": 3}]),
     ("dither integer other than 0/1", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "dither": 2}]),
+    ("generic rotate angle", [{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 2, "y_end": 1, "rotate": 45}]),
     ("fit_width without width", [{"type": "new_multiline", "x": 0, "y": 0, "value": "a", "fit_width": True}]),
     (
         "fit_width with width: null",
@@ -110,6 +124,10 @@ REJECTS = [
 ]
 
 ACCEPTS = [
+    (
+        "generic rotate quarter turn",
+        [{"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 2, "y_end": 1, "rotate": 90}],
+    ),
     ("stack child without x/y", [{"type": "row", "elements": [{"type": "text", "value": "a"}]}]),
     ("legend items as string", [{"type": "legend", "x": 0, "y": 0, "items": "a,red;b,blue"}]),
     ("explicit null for an optional key", [{"type": "circle", "x": 1, "y": 1, "radius": 3, "fill": None}]),

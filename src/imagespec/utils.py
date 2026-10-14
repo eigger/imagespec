@@ -104,7 +104,9 @@ def coerce_element(element: dict, fields: Iterable[Field]) -> dict:
     template never reaches arithmetic or ``.get`` inside a handler.
     """
     out = dict(element)
-    for f in fields:
+    # A type-specific declaration overrides a same-named common field. Keep one
+    # coercion per key so nullable duplicate declarations cannot delete it twice.
+    for f in {field.name: field for field in fields}.values():
         if f.name not in element:
             continue
         value = element[f.name]

@@ -894,10 +894,54 @@ def test_explicit_max_width_is_left_alone(ctx):
     assert bottom - top < 16  # the element's own max_width (400px) wins: one line, clipped by the column
 
 
-def test_rotated_text_is_not_wrapped_by_the_column(ctx):
-    col = {"type": "column", "width": 60, "elements": [{"type": "text", "value": LONG, "size": 12, "rotation": 90}]}
+@pytest.mark.parametrize("rotation_key", ["rotation", "rotate"])
+def test_rotated_text_is_not_wrapped_by_the_column(ctx, rotation_key):
+    col = {
+        "type": "column",
+        "width": 60,
+        "elements": [{"type": "text", "value": LONG, "size": 12, rotation_key: 90}],
+    }
     left, top, right, bottom = _ink(render([col], 400, 400, context=ctx))
     assert right - left < 16 and bottom - top > 100  # still one long rotated line
+
+
+def test_generic_rotated_text_in_row_keeps_its_full_long_axis(ctx):
+    value = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    row = {
+        "type": "row",
+        "width": 400,
+        "height": 60,
+        "elements": [{"type": "text", "x": 0, "y": 0, "value": value, "size": 24, "rotate": 90}],
+    }
+    legacy_equivalent = {
+        **row,
+        "elements": [{"type": "text", "x": 0, "y": 0, "value": value, "size": 24, "rotation": -90}],
+    }
+
+    assert (
+        render([row], 400, 400, context=ctx).tobytes() == render([legacy_equivalent], 400, 400, context=ctx).tobytes()
+    )
+
+
+def test_generic_rotation_reserves_intermediate_text_frames_in_stack(ctx):
+    value = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    vertical = {
+        "type": "row",
+        "width": 60,
+        "height": 400,
+        "elements": [{"type": "text", "x": 0, "y": 0, "value": value, "size": 24, "rotate": 90}],
+    }
+    horizontal = {
+        "type": "row",
+        "width": 400,
+        "height": 60,
+        "elements": [{"type": "text", "x": 0, "y": 0, "value": value, "size": 24, "rotation": 90, "rotate": 90}],
+    }
+
+    _, _, _, vertical_bottom = _ink(render([vertical], 400, 400, context=ctx))
+    horizontal_left, _, horizontal_right, _ = _ink(render([horizontal], 400, 400, context=ctx))
+    assert vertical_bottom > 300
+    assert horizontal_right - horizontal_left > 300
 
 
 def test_wrapped_text_respects_padding_and_margins(ctx):
