@@ -10,7 +10,7 @@ last beta release; they are listed under **Changed**.
 `schema_version` in `schema/elements.json` is bumped whenever the payload
 contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
-## [Unreleased]
+## [1.1.0] — 2026-10-14
 
 ### Added
 
