@@ -1,0 +1,20 @@
+- type: rectangle
+  x_start: 0
+  y_start: 0
+  x_end: 295
+  y_end: 127
+  outline: black
+  width: 2
+- type: text
+  x: 12
+  y: 12
+  value: "Hello, imagespec"
+  size: 22
+  color: black
+- type: line
+  x_start: 12
+  y_start: 48
+  x_end: 284
+  y_end: 48
+  fill: black
+  width: 2

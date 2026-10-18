@@ -10,6 +10,15 @@ last beta release; they are listed under **Changed**.
 `schema_version` in `schema/elements.json` is bumped whenever the payload
 contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
+## [Unreleased]
+
+### Added
+
+- English and Korean common payload user guides and an offline minimal YAML
+  example, covering host action boundaries, validation, device output settings
+  and available assets. No renderer API, payload schema, dependency, version or
+  release-policy changes.
+
 ## [1.1.0] — 2026-10-14
 
 ### Added

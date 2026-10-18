@@ -89,6 +89,8 @@ carry its own `dither` bool/method to override it just for itself.
 
 ## Payload specification
 
+Start with the [common payload guide](docs/payload.md) ([한국어](docs/payload.ko.md)) and its [minimal offline YAML example](examples/payload/minimal.yaml). Use your device integration’s own guide for the real action, target and output settings.
+
 Payloads are specified as a list (sequence) of dictionary elements, which can be easily authored in YAML or JSON. Each element requires a `type` string and varying geometric/styling attributes.
 
 > [!TIP]
