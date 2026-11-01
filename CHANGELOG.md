@@ -16,7 +16,9 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 - A `rectangle` with `y_start == y_end` no longer leaks stray outline pixels on
   the row below it (a Pillow quirk). Zero-width and zero-height rectangles now
-  render as a single line.
+  render as a single line, also for `rectangle_pattern` tiles and for sub-pixel
+  differences that round to the same row. A zero-height rectangle is always one
+  pixel thick now; use `line` with `width` for a thicker divider.
 
 ### Added
 

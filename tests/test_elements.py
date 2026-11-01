@@ -322,3 +322,31 @@ def test_zero_height_rectangle_honours_outline_color_and_zero_width(ctx):
     no_outline = render([{**base, "width": 0}], 12, 10, context=ctx)
     assert no_outline.getpixel((4, 5)) != (0, 0, 0)
     assert no_outline.getpixel((4, 6)) == (255, 255, 255)
+
+
+def test_sub_pixel_rectangle_is_one_line(ctx):
+    el = {"type": "rectangle", "x_start": 2, "y_start": 5, "x_end": 8, "y_end": 5.4, "fill": "white"}
+    img = render([el], 12, 10, context=ctx)
+    assert _dark_pixels(img) == {(x, 5) for x in range(2, 9)}
+
+
+def test_zero_height_rectangle_ignores_outline_width(ctx):
+    el = {"type": "rectangle", "x_start": 2, "y_start": 5, "x_end": 8, "y_end": 5, "fill": "white", "width": 3}
+    img = render([el], 12, 10, context=ctx)
+    assert _dark_pixels(img) == {(x, 5) for x in range(2, 9)}
+
+
+def test_zero_height_rectangle_pattern_tiles_are_lines(ctx):
+    el = {
+        "type": "rectangle_pattern",
+        "x_start": 2,
+        "y_start": 5,
+        "x_size": 4,
+        "y_size": 0,
+        "x_repeat": 1,
+        "y_repeat": 1,
+        "x_offset": 0,
+        "y_offset": 0,
+    }
+    img = render([el], 12, 10, context=ctx)
+    assert _dark_pixels(img) == {(x, 5) for x in range(2, 7)}
