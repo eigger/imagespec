@@ -32,6 +32,34 @@ def _rounding(element: dict) -> tuple[int, tuple[bool, bool, bool, bool]]:
     return radius, corners
 
 
+def _collapsed(a, b):
+    return round(a) == round(b) and int(a) == int(b)
+
+
+def _draw_box(draw, box, fill, outline, width, radius, corners):
+    """Draw a rectangle, collapsing a box that is one pixel thick to a line.
+
+    Pillow strokes the side edges of such a box one row (or column) past it, so
+    stray outline pixels leak next to it. An axis only counts as collapsed when
+    both Pillow's rounding (``rounded_rectangle``) and its truncation
+    (``rectangle``/``line``) agree, so sub-pixel boxes keep their old position.
+    """
+    x0, y0, x1, y1 = box
+    if _collapsed(x0, x1) or _collapsed(y0, y1):
+        line_color = fill if width == 0 else outline
+        if line_color is not None:
+            draw.line([(x0, y0), (x1, y1)], fill=line_color)
+        return
+    draw.rounded_rectangle(
+        [(x0, y0), (x1, y1)],
+        fill=fill,
+        outline=outline,
+        width=width,
+        radius=radius,
+        corners=corners,
+    )
+
+
 def _draw_dashed_line(draw, x0, y0, x1, y1, dash, fill, width):
     """Draw a dashed/dotted line between two points."""
     dash_on = dash[0]
@@ -116,13 +144,14 @@ def rectangle(state: RenderState, element: dict) -> None:
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
     width = element.get("width", 1)
     radius, corners = _rounding(element)
-    draw.rounded_rectangle(
-        [(element["x_start"], element["y_start"]), (element["x_end"], element["y_end"])],
-        fill=fill,
-        outline=outline,
-        width=width,
-        radius=radius,
-        corners=corners,
+    _draw_box(
+        draw,
+        (element["x_start"], element["y_start"], element["x_end"], element["y_end"]),
+        fill,
+        outline,
+        width,
+        radius,
+        corners,
     )
 
 
@@ -160,13 +189,14 @@ def rectangle_pattern(state: RenderState, element: dict) -> None:
         for y in range(int(element["y_repeat"])):
             x0 = element["x_start"] + x * (element["x_offset"] + element["x_size"])
             y0 = element["y_start"] + y * (element["y_offset"] + element["y_size"])
-            draw.rounded_rectangle(
-                [(x0, y0), (x0 + element["x_size"], y0 + element["y_size"])],
-                fill=fill,
-                outline=outline,
-                width=width,
-                radius=radius,
-                corners=corners,
+            _draw_box(
+                draw,
+                (x0, y0, x0 + element["x_size"], y0 + element["y_size"]),
+                fill,
+                outline,
+                width,
+                radius,
+                corners,
             )
 
 
