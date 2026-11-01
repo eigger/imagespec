@@ -12,6 +12,8 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-11-02
+
 ### Fixed
 
 - A `rectangle` with `y_start == y_end` no longer leaks stray outline pixels on
