@@ -297,3 +297,28 @@ def test_line_rejects_dash_lengths_without_finite_positive_progress(ctx, dash):
 
     with pytest.raises(RenderError, match="dash lengths must be finite positive"):
         render([{"type": "line", "x_start": 0, "x_end": 10, "y_start": 0, "dash": dash}], 20, 20, context=ctx)
+
+
+def _dark_pixels(img):
+    return {(x, y) for y in range(img.height) for x in range(img.width) if img.getpixel((x, y)) == (0, 0, 0)}
+
+
+def test_zero_height_rectangle_is_one_line(ctx):
+    el = {"type": "rectangle", "x_start": 2, "y_start": 5, "x_end": 8, "y_end": 5, "fill": "white"}
+    img = render([el], 12, 10, context=ctx)
+    assert _dark_pixels(img) == {(x, 5) for x in range(2, 9)}
+
+
+def test_zero_width_rectangle_is_one_line(ctx):
+    el = {"type": "rectangle", "x_start": 5, "y_start": 2, "x_end": 5, "y_end": 8, "fill": "white"}
+    img = render([el], 12, 10, context=ctx)
+    assert _dark_pixels(img) == {(5, y) for y in range(2, 9)}
+
+
+def test_zero_height_rectangle_honours_outline_color_and_zero_width(ctx):
+    base = {"type": "rectangle", "x_start": 2, "y_start": 5, "x_end": 8, "y_end": 5, "fill": "red"}
+    white = render([{**base, "outline": "white"}], 12, 10, context=ctx)
+    assert _dark_pixels(white) == set()
+    no_outline = render([{**base, "width": 0}], 12, 10, context=ctx)
+    assert no_outline.getpixel((4, 5)) != (0, 0, 0)
+    assert no_outline.getpixel((4, 6)) == (255, 255, 255)

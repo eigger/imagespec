@@ -116,6 +116,16 @@ def rectangle(state: RenderState, element: dict) -> None:
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
     width = element.get("width", 1)
     radius, corners = _rounding(element)
+    if element["x_start"] == element["x_end"] or element["y_start"] == element["y_end"]:
+        # Pillow strokes the side edges of a zero-height box one row past it; a
+        # zero-width or zero-height box is a single line of pixels anyway.
+        line_color = fill if width == 0 else outline
+        if line_color is not None:
+            draw.line(
+                [(element["x_start"], element["y_start"]), (element["x_end"], element["y_end"])],
+                fill=line_color,
+            )
+        return
     draw.rounded_rectangle(
         [(element["x_start"], element["y_start"]), (element["x_end"], element["y_end"])],
         fill=fill,

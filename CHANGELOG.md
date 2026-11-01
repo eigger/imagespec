@@ -12,6 +12,12 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ## [Unreleased]
 
+### Fixed
+
+- A `rectangle` with `y_start == y_end` no longer leaks stray outline pixels on
+  the row below it (a Pillow quirk). Zero-width and zero-height rectangles now
+  render as a single line.
+
 ### Added
 
 - English and Korean common payload user guides and an offline minimal YAML
