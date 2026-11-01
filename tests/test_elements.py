@@ -350,3 +350,16 @@ def test_zero_height_rectangle_pattern_tiles_are_lines(ctx):
     }
     img = render([el], 12, 10, context=ctx)
     assert _dark_pixels(img) == {(x, 5) for x in range(2, 7)}
+
+
+def test_half_pixel_rectangle_keeps_its_row(ctx):
+    el = {"type": "rectangle", "x_start": 2, "y_start": 5.5, "x_end": 8, "y_end": 5.5, "fill": "white"}
+    img = render([el], 12, 10, context=ctx)
+    assert _dark_pixels(img) == {(x, 5) for x in range(2, 9)}
+
+
+def test_two_row_rectangle_with_fractional_start_is_not_collapsed(ctx):
+    el = {"type": "rectangle", "x_start": 2, "y_start": 5.5, "x_end": 8, "y_end": 6.0, "fill": "white"}
+    img = render([el], 12, 10, context=ctx)
+    dark = _dark_pixels(img)
+    assert {y for _, y in dark} == {5, 6}

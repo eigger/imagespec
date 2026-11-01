@@ -32,18 +32,23 @@ def _rounding(element: dict) -> tuple[int, tuple[bool, bool, bool, bool]]:
     return radius, corners
 
 
+def _collapsed(a, b):
+    return round(a) == round(b) and int(a) == int(b)
+
+
 def _draw_box(draw, box, fill, outline, width, radius, corners):
     """Draw a rectangle, collapsing a box that is one pixel thick to a line.
 
     Pillow strokes the side edges of such a box one row (or column) past it, so
-    stray outline pixels leak next to it. The box is compared after rounding, as
-    Pillow rounds before drawing.
+    stray outline pixels leak next to it. An axis only counts as collapsed when
+    both Pillow's rounding (``rounded_rectangle``) and its truncation
+    (``rectangle``/``line``) agree, so sub-pixel boxes keep their old position.
     """
     x0, y0, x1, y1 = box
-    if round(x0) == round(x1) or round(y0) == round(y1):
+    if _collapsed(x0, x1) or _collapsed(y0, y1):
         line_color = fill if width == 0 else outline
         if line_color is not None:
-            draw.line([(round(x0), round(y0)), (round(x1), round(y1))], fill=line_color)
+            draw.line([(x0, y0), (x1, y1)], fill=line_color)
         return
     draw.rounded_rectangle(
         [(x0, y0), (x1, y1)],
