@@ -36,6 +36,10 @@ jobs:
           if tag != f"v{version}":
               raise SystemExit(f"release tag {tag!r} does not match project version {version!r}")
           PY
+      - name: Run the test suite before publishing
+        run: |
+          pip install -e ".[dev,datamatrix]"
+          pytest -q
       - run: pip install build twine
       - run: python -m build
       - run: twine check dist/*

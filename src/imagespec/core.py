@@ -12,7 +12,7 @@ from . import elements  # noqa: E402,F401  (side-effect import)
 from .context import RenderContext
 from .dispatch import render_element
 from .dither import dither_to_palette, resolve_dither_method
-from .exceptions import RenderError, describe_exception
+from .exceptions import RenderArgumentError, RenderError, describe_exception
 from .state import RenderState
 from .validate import validate
 
@@ -22,6 +22,17 @@ _LOGGER = logging.getLogger(__name__)
 ROTATE_MODE_CANVAS = "canvas"  # fixed-resolution e-ink panels (ESL tags)
 ROTATE_MODE_IMAGE = "image"  # variable-size label printers
 _ROTATE_MODES = (ROTATE_MODE_CANVAS, ROTATE_MODE_IMAGE)
+
+
+def _canvas_size(value: object, name: str) -> int:
+    """A positive integer canvas dimension (whole-number floats such as ``200.0`` are accepted)."""
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise RenderArgumentError(f"{name} must be a positive integer, got {value!r}")
+    if value <= 0:
+        raise RenderArgumentError(f"{name} must be positive, got {value}")
+    return value
 
 
 def render(
@@ -83,14 +94,19 @@ def render(
     context:
         Host-supplied :class:`RenderContext` (fonts, history, ...).
     """
-    rotate = int(rotate or 0)
+    try:
+        rotate = int(rotate or 0)
+    except (TypeError, ValueError):
+        raise RenderArgumentError(f"rotate must be 0/90/180/270, got {rotate!r}") from None
     if rotate not in (0, 90, 180, 270):
-        raise ValueError(f"rotate must be 0/90/180/270, got {rotate}")
+        raise RenderArgumentError(f"rotate must be 0/90/180/270, got {rotate}")
     if rotate_mode not in _ROTATE_MODES:
-        raise ValueError(f"rotate_mode must be one of {_ROTATE_MODES}, got {rotate_mode!r}")
-    if width <= 0 or height <= 0:
-        raise ValueError(f"width and height must be positive, got {width}x{height}")
-    resolve_dither_method(dither)  # fail fast, before any drawing work
+        raise RenderArgumentError(f"rotate_mode must be one of {_ROTATE_MODES}, got {rotate_mode!r}")
+    width, height = _canvas_size(width, "width"), _canvas_size(height, "height")
+    try:
+        resolve_dither_method(dither)  # fail fast, before any drawing work
+    except (TypeError, ValueError) as exc:
+        raise RenderArgumentError(str(exc)) from exc
     if strict:
         issues = validate(payload)
         if issues:

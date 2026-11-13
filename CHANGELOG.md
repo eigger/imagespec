@@ -12,6 +12,42 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ## [Unreleased]
 
+### Fixed
+
+- `plot`: a non-positive or non-finite `yaxis.tick_every` raised nothing and looped
+  forever; it is now a `RenderError`, and the tick count is capped at one per pixel
+  row. Fractional `tick_every` values no longer drop the top tick (ticks are placed
+  by multiplication rather than accumulated addition, so a tick may move 1px).
+- `plot`: empty history, a dict first sample, numeric `state`, timezone-naive
+  timestamps, `duration <= 0` and a data item without `entity` give clear errors or
+  are accepted instead of leaking `IndexError`/`AttributeError`/`TypeError`.
+- `validate()` no longer raises on overflowing `class` tokens (`gap-1e308`) or very
+  deep nesting; the latter is reported as an issue.
+- `caching_resolver`: tolerates the Windows `os.replace` race between concurrent
+  downloads, expands `~` in `cache_dir`, and no longer caches responses that are
+  not a loadable font or exceed `max_bytes` (default 50 MB) - it logs a warning and
+  returns `None` so the bundled font is used.
+- `google_fonts_resolver` raises `ValueError` for an unknown family.
+- `pie`/`diagram`/`progress_bar`/`dlimg`/`text_fit`: malformed `values`, missing
+  `bars.color`, zero `ysize`, tiny `show_percentage` bars and `min_size: 0` raise a
+  descriptive `RenderError` (or are tolerated, for a trailing `;` in `pie`).
+
+### Changed
+
+- `render()` argument errors (size, `rotate`, `rotate_mode`, `dither`) raise the new
+  `RenderArgumentError`, a `RenderError` that is also a `ValueError`. `dither` is
+  checked before drawing; whole-number float sizes such as `200.0` are accepted.
+- A font that cannot be resolved logs a one-time warning before falling back to the
+  default font.
+- Errors wrapped with the element index include the exception type when the message
+  alone is bare (`KeyError: 'color'`); `dlimg` decode failures name the source
+  (without its query string) and the byte count.
+
+### CI
+
+- Added a Windows test job, least-privilege `permissions`, a test run before
+  publishing, and `tests/golden`, `schema` and example assets in the sdist.
+
 ## [1.1.1] — 2026-11-02
 
 ### Fixed

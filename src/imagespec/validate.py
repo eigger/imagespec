@@ -54,8 +54,11 @@ def validate(payload: Sequence[Any], *, positioned: bool = True) -> list[Issue]:
     issues: list[Issue] = []
     if not isinstance(payload, (list, tuple)):
         return [Issue("", f"payload must be a list of elements, got {type(payload).__name__}")]
-    for idx, element in enumerate(payload):
-        _check_element(element, f"[{idx}]", positioned, issues)
+    try:
+        for idx, element in enumerate(payload):
+            _check_element(element, f"[{idx}]", positioned, issues)
+    except RecursionError:
+        issues.append(Issue("", "payload is nested too deeply to validate"))
     return issues
 
 

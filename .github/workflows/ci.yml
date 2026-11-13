@@ -5,6 +5,9 @@ on:
     branches: [main, master]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -47,6 +50,24 @@ jobs:
       - name: Schema export is up to date
         run: python scripts/export_schema.py --check
 
+  # Windows differs from Linux in font hinting, file replacement semantics and
+  # missing libraqm, so run the suite there too (no coverage floor: that is
+  # already enforced on Linux; goldens get the same tolerance as the min-deps job).
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev,datamatrix]"
+      - name: Run tests
+        run: pytest -q
+        env:
+          IMAGESPEC_GOLDEN_TOLERANCE: "0.10"
+
   # Install the *lowest* version each floor in pyproject.toml allows and run the
   # suite, so a floor that is too low (e.g. an API we use that only landed in a
   # later release) fails here instead of in a downstream install. The regular
@@ -75,7 +96,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: [lint, test, test-min-deps]
+    needs: [lint, test, test-windows, test-min-deps]
     steps:
       - uses: actions/checkout@v7
         with:

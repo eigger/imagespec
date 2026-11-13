@@ -579,7 +579,7 @@ def text_fit(state: RenderState, element: dict) -> None:
     if fit not in ("shrink", "ellipsis", "shrink_ellipsis"):
         raise RenderError(f"text_fit: 'fit' must be shrink/ellipsis/shrink_ellipsis, got {fit!r}")
     start_size = element.get("size", 20)
-    min_size = element.get("min_size", 8)
+    min_size = max(1, element.get("min_size", 8))
     max_lines = max(1, int(element.get("max_lines", 1)))
     line_spacing = element.get("line_spacing", 2)
     ellipsis = element.get("ellipsis", "…")

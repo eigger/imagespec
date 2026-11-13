@@ -91,9 +91,11 @@ def _space(val: str):
         if inner.endswith("px"):
             inner = inner[:-2]
         n = _to_float(inner)
-        return None if n is None else int(round(n))
+        return None if n is None or not math.isfinite(n) else int(round(n))
     n = _to_float(val)
-    return None if n is None else int(round(n * _STEP))
+    if n is None or not math.isfinite(n * _STEP):
+        return None
+    return int(round(n * _STEP))
 
 
 def _apply(token: str, props: dict) -> None:

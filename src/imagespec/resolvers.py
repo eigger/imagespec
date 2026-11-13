@@ -11,12 +11,27 @@ first use.
 
 from __future__ import annotations
 
+import io
+import logging
 import os
 import tempfile
 
 import requests
+from PIL import ImageFont
 
 from .context import FontResolver
+
+_LOGGER = logging.getLogger(__name__)
+
+MAX_FONT_BYTES = 50 * 1024 * 1024
+
+
+def _is_font(data: bytes) -> bool:
+    try:
+        ImageFont.truetype(io.BytesIO(data), 10)
+    except (OSError, ValueError):
+        return False
+    return True
 
 
 def chain_resolvers(*resolvers: FontResolver | None) -> FontResolver:
@@ -55,6 +70,7 @@ def caching_resolver(
     *,
     session: requests.Session | None = None,
     timeout: float = 30,
+    max_bytes: int = MAX_FONT_BYTES,
 ) -> FontResolver:
     """Download fonts named in ``sources`` on first use, cache them, reuse offline.
 
@@ -67,6 +83,10 @@ def caching_resolver(
         not present here returns ``None`` (so bundled fonts are used instead).
     session, timeout:
         Optional ``requests`` session and per-request timeout.
+    max_bytes:
+        Largest download accepted. A response that is larger, or is not a
+        loadable font (e.g. an HTML error page), is logged and not cached —
+        the resolver returns ``None`` so the bundled font is used.
     """
     cache_dir = os.path.expanduser(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)
@@ -83,10 +103,18 @@ def caching_resolver(
             return None
         resp = http.get(url, timeout=timeout)
         resp.raise_for_status()
+        data = resp.content
+        if len(data) > max_bytes:
+            _LOGGER.warning("Font %r from %s is %d bytes (limit %d) - not cached", name, url, len(data), max_bytes)
+            return None
+        if not _is_font(data):
+            # e.g. a captive portal's HTML answered 200: caching it would break every later render
+            _LOGGER.warning("Download for font %r from %s is not a usable font file - not cached", name, url)
+            return None
         fd, tmp = tempfile.mkstemp(prefix=base + ".", suffix=".part", dir=cache_dir)
         try:
             with os.fdopen(fd, "wb") as f:
-                f.write(resp.content)
+                f.write(data)
             try:
                 os.replace(tmp, cached)  # atomic: avoid a half-written cache file
             except OSError:
