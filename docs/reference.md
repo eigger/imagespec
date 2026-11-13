@@ -573,7 +573,7 @@ Time-series line chart over the last `duration` seconds, fed by the host's `hist
 | `yaxis.width` | number | `1` | Axis line width |
 | `yaxis.color` | color | `"black"` |  |
 | `yaxis.tick_width` | number | `2` |  |
-| `yaxis.tick_every` | number | `1` | Value step between ticks |
+| `yaxis.tick_every` | number | `1` | Value step between ticks (must be > 0; at most one tick per pixel row) |
 | `yaxis.grid` | number | `5` | Dotted grid spacing in px; `null` disables |
 | `yaxis.grid_color` | color | `"black"` |  |
 | `xlegend` | object |  | Time labels along the bottom |

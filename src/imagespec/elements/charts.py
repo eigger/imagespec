@@ -317,7 +317,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
                 num("width", 1, doc="Axis line width"),
                 color("color", "black"),
                 num("tick_width", 2),
-                num("tick_every", 1, doc="Value step between ticks"),
+                num("tick_every", 1, doc="Value step between ticks (must be > 0; at most one tick per pixel row)"),
                 num("grid", 5, nullable=True, doc="Dotted grid spacing in px; `null` disables"),
                 color("grid_color", "black"),
             ],
@@ -447,17 +447,17 @@ def plot(state: RenderState, element: dict) -> None:
     if yaxis is not None:
         # One tick per pixel row at most: a tiny tick_every over a wide value range
         # would otherwise loop (and allocate) proportionally to spread/tick_every.
-        n_ticks = int(spread // yaxis_tick_every) + 1
-        step = yaxis_tick_every
+        n_ticks = math.floor(spread / yaxis_tick_every + 1e-9) + 1
         if n_ticks > max(diag_height, 1):
-            step = spread / max(diag_height - 1, 1)
-            n_ticks = int(spread // step) + 1
-        seen: set[int] = set()
-        for i in range(n_ticks):
-            curr_y = round(diag_y + (1 - ((i * step) / spread)) * (diag_height - 1))
-            if curr_y not in seen:
-                seen.add(curr_y)
-                tick_ys.append(curr_y)
+            tick_ys = list(range(diag_y + diag_height - 1, diag_y - 1, -1))  # every row
+        else:
+            seen: set[int] = set()
+            for i in range(n_ticks):
+                frac = min(i * yaxis_tick_every / spread, 1.0)
+                curr_y = round(diag_y + (1 - frac) * (diag_height - 1))
+                if curr_y not in seen:
+                    seen.add(curr_y)
+                    tick_ys.append(curr_y)
 
     if yaxis is not None and yaxis_grid is not None:
         grid_points: list[tuple[int, int]] = []

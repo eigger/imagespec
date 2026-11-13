@@ -120,7 +120,7 @@ class RenderContext:
             return p
         p = _bundled_font_path(self.default_font)
         if p:
-            if name not in _WARNED_FONTS:
+            if name not in _WARNED_FONTS and len(_WARNED_FONTS) < 256:  # bounded: names come from payloads
                 _WARNED_FONTS.add(name)
                 _LOGGER.warning("Font %r not found - using default %r", name, self.default_font)
             return p

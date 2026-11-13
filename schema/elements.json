@@ -2700,7 +2700,7 @@
                 "number",
                 "null"
               ],
-              "description": "Value step between ticks",
+              "description": "Value step between ticks (must be > 0; at most one tick per pixel row)",
               "default": 1
             },
             "grid": {
