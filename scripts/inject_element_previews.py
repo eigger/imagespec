@@ -17,30 +17,39 @@ def preview_block(name: str) -> str:
     return f"\n![{name} preview](../examples/elements/{name}.png)\n"
 
 
+def _section(lines: list[str], start: int) -> str:
+    """Text from ``start`` up to the next heading (or the end)."""
+    end = start
+    while end < len(lines) and not lines[end].startswith("#"):
+        end += 1
+    return "".join(lines[start:end])
+
+
 def main() -> None:
     text = DOC.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
     out: list[str] = []
     heading_re = re.compile(r"^### `([^`]+)`(?: / `([^`]+)`(?: / `([^`]+)`)?)?\s*$")
 
-    for line in lines:
+    def missing(name: str, following: str) -> str:
+        """The preview block for ``name`` unless the section already has it (keeps re-runs idempotent)."""
+        if f"](../examples/elements/{name}.png)" in following:
+            return ""
+        return preview_block(name)
+
+    for i, line in enumerate(lines):
         out.append(line)
+        following = _section(lines, i + 1)
         match = heading_re.match(line.rstrip("\n"))
         if match:
             names = [group for group in match.groups() if group]
-            if len(names) > 1:
-                block = "".join(preview_block(name) for name in names)
-            else:
-                block = preview_block(names[0])
+            block = "".join(missing(name, following) for name in names)
             if block:
                 out.append(block)
         elif line.startswith("## Combined label example"):
-            out.append(preview_block("label_combo"))
+            out.append(missing("label_combo", following))
 
-    new_text = "".join(out)
-    # Drop duplicate consecutive preview lines if the script is re-run.
-    new_text = re.sub(r"(\n!\[[^\]]+\]\([^\)]+\))+", r"\1", new_text)
-    DOC.write_text(new_text, encoding="utf-8", newline="\n")
+    DOC.write_text("".join(out), encoding="utf-8", newline="\n")
     print(f"Updated {DOC.relative_to(ROOT)}")
 
 

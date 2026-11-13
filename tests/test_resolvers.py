@@ -80,20 +80,37 @@ def test_google_fonts_resolver_families_filter_excludes_others(tmp_path):
 FONT_BYTES = Path(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf").read_bytes()
 
 
+class FakeResponse:
+    """Minimal streaming ``requests.Response`` stand-in."""
+
+    def __init__(self, content=b"", headers=None, chunks=None):
+        self._chunks = chunks if chunks is not None else [content]
+        self.headers = headers or {}
+        self.closed = False
+
+    def raise_for_status(self):
+        pass
+
+    def iter_content(self, size):
+        yield from self._chunks
+
+    def close(self):
+        self.closed = True
+
+
+class FakeSession:
+    def __init__(self, response=None, error=None):
+        self.response, self.error, self.calls = response, error, 0
+
+    def get(self, url, timeout, stream=False):
+        self.calls += 1
+        if self.error:
+            raise self.error
+        return self.response
+
+
 def _session(content):
-    class Response:
-        @staticmethod
-        def raise_for_status():
-            pass
-
-    Response.content = content
-
-    class Session:
-        @staticmethod
-        def get(url, timeout):
-            return Response()
-
-    return Session()
+    return FakeSession(FakeResponse(content))
 
 
 def test_caching_resolver_rejects_non_font_download(tmp_path, caplog):
@@ -107,24 +124,17 @@ def test_caching_resolver_rejects_oversized_download(tmp_path, caplog):
     r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=_session(FONT_BYTES), max_bytes=1000)
     assert r("f.ttf") is None
     assert list(tmp_path.iterdir()) == []
-    assert "limit 1000" in caplog.text
+    assert "exceeds 1000 bytes" in caplog.text
 
 
 def test_caching_resolver_allows_concurrent_cold_downloads(tmp_path):
     barrier = threading.Barrier(2)
 
-    class Response:
-        content = FONT_BYTES
-
-        @staticmethod
-        def raise_for_status():
-            pass
-
     class Session:
         @staticmethod
-        def get(url, timeout):
+        def get(url, timeout, stream=False):
             barrier.wait(timeout=2)
-            return Response()
+            return FakeResponse(FONT_BYTES)
 
     resolver = caching_resolver(str(tmp_path), {"font.ttf": "https://example.test/font.ttf"}, session=Session())
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -141,3 +151,59 @@ def test_google_fonts_resolver_rejects_unknown_family(tmp_path):
 
     with pytest.raises(ValueError, match="Nope.ttf"):
         google_fonts_resolver(str(tmp_path), families=["Nope.ttf"])
+
+
+def test_caching_resolver_stops_streaming_past_the_limit(tmp_path):
+    consumed = []
+
+    def endless():
+        while True:
+            consumed.append(1)
+            yield b"x" * 1024
+
+    resp = FakeResponse(chunks=endless())
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=FakeSession(resp), max_bytes=4096)
+    assert r("f.ttf") is None
+    assert len(consumed) <= 6 and resp.closed  # aborted early, nothing buffered beyond the cap
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_caching_resolver_rejects_declared_oversize_without_reading(tmp_path):
+    resp = FakeResponse(chunks=[], headers={"Content-Length": "999999"})
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=FakeSession(resp), max_bytes=1000)
+    assert r("f.ttf") is None and resp.closed
+
+
+def test_caching_resolver_remembers_failures_for_the_ttl(tmp_path):
+    import requests
+
+    session = FakeSession(error=requests.ConnectionError("offline"))
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=session, failure_ttl=60)
+    assert r("f.ttf") is None and r("f.ttf") is None
+    assert session.calls == 1  # second render did not wait on the network again
+
+
+def test_caching_resolver_retries_after_the_ttl(tmp_path, monkeypatch):
+    import requests
+
+    import imagespec.resolvers as mod
+
+    now = [1000.0]
+    monkeypatch.setattr(mod.time, "monotonic", lambda: now[0])
+    session = FakeSession(error=requests.ConnectionError("offline"))
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=session, failure_ttl=60)
+    r("f.ttf")
+    now[0] += 61
+    session.error, session.response = None, FakeResponse(FONT_BYTES)
+    assert r("f.ttf") == str(tmp_path / "f.ttf")
+    assert session.calls == 2
+
+
+def test_caching_resolver_ttl_zero_retries_every_call(tmp_path):
+    import requests
+
+    session = FakeSession(error=requests.ConnectionError("offline"))
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=session, failure_ttl=0)
+    r("f.ttf")
+    r("f.ttf")
+    assert session.calls == 2

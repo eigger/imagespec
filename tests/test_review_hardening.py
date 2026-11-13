@@ -138,13 +138,19 @@ def test_caching_resolver_replace_race(tmp_path, monkeypatch):
     from imagespec.resolvers import caching_resolver
 
     class Resp:
-        content = FONT
+        headers: dict = {}  # noqa: RUF012
 
         def raise_for_status(self):
             pass
 
+        def iter_content(self, size):
+            yield FONT
+
+        def close(self):
+            pass
+
     class Http:
-        def get(self, url, timeout):
+        def get(self, url, timeout, stream=False):
             return Resp()
 
     def boom(src, dst):
