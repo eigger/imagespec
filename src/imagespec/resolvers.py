@@ -91,10 +91,10 @@ def caching_resolver(
         the resolver returns ``None`` so the bundled font is used. The size is
         enforced while streaming, so an oversized body is never held in memory.
     failure_ttl:
-        Seconds to remember a failed download (network error, non-font, too
-        large) and skip retrying it; the resolver returns ``None`` meanwhile so
+        Seconds to remember a failed download (network or HTTP error, non-font,
+        too large) and skip retrying it; the resolver returns ``None`` meanwhile so
         renders fall back to the bundled font instead of blocking on a dead
-        network every time. ``0`` retries on every call.
+        network every time. A failed download never raises; the resolver returns ``None``. ``0`` retries on every call.
     """
     cache_dir = os.path.expanduser(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)
