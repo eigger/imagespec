@@ -52,7 +52,7 @@ try:
         strict=True,
         context=RenderContext(palette="bw"),
     )
-except (RenderError, ValueError) as exc:
+except RenderError as exc:
     raise SystemExit(str(exc)) from exc
 
 image.save("/tmp/imagespec-minimal.png")
@@ -101,7 +101,7 @@ Use `DITHER_METHODS` from the installed library, or the [dithering reference](di
 
 `render(..., strict=True)` runs the same checks and raises `RenderError` listing issues. Without strict mode, unknown keys are generally ignored and unknown element types are logged and skipped; a preview can therefore look incomplete without an exception. Use validation to catch typos rather than relying on lenient rendering. The installed version’s `known_types()` and reference determine support, not a newer online example.
 
-Handler failures are surfaced as `RenderError` with element context. `err.path` identifies an element or nested child (for example `[1].elements[0]`), `err.message` is the bare message and `str(err)` includes the path. Global invalid size, rotation or rotation mode can raise `ValueError`; not every error is a `RenderError` or proof of a device fault.
+Handler failures are surfaced as `RenderError` with element context. `err.path` identifies an element or nested child (for example `[1].elements[0]`), `err.message` is the bare message and `str(err)` includes the path. Invalid global size, rotation, rotation mode or dither raise `RenderArgumentError`, which is a `RenderError` (and also a `ValueError`/`TypeError`); an error is not necessarily a device fault.
 
 | Problem | First check |
 |---|---|

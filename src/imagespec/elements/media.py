@@ -16,7 +16,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import blit, int_xy, mono_draw, require
+from ..utils import blit, describe_url, int_xy, mono_draw, require
 
 # MDI metadata is large (~3MB); load+cache once per file path.
 _mdi_meta_cache: dict[str, list] = {}
@@ -206,13 +206,11 @@ def icon(state: RenderState, element: dict) -> None:
     )
 
 
-def _describe_source(url: str) -> str:
-    """Short, secret-free description of an image source for error messages."""
-    if url.startswith("data:"):
-        return "data URL (" + url[5:].split(",", 1)[0].split(";", 1)[0] + ")"
-    parts = urllib.parse.urlsplit(url)
-    port = f":{parts.port}" if parts.port else ""
-    return f"{parts.scheme}://{parts.hostname}{port}{parts.path}"[:120]  # no query string: it may carry tokens
+def _fetch_error(exc: requests.RequestException) -> str:
+    """Exception summary without its message: requests embeds the full URL (query, credentials) there."""
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    return f"{type(exc).__name__} (HTTP {status})" if status else type(exc).__name__
 
 
 def _decode_image(data: bytes, source: str) -> Image.Image:
@@ -284,8 +282,8 @@ def dlimg(state: RenderState, element: dict) -> None:
         try:
             data = state.context.fetch_image(url, timeout=element.get("timeout", 30))
         except requests.RequestException as exc:
-            raise RenderError(f"dlimg: failed to fetch {_describe_source(url)}: {exc}") from exc
-        imgdl = _decode_image(data, _describe_source(url))
+            raise RenderError(f"dlimg: failed to fetch {describe_url(url)}: {_fetch_error(exc)}") from exc
+        imgdl = _decode_image(data, describe_url(url))
     elif url.startswith("data:"):
         s = url[5:]
         if not s or "," not in s:
@@ -301,7 +299,7 @@ def dlimg(state: RenderState, element: dict) -> None:
                 raise RenderError("dlimg: invalid base64 in data url") from exc
         else:
             data = urllib.parse.unquote_to_bytes(raw_data)
-        imgdl = _decode_image(data, _describe_source(url))
+        imgdl = _decode_image(data, describe_url(url))
     else:
         # Local / relative filesystem path — gated for safety.
         if not state.context.allow_local_images:

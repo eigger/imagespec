@@ -410,3 +410,59 @@ def test_dlimg_error_does_not_leak_credentials(monkeypatch):
             ctx=ctx,
         )
     assert "s3cret" not in str(ei.value) and "pw" not in str(ei.value)
+
+
+def test_dlimg_fetch_failure_hides_query_and_credentials(monkeypatch):
+    import requests
+
+    ctx = RenderContext()
+
+    def boom(url, timeout):
+        raise requests.ConnectionError(f"Max retries exceeded with url: {url}")
+
+    monkeypatch.setattr(ctx, "fetch_image", boom)
+    with pytest.raises(RenderError) as ei:
+        _r(
+            {
+                "type": "dlimg",
+                "url": "https://user:pw@example.test/p.png?token=s3cret",
+                "x": 0,
+                "y": 0,
+                "xsize": 4,
+                "ysize": 4,
+            },
+            ctx=ctx,
+        )
+    msg = str(ei.value)
+    assert "s3cret" not in msg and "pw@" not in msg
+    assert "https://example.test/p.png" in msg and "ConnectionError" in msg
+
+
+@pytest.mark.parametrize("url", ["http://h:99999/x", "http://h:abc/x", "http://[::1]:8080/x?t=1"])
+def test_describe_url_never_raises(url):
+    from imagespec.utils import describe_url
+
+    out = describe_url(url)
+    assert "?t=1" not in out
+    assert out.startswith("http://")
+
+
+def test_context_download_errors_hide_credentials():
+    ctx = RenderContext(image_fetcher=lambda url: b"x" * 10, max_image_bytes=5)
+    with pytest.raises(RenderError) as ei:
+        ctx.fetch_image("https://user:pw@example.test/p.png?token=s3cret", timeout=1)
+    assert "s3cret" not in str(ei.value) and "pw@" not in str(ei.value)
+
+
+def test_plot_accepts_numpy_float32_exponent_state():
+    np = pytest.importorskip("numpy")
+    ctx = RenderContext(
+        history_provider=lambda ids, s, e: {
+            i: [
+                {"state": np.float32(1e-05), "last_changed": "2026-01-01T00:00:00+00:00"},
+                {"state": np.float32(2e-05), "last_changed": "2026-01-01T01:00:00+00:00"},
+            ]
+            for i in ids
+        }
+    )
+    _r({"type": "plot", "data": [{"entity": "a"}], "duration": 10**9}, ctx=ctx)

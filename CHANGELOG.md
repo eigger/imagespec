@@ -18,7 +18,7 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
   forever; it is now a `RenderError`, and the tick count is capped at one per pixel
   row. Fractional `tick_every` values no longer drop the top tick (ticks are placed
   by multiplication rather than accumulated addition, so a tick may move 1px).
-- `plot`: empty history, a dict first sample, numeric `state`, timezone-naive
+- `plot`: empty history, a dict first sample, numeric `state` (including exponent-form floats such as `1e-05`), timezone-naive
   timestamps, `duration <= 0` and a data item without `entity` give clear errors or
   are accepted instead of leaking `IndexError`/`AttributeError`/`TypeError`.
 - `validate()` no longer raises on overflowing `class` tokens (`gap-1e308`) or very
@@ -32,7 +32,6 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
   zero `ysize` and tiny `show_percentage` bars raise a descriptive `RenderError`.
   A trailing `;` in `pie`/`diagram` values is tolerated, and `text_fit` clamps
   `min_size` below 1 to 1.
-- `plot`: exponent-form numeric states (`1e-05`) are no longer dropped.
 
 ### Changed
 

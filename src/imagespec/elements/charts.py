@@ -8,6 +8,7 @@ never touches a host's recorder directly.
 from __future__ import annotations
 
 import math
+import numbers
 from datetime import UTC, datetime, timedelta
 
 from PIL import ImageDraw
@@ -448,7 +449,7 @@ def plot(state: RenderState, element: dict) -> None:
         states = []
         for s in normalized:
             raw_state = s["state"]
-            if isinstance(raw_state, (int, float)) and not isinstance(raw_state, bool):
+            if isinstance(raw_state, numbers.Real) and raw_state is not True and raw_state is not False:
                 if not math.isfinite(raw_state):
                     continue
             else:

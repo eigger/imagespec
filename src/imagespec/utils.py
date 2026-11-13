@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import urllib.parse
 from collections.abc import Iterable
 
 from PIL import Image, ImageChops, ImageDraw
@@ -243,3 +244,16 @@ def multiline_anchor(anchor: str | None, text: str, *, always: bool = False) -> 
     if anchor and len(anchor) >= 2 and anchor[1] in ("t", "b") and (always or "\n" in text):
         return anchor[0] + {"t": "a", "b": "d"}[anchor[1]] + anchor[2:]
     return anchor
+
+
+def describe_url(url: str) -> str:
+    """Short, secret-free description of an image source for messages and logs.
+
+    Drops credentials (``user:pw@``), the query string and the fragment, which
+    may carry tokens; ``data:`` URLs are reduced to their media type.
+    """
+    if url.startswith("data:"):
+        return "data URL (" + url[5:].split(",", 1)[0].split(";", 1)[0] + ")"
+    parts = urllib.parse.urlsplit(url)
+    host = parts.netloc.rpartition("@")[2]  # keeps [ipv6] brackets and the port, never raises
+    return f"{parts.scheme}://{host}{parts.path}"[:120]

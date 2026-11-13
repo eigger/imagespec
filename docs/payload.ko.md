@@ -52,7 +52,7 @@ try:
         strict=True,
         context=RenderContext(palette="bw"),
     )
-except (RenderError, ValueError) as exc:
+except RenderError as exc:
     raise SystemExit(str(exc)) from exc
 
 image.save("/tmp/imagespec-minimal.png")
@@ -101,7 +101,7 @@ YAML 들여쓰기·따옴표도 중요합니다. HEX 색상은 `"#ff0000"`처럼
 
 `render(..., strict=True)`는 같은 검사를 먼저 수행하고 문제를 모아 `RenderError`로 알립니다. strict가 없으면 모르는 키는 대체로 무시하고 미지원 요소 type은 로그를 남기고 건너뛰므로 예외 없이 미리보기가 누락될 수 있습니다. 관대한 렌더링에 의존하지 말고 검증으로 오타를 찾으세요. 지원 여부는 최신 온라인 예제가 아니라 설치된 버전의 `known_types()`와 참조를 기준으로 판단합니다.
 
-핸들러 오류는 요소 문맥을 포함한 `RenderError`로 전달됩니다. `err.path`는 요소·중첩 자식 위치(예: `[1].elements[0]`), `err.message`는 경로 없는 메시지이며 `str(err)`에는 경로가 포함됩니다. 잘못된 전체 크기·회전·회전 모드는 `ValueError`일 수 있습니다. 모든 오류가 `RenderError`이거나 기기 장애인 것은 아닙니다.
+핸들러 오류는 요소 문맥을 포함한 `RenderError`로 전달됩니다. `err.path`는 요소·중첩 자식 위치(예: `[1].elements[0]`), `err.message`는 경로 없는 메시지이며 `str(err)`에는 경로가 포함됩니다. 잘못된 전체 크기·회전·회전 모드·dither는 `RenderArgumentError`(`RenderError`이자 `ValueError`/`TypeError`)로 전달됩니다. 오류가 곧 기기 장애를 뜻하는 것은 아닙니다.
 
 | 문제 | 먼저 확인 |
 |---|---|
