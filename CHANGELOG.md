@@ -28,9 +28,11 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
   not a loadable font or exceed `max_bytes` (default 50 MB) - it logs a warning and
   returns `None` so the bundled font is used.
 - `google_fonts_resolver` raises `ValueError` for an unknown family.
-- `pie`/`diagram`/`progress_bar`/`dlimg`/`text_fit`: malformed `values`, missing
-  `bars.color`, zero `ysize`, tiny `show_percentage` bars and `min_size: 0` raise a
-  descriptive `RenderError` (or are tolerated, for a trailing `;` in `pie`).
+- `pie`/`diagram`/`progress_bar`/`dlimg`: malformed `values`, missing `bars.color`,
+  zero `ysize` and tiny `show_percentage` bars raise a descriptive `RenderError`.
+  A trailing `;` in `pie`/`diagram` values is tolerated, and `text_fit` clamps
+  `min_size` below 1 to 1.
+- `plot`: exponent-form numeric states (`1e-05`) are no longer dropped.
 
 ### Changed
 
@@ -39,6 +41,11 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
   checked before drawing; whole-number float sizes such as `200.0` are accepted.
 - A font that cannot be resolved logs a one-time warning before falling back to the
   default font.
+- `RenderArgumentError` also subclasses `TypeError`, so callers that caught the
+  `TypeError` formerly raised for a non-integer size or a bad `dither` type keep working.
+- `dlimg` matches `http://`/`https://` case-insensitively (an `HTTP://` URL used to be
+  treated as a local path and rejected). `plot` treats timezone-naive provider
+  timestamps as UTC.
 - Errors wrapped with the element index include the exception type when the message
   alone is bare (`KeyError: 'color'`); `dlimg` decode failures name the source
   (without its query string) and the byte count.

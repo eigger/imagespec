@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import operator
 from collections.abc import Sequence
 
 from PIL import Image
@@ -28,8 +29,12 @@ def _canvas_size(value: object, name: str) -> int:
     """A positive integer canvas dimension (whole-number floats such as ``200.0`` are accepted)."""
     if isinstance(value, float) and value.is_integer():
         value = int(value)
-    if isinstance(value, bool) or not isinstance(value, int):
+    if isinstance(value, (bool, float)):
         raise RenderArgumentError(f"{name} must be a positive integer, got {value!r}")
+    try:
+        value = operator.index(value)  # type: ignore[arg-type]  # ints, numpy integers, ...
+    except TypeError:
+        raise RenderArgumentError(f"{name} must be a positive integer, got {value!r}") from None
     if value <= 0:
         raise RenderArgumentError(f"{name} must be positive, got {value}")
     return value
@@ -96,7 +101,7 @@ def render(
     """
     try:
         rotate = int(rotate or 0)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise RenderArgumentError(f"rotate must be 0/90/180/270, got {rotate!r}") from None
     if rotate not in (0, 90, 180, 270):
         raise RenderArgumentError(f"rotate must be 0/90/180/270, got {rotate}")

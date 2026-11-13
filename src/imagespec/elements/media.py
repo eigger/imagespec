@@ -211,7 +211,8 @@ def _describe_source(url: str) -> str:
     if url.startswith("data:"):
         return "data URL (" + url[5:].split(",", 1)[0].split(";", 1)[0] + ")"
     parts = urllib.parse.urlsplit(url)
-    return f"{parts.scheme}://{parts.netloc}{parts.path}"[:120]  # no query string: it may carry tokens
+    port = f":{parts.port}" if parts.port else ""
+    return f"{parts.scheme}://{parts.hostname}{port}{parts.path}"[:120]  # no query string: it may carry tokens
 
 
 def _decode_image(data: bytes, source: str) -> Image.Image:
@@ -283,7 +284,7 @@ def dlimg(state: RenderState, element: dict) -> None:
         try:
             data = state.context.fetch_image(url, timeout=element.get("timeout", 30))
         except requests.RequestException as exc:
-            raise RenderError(f"dlimg: failed to fetch {url}: {exc}") from exc
+            raise RenderError(f"dlimg: failed to fetch {_describe_source(url)}: {exc}") from exc
         imgdl = _decode_image(data, _describe_source(url))
     elif url.startswith("data:"):
         s = url[5:]

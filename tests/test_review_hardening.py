@@ -313,3 +313,100 @@ def test_plot_empty_history_names_entity():
     ctx = RenderContext(history_provider=lambda ids, s, e: {i: [] for i in ids})
     with pytest.raises(RenderError, match="sensor.a"):
         _r({"type": "plot", "data": [{"entity": "sensor.a"}]}, ctx=ctx)
+
+
+def test_render_accepts_numpy_integer_sizes():
+    np = pytest.importorskip("numpy")
+    assert render([], np.int64(20), np.int32(10), context=RenderContext()).size == (20, 10)
+
+
+def test_render_argument_error_is_also_type_error():
+    with pytest.raises(TypeError):
+        render([], "20", 10, context=RenderContext())
+    with pytest.raises(RenderError):
+        render([], 10, 10, rotate=float("inf"), context=RenderContext())
+
+
+@pytest.mark.parametrize("value", [1e-05, 1.2345678901234568e17])
+def test_plot_accepts_exponent_float_states(value):
+    ctx = RenderContext(
+        history_provider=lambda ids, s, e: {
+            i: [
+                {"state": value, "last_changed": "2026-01-01T00:00:00+00:00"},
+                {"state": value * 2, "last_changed": "2026-01-01T01:00:00+00:00"},
+            ]
+            for i in ids
+        }
+    )
+    _r({"type": "plot", "data": [{"entity": "a"}], "duration": 10**9}, ctx=ctx)
+
+
+def test_plot_treats_naive_timestamps_as_utc():
+    def provider(stamp):
+        return lambda ids, s, e: {
+            i: [{"state": 1, "last_changed": stamp(0)}, {"state": 9, "last_changed": stamp(1)}] for i in ids
+        }
+
+    naive = provider(lambda h: f"2026-01-01T0{h}:00:00")
+    aware = provider(lambda h: f"2026-01-01T0{h}:00:00+00:00")
+    el = {"type": "plot", "data": [{"entity": "a", "color": "black"}], "duration": 10**9}
+    assert (
+        _r(el, ctx=RenderContext(history_provider=naive)).tobytes()
+        == _r(el, ctx=RenderContext(history_provider=aware)).tobytes()
+    )
+
+
+def test_text_fit_min_size_zero_is_clamped():
+    _r(
+        {
+            "type": "text_fit",
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2,
+            "value": "a long text that cannot fit",
+            "size": 5,
+            "min_size": 0,
+        }
+    )
+
+
+def test_diagram_tolerates_trailing_semicolon():
+    _r({"type": "diagram", "x": 0, "y": 0, "width": 90, "height": 50, "bars": {"values": "a,1;b,2;", "color": "black"}})
+
+
+def test_dlimg_http_scheme_is_case_insensitive(monkeypatch):
+    seen = []
+    ctx = RenderContext()
+    monkeypatch.setattr(ctx, "fetch_image", lambda url, timeout: seen.append(url) or b"not an image")
+    with pytest.raises(RenderError, match=r"https://example\.test/p\.png is not a readable image"):
+        _r(
+            {
+                "type": "dlimg",
+                "url": "HTTPS://user:pw@example.test/p.png?token=s3cret",
+                "x": 0,
+                "y": 0,
+                "xsize": 4,
+                "ysize": 4,
+            },
+            ctx=ctx,
+        )
+    assert seen
+
+
+def test_dlimg_error_does_not_leak_credentials(monkeypatch):
+    ctx = RenderContext()
+    monkeypatch.setattr(ctx, "fetch_image", lambda url, timeout: b"x")
+    with pytest.raises(RenderError) as ei:
+        _r(
+            {
+                "type": "dlimg",
+                "url": "https://user:pw@example.test/p.png?token=s3cret",
+                "x": 0,
+                "y": 0,
+                "xsize": 4,
+                "ysize": 4,
+            },
+            ctx=ctx,
+        )
+    assert "s3cret" not in str(ei.value) and "pw" not in str(ei.value)

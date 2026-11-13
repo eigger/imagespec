@@ -447,9 +447,14 @@ def plot(state: RenderState, element: dict) -> None:
         normalized = [head, *states[1:]]
         states = []
         for s in normalized:
-            raw_state = str(s["state"])
-            if not is_decimal(raw_state):
-                continue
+            raw_state = s["state"]
+            if isinstance(raw_state, (int, float)) and not isinstance(raw_state, bool):
+                if not math.isfinite(raw_state):
+                    continue
+            else:
+                raw_state = str(raw_state)
+                if not is_decimal(raw_state):
+                    continue
             when = datetime.fromisoformat(str(s["last_changed"]))
             if when.tzinfo is None:
                 when = when.replace(tzinfo=UTC)  # providers are expected to send UTC; treat naive as such

@@ -35,11 +35,11 @@ class RenderError(Exception):
         return self
 
 
-class RenderArgumentError(RenderError, ValueError):
+class RenderArgumentError(RenderError, ValueError, TypeError):
     """A bad argument to :func:`imagespec.render` itself (size, rotate, dither), not to an element.
 
     Subclasses :class:`RenderError` so adapters catching it cover these too, and
-    ``ValueError`` so existing ``except ValueError`` callers keep working.
+    ``ValueError``/``TypeError`` so existing callers of either keep working.
     """
 
 
