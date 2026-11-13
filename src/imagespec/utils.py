@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from collections.abc import Iterable
 
@@ -246,6 +247,11 @@ def multiline_anchor(anchor: str | None, text: str, *, always: bool = False) -> 
     return anchor
 
 
+_SCHEME_RE = re.compile(r"[A-Za-z][A-Za-z0-9+.\-]*\Z")
+_AUTHORITY_END_RE = re.compile(r"[/?#]")
+_QUERY_OR_FRAGMENT_RE = re.compile(r"[?#]")
+
+
 def describe_url(url: str) -> str:
     """Short, secret-free description of an image source for messages and logs.
 
@@ -257,11 +263,16 @@ def describe_url(url: str) -> str:
     # Parsed by hand (urlsplit raises on malformed hosts). NFKC first: look-alikes such as
     # a fullwidth '@' normalise to '@' in the URL a client actually sends.
     scheme, sep, rest = unicodedata.normalize("NFKC", url).partition("://")
-    if not sep:
+    if not sep or not _SCHEME_RE.match(scheme):
         return "<invalid url>"
-    # The authority runs to the first '/', so an unescaped '#'/'?' inside a password
-    # cannot cut the credentials short; userinfo is whatever precedes the last '@'.
-    authority, slash, tail = rest.partition("/")
-    host = authority.rpartition("@")[2].split("?", 1)[0].split("#", 1)[0]
-    path = slash + tail.split("?", 1)[0].split("#", 1)[0]
-    return f"{scheme.lower()}://{host}{path}"[:120]
+    # RFC 3986: the authority ends at the first '/', '?' or '#'.
+    m = _AUTHORITY_END_RE.search(rest)
+    authority = rest if m is None else rest[: m.start()]
+    path = ""
+    if m is not None and m.group() == "/":
+        path = _QUERY_OR_FRAGMENT_RE.split(rest[m.start() :], maxsplit=1)[0]
+    elif m is not None and "@" in rest[m.start() :].split("/", 1)[0]:
+        # '@' after a '?'/'#': either a query value or a password with an unescaped
+        # '#'/'?'. Can't tell which, so show nothing rather than risk a leak.
+        return f"{scheme.lower()}://<redacted>"
+    return f"{scheme.lower()}://{authority.rpartition('@')[2]}{path}"[:120]

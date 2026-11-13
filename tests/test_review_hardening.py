@@ -496,3 +496,30 @@ def test_describe_url_without_scheme_is_opaque():
     from imagespec.utils import describe_url
 
     assert describe_url("//u:SECRET@[x/p?t=TOK") == "<invalid url>"
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://host?email=u@example.com&token=SECRET",
+        "http://host?next=/a&token=SECRET",
+        "http://host?redirect=http://x/y&sig=SECRET",
+        "http://host#frag@SECRET",
+        "http://host#a/b&SECRET",
+        "http://host?tok=a@b&sig=SECRET",
+        "user:SECRET@host/x?u=http://a/b",
+    ],
+)
+def test_describe_url_never_leaks_query_or_fragment(url):
+    from imagespec.utils import describe_url
+
+    assert "SECRET" not in describe_url(url)
+
+
+def test_describe_url_normal_urls():
+    from imagespec.utils import describe_url
+
+    assert describe_url("http://host:8080/p.png?x=1") == "http://host:8080/p.png"
+    assert describe_url("http://[::1]:8080/x?t=1") == "http://[::1]:8080/x"
+    assert describe_url("https://user:pw@example.test/p.png?token=s3cret") == "https://example.test/p.png"
+    assert describe_url("http://host?x=1") == "http://host"
