@@ -449,7 +449,10 @@ def plot(state: RenderState, element: dict) -> None:
         # would otherwise loop (and allocate) proportionally to spread/tick_every.
         n_ticks = math.floor(spread / yaxis_tick_every + 1e-9) + 1
         if n_ticks > max(diag_height, 1):
-            tick_ys = list(range(diag_y + diag_height - 1, diag_y - 1, -1))  # every row
+            # every row up to the last tick (which may sit below the top when tick_every does not divide spread)
+            top_frac = min((n_ticks - 1) * yaxis_tick_every / spread, 1.0)
+            top_y = round(diag_y + (1 - top_frac) * (diag_height - 1))
+            tick_ys = list(range(diag_y + diag_height - 1, top_y - 1, -1))
         else:
             seen: set[int] = set()
             for i in range(n_ticks):

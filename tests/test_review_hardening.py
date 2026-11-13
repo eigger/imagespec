@@ -167,3 +167,7 @@ def test_caching_resolver_expands_user(tmp_path, monkeypatch):
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     caching_resolver("~/fonts")
     assert (tmp_path / "fonts").is_dir()
+
+
+def test_plot_capped_ticks_stop_at_last_tick_row():
+    assert _tick_rows(0, 23, 3, 7) == [1, 2, 3, 4, 5, 6]
