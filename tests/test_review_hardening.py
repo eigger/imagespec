@@ -438,12 +438,22 @@ def test_dlimg_fetch_failure_hides_query_and_credentials(monkeypatch):
     assert "https://example.test/p.png" in msg and "ConnectionError" in msg
 
 
-@pytest.mark.parametrize("url", ["http://h:99999/x", "http://h:abc/x", "http://[::1]:8080/x?t=1"])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://h:99999/x",
+        "http://h:abc/x",
+        "http://[::1]:8080/x?t=1",
+        "http://[::1/x?t=1",
+        "http://[zz]/x?t=1",
+        "http://u:p@h℀x/p?t=1",
+    ],
+)
 def test_describe_url_never_raises(url):
     from imagespec.utils import describe_url
 
     out = describe_url(url)
-    assert "?t=1" not in out
+    assert "?t=1" not in out and "u:p@" not in out
     assert out.startswith("http://")
 
 
@@ -461,6 +471,19 @@ def test_plot_accepts_numpy_float32_exponent_state():
             i: [
                 {"state": np.float32(1e-05), "last_changed": "2026-01-01T00:00:00+00:00"},
                 {"state": np.float32(2e-05), "last_changed": "2026-01-01T01:00:00+00:00"},
+            ]
+            for i in ids
+        }
+    )
+    _r({"type": "plot", "data": [{"entity": "a"}], "duration": 10**9}, ctx=ctx)
+
+
+def test_plot_skips_huge_int_state():
+    ctx = RenderContext(
+        history_provider=lambda ids, s, e: {
+            i: [
+                {"state": 10**400, "last_changed": "2026-01-01T00:00:00+00:00"},
+                {"state": 3, "last_changed": "2026-01-01T01:00:00+00:00"},
             ]
             for i in ids
         }

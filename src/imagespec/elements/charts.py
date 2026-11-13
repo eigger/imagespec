@@ -450,7 +450,10 @@ def plot(state: RenderState, element: dict) -> None:
         for s in normalized:
             raw_state = s["state"]
             if isinstance(raw_state, numbers.Real) and raw_state is not True and raw_state is not False:
-                if not math.isfinite(raw_state):
+                try:
+                    if not math.isfinite(raw_state):
+                        continue
+                except OverflowError:  # an int too large for a float
                     continue
             else:
                 raw_state = str(raw_state)

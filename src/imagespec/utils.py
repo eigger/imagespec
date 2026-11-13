@@ -254,6 +254,13 @@ def describe_url(url: str) -> str:
     """
     if url.startswith("data:"):
         return "data URL (" + url[5:].split(",", 1)[0].split(";", 1)[0] + ")"
-    parts = urllib.parse.urlsplit(url)
-    host = parts.netloc.rpartition("@")[2]  # keeps [ipv6] brackets and the port, never raises
-    return f"{parts.scheme}://{host}{parts.path}"[:120]
+    try:
+        parts = urllib.parse.urlsplit(url)
+        scheme, netloc, path = parts.scheme, parts.netloc, parts.path
+    except ValueError:  # malformed bracketed host, NFKC host, ...: strip by hand
+        scheme, _, rest = url.partition("://")
+        rest = rest.split("#", 1)[0].split("?", 1)[0]
+        netloc, slash, path = rest.partition("/")
+        path = slash + path
+    host = netloc.rpartition("@")[2]  # keeps [ipv6] brackets and the port
+    return f"{scheme}://{host}{path}"[:120]

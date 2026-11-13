@@ -47,7 +47,8 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
   timestamps as UTC.
 - Errors wrapped with the element index include the exception type when the message
   alone is bare (`KeyError: 'color'`); `dlimg` decode failures name the source
-  (without its query string) and the byte count.
+  and the byte count. `dlimg` fetch and size-limit errors no longer include credentials,
+  the query string or the underlying exception text (only `ExcName (HTTP status)`).
 
 ### CI
 
