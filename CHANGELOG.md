@@ -52,7 +52,7 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ### CI
 
-- Added a Windows test job, least-privilege `permissions`, a test run before
+- Added least-privilege `permissions`, a test run before
   publishing, and `tests/golden`, `schema` and example assets in the sdist.
 
 ## [1.1.1] — 2026-11-02
