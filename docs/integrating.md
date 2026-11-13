@@ -145,7 +145,7 @@ coordinate, an unknown barcode symbology, a failed `dlimg` download — surfaces
 as `RenderError`. Errors raised by a handler's own validation name the element
 type (`Missing required argument(s) 'x' in 'text'`); anything else that fails
 inside a handler is wrapped with the element index and type
-(`error rendering element #3 (type 'text'): ...`). Unknown element `type`s are
+(`error rendering element #3 (type 'text'): KeyError: ...`). Unknown element `type`s are
 logged and skipped, not raised, so a payload written for a newer imagespec
 degrades instead of failing. Translate `RenderError` once, at the adapter.
 

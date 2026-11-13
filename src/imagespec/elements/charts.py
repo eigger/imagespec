@@ -317,7 +317,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
                 num("width", 1, doc="Axis line width"),
                 color("color", "black"),
                 num("tick_width", 2),
-                num("tick_every", 1, doc="Value step between ticks"),
+                num("tick_every", 1, doc="Value step between ticks (must be > 0; at most one tick per pixel row)"),
                 num("grid", 5, nullable=True, doc="Dotted grid spacing in px; `null` disables"),
                 color("grid_color", "black"),
             ],
@@ -370,6 +370,8 @@ def plot(state: RenderState, element: dict) -> None:
         yaxis_color = state.context.color(yaxis.get("color", "black"))
         yaxis_tick_width = yaxis.get("tick_width", 2)
         yaxis_tick_every = float(yaxis.get("tick_every", 1))
+        if not math.isfinite(yaxis_tick_every) or yaxis_tick_every <= 0:
+            raise RenderError(f"plot: 'yaxis.tick_every' must be a positive number, got {yaxis.get('tick_every')!r}")
         yaxis_grid = yaxis.get("grid", 5)
         if yaxis_grid is not None:
             yaxis_grid = max(1, round(yaxis_grid))  # range() step
@@ -441,13 +443,29 @@ def plot(state: RenderState, element: dict) -> None:
             width=1,
         )
 
+    tick_ys: list[int] = []
+    if yaxis is not None:
+        # One tick per pixel row at most: a tiny tick_every over a wide value range
+        # would otherwise loop (and allocate) proportionally to spread/tick_every.
+        n_ticks = math.floor(spread / yaxis_tick_every + 1e-9) + 1
+        if n_ticks > max(diag_height, 1):
+            # every row up to the last tick (which may sit below the top when tick_every does not divide spread)
+            top_frac = min((n_ticks - 1) * yaxis_tick_every / spread, 1.0)
+            top_y = round(diag_y + (1 - top_frac) * (diag_height - 1))
+            tick_ys = list(range(diag_y + diag_height - 1, top_y - 1, -1))
+        else:
+            seen: set[int] = set()
+            for i in range(n_ticks):
+                frac = min(i * yaxis_tick_every / spread, 1.0)
+                curr_y = round(diag_y + (1 - frac) * (diag_height - 1))
+                if curr_y not in seen:
+                    seen.add(curr_y)
+                    tick_ys.append(curr_y)
+
     if yaxis is not None and yaxis_grid is not None:
         grid_points: list[tuple[int, int]] = []
-        curr: float = min_v
-        while curr <= max_v:
-            curr_y = round(diag_y + (1 - ((curr - min_v) / spread)) * (diag_height - 1))
+        for curr_y in tick_ys:
             grid_points.extend((x, curr_y) for x in range(diag_x, diag_x + diag_width, yaxis_grid))
-            curr += yaxis_tick_every
         draw.point(grid_points, fill=yaxis_grid_color)
 
     for p, data in zip(element["data"], raw_data, strict=False):
@@ -495,15 +513,12 @@ def plot(state: RenderState, element: dict) -> None:
             [(diag_x, diag_y), (diag_x + yaxis_width - 1, diag_y + diag_height - 1)], width=0, fill=yaxis_color
         )
         if yaxis_tick_width > 0:
-            curr = float(min_v)
-            while curr <= max_v:
-                curr_y = round(diag_y + (1 - ((curr - min_v) / spread)) * (diag_height - 1))
+            for curr_y in tick_ys:
                 draw.rectangle(
                     [(diag_x + yaxis_width, curr_y), (diag_x + yaxis_width + yaxis_tick_width - 1, curr_y)],
                     width=0,
                     fill=yaxis_color,
                 )
-                curr += yaxis_tick_every
 
     if xlegend is not None:
         label_y = diag_y + diag_height + 2

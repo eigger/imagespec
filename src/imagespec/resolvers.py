@@ -68,6 +68,7 @@ def caching_resolver(
     session, timeout:
         Optional ``requests`` session and per-request timeout.
     """
+    cache_dir = os.path.expanduser(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)
     sources = sources or {}
     http = session or requests
@@ -86,7 +87,13 @@ def caching_resolver(
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(resp.content)
-            os.replace(tmp, cached)  # atomic: avoid a half-written cache file
+            try:
+                os.replace(tmp, cached)  # atomic: avoid a half-written cache file
+            except OSError:
+                # Windows refuses to replace a file a concurrent download just
+                # published (PermissionError); that file is identical, so use it.
+                if not os.path.exists(cached):
+                    raise
         finally:
             if os.path.exists(tmp):
                 os.unlink(tmp)
@@ -145,5 +152,14 @@ def google_fonts_resolver(
         # a payload with `"font": "NotoSansJP-Regular.ttf"` now resolves,
         # downloading once and reusing the cached file after that.
     """
-    sources = GOOGLE_FONTS_SOURCES if families is None else {k: GOOGLE_FONTS_SOURCES[k] for k in families}
+    if families is None:
+        sources = GOOGLE_FONTS_SOURCES
+    else:
+        unknown = [k for k in families if k not in GOOGLE_FONTS_SOURCES]
+        if unknown:
+            raise ValueError(
+                f"unknown Google Fonts famil{'y' if len(unknown) == 1 else 'ies'}: {', '.join(unknown)}; "
+                f"expected any of: {', '.join(GOOGLE_FONTS_SOURCES)}"
+            )
+        sources = {k: GOOGLE_FONTS_SOURCES[k] for k in families}
     return caching_resolver(cache_dir, sources=sources, session=session, timeout=timeout)

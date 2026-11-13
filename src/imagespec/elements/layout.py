@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw
 
 from ..classutil import parse_class
 from ..dispatch import render_element
-from ..exceptions import RenderError
+from ..exceptions import RenderError, describe_exception
 from ..registry import element, get_spec
 from ..spec import COMMON_FIELDS, LAYOUT_FIELDS, STRETCHABLE_TYPES, color, elements, enum, num
 from ..state import RenderState
@@ -84,7 +84,8 @@ def group(state: RenderState, element: dict) -> None:
             raise
         except Exception as exc:  # noqa: BLE001 — add child context, then surface
             raise RenderError(
-                f"group: error rendering child #{idx} (type '{ctype}'): {exc}", path=f".elements[{idx}]"
+                f"group: error rendering child #{idx} (type '{ctype}'): {describe_exception(exc)}",
+                path=f".elements[{idx}]",
             ) from exc
 
     result = substate.img
@@ -650,7 +651,7 @@ def stack(state: RenderState, element: dict) -> None:
             raise
         except Exception as exc:  # noqa: BLE001 — add child context, then surface
             raise RenderError(
-                f"stack: error rendering child #{source_idx[idx]} (type '{ctype}'): {exc}",
+                f"stack: error rendering child #{source_idx[idx]} (type '{ctype}'): {describe_exception(exc)}",
                 path=f".elements[{source_idx[idx]}]",
             ) from exc
         rendered = substate.img

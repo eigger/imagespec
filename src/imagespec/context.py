@@ -17,6 +17,7 @@ host application is provided through :class:`RenderContext`:
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from collections import OrderedDict
@@ -29,6 +30,9 @@ from PIL import ImageFont
 
 from .colors import DEFAULT_PALETTE, get_palette, resolve_color
 from .exceptions import RenderError
+
+_LOGGER = logging.getLogger(__name__)
+_WARNED_FONTS: set[str] = set()
 
 FontResolver = Callable[[str], str | None]
 HistoryProvider = Callable[[Sequence[str], Any, Any], dict[str, Any]]
@@ -116,6 +120,9 @@ class RenderContext:
             return p
         p = _bundled_font_path(self.default_font)
         if p:
+            if name not in _WARNED_FONTS and len(_WARNED_FONTS) < 256:  # bounded: names come from payloads
+                _WARNED_FONTS.add(name)
+                _LOGGER.warning("Font %r not found - using default %r", name, self.default_font)
             return p
         raise RenderError(
             f"Font '{name}' could not be resolved and no bundled default ('{self.default_font}') is available."

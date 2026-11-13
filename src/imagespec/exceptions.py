@@ -33,3 +33,15 @@ class RenderError(Exception):
         """Prepend ``segment`` (an enclosing container/index) to :attr:`path`; returns ``self``."""
         self.path = segment + self.path
         return self
+
+
+def describe_exception(exc: BaseException) -> str:
+    """Message for a wrapped handler failure.
+
+    ``ValueError``/``TypeError`` messages are already descriptive; others
+    (``KeyError: 'color'``, ``IndexError``, ``ZeroDivisionError``) are bare, so
+    their type name is kept to make them intelligible.
+    """
+    if type(exc) in (ValueError, TypeError):
+        return str(exc)
+    return f"{type(exc).__name__}: {exc}"

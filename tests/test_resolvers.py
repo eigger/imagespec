@@ -98,3 +98,12 @@ def test_caching_resolver_allows_concurrent_cold_downloads(tmp_path):
     assert results == [str(tmp_path / "font.ttf")] * 2
     assert (tmp_path / "font.ttf").read_bytes() == b"font bytes"
     assert sorted(p.name for p in tmp_path.iterdir()) == ["font.ttf"]
+
+
+def test_google_fonts_resolver_rejects_unknown_family(tmp_path):
+    import pytest
+
+    from imagespec.resolvers import google_fonts_resolver
+
+    with pytest.raises(ValueError, match="Nope.ttf"):
+        google_fonts_resolver(str(tmp_path), families=["Nope.ttf"])
