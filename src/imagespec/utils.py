@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import urllib.parse
+import unicodedata
 from collections.abc import Iterable
 
 from PIL import Image, ImageChops, ImageDraw
@@ -254,13 +254,14 @@ def describe_url(url: str) -> str:
     """
     if url.startswith("data:"):
         return "data URL (" + url[5:].split(",", 1)[0].split(";", 1)[0] + ")"
-    try:
-        parts = urllib.parse.urlsplit(url)
-        scheme, netloc, path = parts.scheme, parts.netloc, parts.path
-    except ValueError:  # malformed bracketed host, NFKC host, ...: strip by hand
-        scheme, _, rest = url.partition("://")
-        rest = rest.split("#", 1)[0].split("?", 1)[0]
-        netloc, slash, path = rest.partition("/")
-        path = slash + path
-    host = netloc.rpartition("@")[2]  # keeps [ipv6] brackets and the port
-    return f"{scheme}://{host}{path}"[:120]
+    # Parsed by hand (urlsplit raises on malformed hosts). NFKC first: look-alikes such as
+    # a fullwidth '@' normalise to '@' in the URL a client actually sends.
+    scheme, sep, rest = unicodedata.normalize("NFKC", url).partition("://")
+    if not sep:
+        return "<invalid url>"
+    # The authority runs to the first '/', so an unescaped '#'/'?' inside a password
+    # cannot cut the credentials short; userinfo is whatever precedes the last '@'.
+    authority, slash, tail = rest.partition("/")
+    host = authority.rpartition("@")[2].split("?", 1)[0].split("#", 1)[0]
+    path = slash + tail.split("?", 1)[0].split("#", 1)[0]
+    return f"{scheme.lower()}://{host}{path}"[:120]

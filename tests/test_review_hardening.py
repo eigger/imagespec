@@ -453,7 +453,8 @@ def test_describe_url_never_raises(url):
     from imagespec.utils import describe_url
 
     out = describe_url(url)
-    assert "?t=1" not in out and "u:p@" not in out
+    assert "?t=1" not in out and "u:p@" not in out and "TOK" not in out
+    assert not any(x in out for x in ("pa", "p＠", "ss@", "u:p"))
     assert out.startswith("http://")
 
 
@@ -489,3 +490,9 @@ def test_plot_skips_huge_int_state():
         }
     )
     _r({"type": "plot", "data": [{"entity": "a"}], "duration": 10**9}, ctx=ctx)
+
+
+def test_describe_url_without_scheme_is_opaque():
+    from imagespec.utils import describe_url
+
+    assert describe_url("//u:SECRET@[x/p?t=TOK") == "<invalid url>"
