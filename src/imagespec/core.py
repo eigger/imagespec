@@ -11,8 +11,8 @@ from PIL import Image
 from . import elements  # noqa: E402,F401  (side-effect import)
 from .context import RenderContext
 from .dispatch import render_element
-from .dither import dither_to_palette
-from .exceptions import RenderError
+from .dither import dither_to_palette, resolve_dither_method
+from .exceptions import RenderError, describe_exception
 from .state import RenderState
 from .validate import validate
 
@@ -90,6 +90,7 @@ def render(
         raise ValueError(f"rotate_mode must be one of {_ROTATE_MODES}, got {rotate_mode!r}")
     if width <= 0 or height <= 0:
         raise ValueError(f"width and height must be positive, got {width}x{height}")
+    resolve_dither_method(dither)  # fail fast, before any drawing work
     if strict:
         issues = validate(payload)
         if issues:
@@ -120,7 +121,9 @@ def render(
             exc.at(f"[{idx}]")  # descriptive already; add where it happened
             raise
         except Exception as exc:  # noqa: BLE001 — add element context, then surface
-            raise RenderError(f"error rendering element #{idx} (type '{etype}'): {exc}", path=f"[{idx}]") from exc
+            raise RenderError(
+                f"error rendering element #{idx} (type '{etype}'): {describe_exception(exc)}", path=f"[{idx}]"
+            ) from exc
 
     img = state.img
     protect_mask = state.dither_protected

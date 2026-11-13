@@ -370,6 +370,8 @@ def plot(state: RenderState, element: dict) -> None:
         yaxis_color = state.context.color(yaxis.get("color", "black"))
         yaxis_tick_width = yaxis.get("tick_width", 2)
         yaxis_tick_every = float(yaxis.get("tick_every", 1))
+        if not math.isfinite(yaxis_tick_every) or yaxis_tick_every <= 0:
+            raise RenderError(f"plot: 'yaxis.tick_every' must be a positive number, got {yaxis.get('tick_every')!r}")
         yaxis_grid = yaxis.get("grid", 5)
         if yaxis_grid is not None:
             yaxis_grid = max(1, round(yaxis_grid))  # range() step
@@ -441,13 +443,26 @@ def plot(state: RenderState, element: dict) -> None:
             width=1,
         )
 
+    tick_ys: list[int] = []
+    if yaxis is not None:
+        # One tick per pixel row at most: a tiny tick_every over a wide value range
+        # would otherwise loop (and allocate) proportionally to spread/tick_every.
+        n_ticks = int(spread // yaxis_tick_every) + 1
+        step = yaxis_tick_every
+        if n_ticks > max(diag_height, 1):
+            step = spread / max(diag_height - 1, 1)
+            n_ticks = int(spread // step) + 1
+        seen: set[int] = set()
+        for i in range(n_ticks):
+            curr_y = round(diag_y + (1 - ((i * step) / spread)) * (diag_height - 1))
+            if curr_y not in seen:
+                seen.add(curr_y)
+                tick_ys.append(curr_y)
+
     if yaxis is not None and yaxis_grid is not None:
         grid_points: list[tuple[int, int]] = []
-        curr: float = min_v
-        while curr <= max_v:
-            curr_y = round(diag_y + (1 - ((curr - min_v) / spread)) * (diag_height - 1))
+        for curr_y in tick_ys:
             grid_points.extend((x, curr_y) for x in range(diag_x, diag_x + diag_width, yaxis_grid))
-            curr += yaxis_tick_every
         draw.point(grid_points, fill=yaxis_grid_color)
 
     for p, data in zip(element["data"], raw_data, strict=False):
@@ -495,15 +510,12 @@ def plot(state: RenderState, element: dict) -> None:
             [(diag_x, diag_y), (diag_x + yaxis_width - 1, diag_y + diag_height - 1)], width=0, fill=yaxis_color
         )
         if yaxis_tick_width > 0:
-            curr = float(min_v)
-            while curr <= max_v:
-                curr_y = round(diag_y + (1 - ((curr - min_v) / spread)) * (diag_height - 1))
+            for curr_y in tick_ys:
                 draw.rectangle(
                     [(diag_x + yaxis_width, curr_y), (diag_x + yaxis_width + yaxis_tick_width - 1, curr_y)],
                     width=0,
                     fill=yaxis_color,
                 )
-                curr += yaxis_tick_every
 
     if xlegend is not None:
         label_y = diag_y + diag_height + 2
