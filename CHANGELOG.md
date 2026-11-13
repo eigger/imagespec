@@ -12,6 +12,8 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-13
+
 ### Fixed
 
 - `caching_resolver` enforces `max_bytes` while streaming (the body is never held in
