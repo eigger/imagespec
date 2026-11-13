@@ -8,6 +8,7 @@ never touches a host's recorder directly.
 from __future__ import annotations
 
 import math
+import numbers
 from datetime import UTC, datetime, timedelta
 
 from PIL import ImageDraw
@@ -44,10 +45,18 @@ def pie(state: RenderState, element: dict) -> None:
 
     segments = []
     for part in str(element["values"]).split(";"):
+        if not part.strip():
+            continue  # tolerate a trailing ';' like sparkline/legend do
         bits = [b.strip() for b in part.split(",")]
         if len(bits) < 2:
-            raise RenderError(f"pie: bad segment {part!r} — expected 'label,value[,color]'")
-        segments.append((bits[0], float(bits[1]), bits[2] if len(bits) > 2 else None))
+            raise RenderError(f"pie: bad segment {part!r} - expected 'label,value[,color]'")
+        try:
+            value = float(bits[1])
+        except ValueError:
+            raise RenderError(f"pie: segment {part!r} has a non-numeric value {bits[1]!r}") from None
+        segments.append((bits[0], value, bits[2] if len(bits) > 2 else None))
+    if not segments:
+        raise RenderError("pie: 'values' must contain at least one 'label,value[,color]' segment")
 
     total = sum(v for _, v, _ in segments) or 1
     # default slice colors: every palette color except the background-ish white
@@ -168,7 +177,10 @@ def diagram(state: RenderState, element: dict) -> None:
     if "bars" in element:
         bars_cfg = element["bars"]
         bar_margin = bars_cfg.get("margin", 10)
-        bars = bars_cfg["values"].split(";")
+        missing = [k for k in ("values", "color") if k not in bars_cfg]
+        if missing:
+            raise RenderError(f"diagram: 'bars' is missing {', '.join(repr(k) for k in missing)}")
+        bars = _parse_bars(bars_cfg["values"])
         barcount = len(bars)
         bar_width = math.floor((width - offset - ((barcount + 1) * bar_margin)) / barcount)
         if bar_width <= 0:
@@ -179,14 +191,13 @@ def diagram(state: RenderState, element: dict) -> None:
         font = state.context.font(element.get("font"), bars_cfg.get("legend_size", 10))
         legend_color = state.context.color(bars_cfg.get("legend_color", "black"))
         bar_color = state.context.color(bars_cfg["color"])
-        max_val = max(float(b.split(",", 1)[1]) for b in bars)
+        max_val = max(v for _, v in bars)
         if max_val <= 0:
             raise RenderError(
                 f"diagram: bar values must include a positive maximum, got max {max_val} — check 'bars.values'."
             )
         height_factor = (height - offset) / max_val
-        for bar_pos, bar in enumerate(bars):
-            name, value = bar.split(",", 1)
+        for bar_pos, (name, value) in enumerate(bars):
             x_pos = pos_x + ((bar_margin + bar_width) * bar_pos) + offset
             draw.text(
                 (x_pos + (bar_width / 2), pos_y + height - offset / 2),
@@ -197,7 +208,7 @@ def diagram(state: RenderState, element: dict) -> None:
             )
             draw.rectangle(
                 [
-                    (x_pos, pos_y + height - offset - (height_factor * float(value))),
+                    (x_pos, pos_y + height - offset - (height_factor * value)),
                     (x_pos + bar_width, pos_y + height - offset),
                 ],
                 fill=bar_color,
@@ -260,6 +271,10 @@ def progress_bar(state: RenderState, element: dict) -> None:
 
     if element.get("show_percentage", False):
         font_size = min(y_end - y_start - 4, x_end - x_start - 4, 20)
+        if font_size < 1:
+            raise RenderError(
+                f"progress_bar: too small ({x_end - x_start + 1}x{y_end - y_start + 1}px) for show_percentage"
+            )
         font = state.context.font(element.get("font"), font_size)
         text = f"{progress:g}%"
         tb = draw.textbbox((0, 0), text, font=font)
@@ -267,6 +282,24 @@ def progress_bar(state: RenderState, element: dict) -> None:
         ty = (y_start + y_end - (tb[3] - tb[1])) / 2
         text_color = bg_color if progress > 50 else fill
         draw.text((tx, ty), text, font=font, fill=text_color, anchor="lt")
+
+
+def _parse_bars(values: object) -> list[tuple[str, float]]:
+    """``"label,value;label,value"`` -> [(label, value)], with positional errors."""
+    bars = []
+    for part in str(values).split(";"):
+        if not part.strip():
+            continue
+        name, sep, raw = part.partition(",")
+        if not sep:
+            raise RenderError(f"diagram: bad bar {part!r} - expected 'label,value'")
+        try:
+            bars.append((name, float(raw)))
+        except ValueError:
+            raise RenderError(f"diagram: bar {part!r} has a non-numeric value {raw.strip()!r}") from None
+    if not bars:
+        raise RenderError("diagram: 'bars.values' must contain at least one 'label,value' pair")
+    return bars
 
 
 @element(
@@ -345,6 +378,8 @@ def plot(state: RenderState, element: dict) -> None:
     width = x_end - x_start + 1
     height = y_end - y_start + 1
     duration = timedelta(seconds=element.get("duration", 60 * 60 * 24))
+    if duration <= timedelta(0):
+        raise RenderError(f"plot: 'duration' must be positive, got {element.get('duration')!r}")
     end = datetime.now(UTC)
     start = end - duration
     size = element.get("size", 10)
@@ -389,6 +424,9 @@ def plot(state: RenderState, element: dict) -> None:
 
     min_v: float | None = element.get("low", None)
     max_v: float | None = element.get("high", None)
+    for i, p in enumerate(element["data"]):
+        if not isinstance(p, dict) or "entity" not in p:
+            raise RenderError(f"plot: data[{i}] must be an object with an 'entity' key")
     entity_ids = [p["entity"] for p in element["data"]]
     if not entity_ids:
         raise RenderError("plot: 'data' must list at least one entity")
@@ -402,11 +440,29 @@ def plot(state: RenderState, element: dict) -> None:
         # The provider yields the first sample as a State-like object (with
         # .state/.last_changed attrs) and the rest as dicts; normalize the head
         # without mutating the caller's list.
+        if not states:
+            raise RenderError(f"plot: history provider returned no samples for {p['entity']}")
         head = states[0]
-        normalized = [{"state": head.state, "last_changed": str(head.last_changed)}, *states[1:]]
-        states = [
-            (datetime.fromisoformat(s["last_changed"]), float(s["state"])) for s in normalized if is_decimal(s["state"])
-        ]
+        if not isinstance(head, dict):
+            head = {"state": head.state, "last_changed": str(head.last_changed)}
+        normalized = [head, *states[1:]]
+        states = []
+        for s in normalized:
+            raw_state = s["state"]
+            if isinstance(raw_state, numbers.Real) and raw_state is not True and raw_state is not False:
+                try:
+                    if not math.isfinite(raw_state):
+                        continue
+                except OverflowError:  # an int too large for a float
+                    continue
+            else:
+                raw_state = str(raw_state)
+                if not is_decimal(raw_state):
+                    continue
+            when = datetime.fromisoformat(str(s["last_changed"]))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=UTC)  # providers are expected to send UTC; treat naive as such
+            states.append((when, float(raw_state)))
         if not states:
             raise RenderError(f"plot: no numeric samples for {p['entity']} in the requested window")
         values = [v for _, v in states]

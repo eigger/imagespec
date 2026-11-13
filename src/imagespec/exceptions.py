@@ -35,6 +35,14 @@ class RenderError(Exception):
         return self
 
 
+class RenderArgumentError(RenderError, ValueError, TypeError):
+    """A bad argument to :func:`imagespec.render` itself (size, rotate, dither), not to an element.
+
+    Subclasses :class:`RenderError` so adapters catching it cover these too, and
+    ``ValueError``/``TypeError`` so existing callers of either keep working.
+    """
+
+
 def describe_exception(exc: BaseException) -> str:
     """Message for a wrapped handler failure.
 

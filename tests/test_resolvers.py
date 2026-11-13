@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from imagespec import GOOGLE_FONTS_SOURCES, chain_resolvers, directory_resolver, google_fonts_resolver
 from imagespec.context import BUNDLED_FONTS_DIR
@@ -76,11 +77,44 @@ def test_google_fonts_resolver_families_filter_excludes_others(tmp_path):
     assert r("NotoSansArabic-Regular.ttf") is None
 
 
+FONT_BYTES = Path(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf").read_bytes()
+
+
+def _session(content):
+    class Response:
+        @staticmethod
+        def raise_for_status():
+            pass
+
+    Response.content = content
+
+    class Session:
+        @staticmethod
+        def get(url, timeout):
+            return Response()
+
+    return Session()
+
+
+def test_caching_resolver_rejects_non_font_download(tmp_path, caplog):
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=_session(b"<html>portal</html>"))
+    assert r("f.ttf") is None
+    assert list(tmp_path.iterdir()) == []  # nothing cached, so a later good download can succeed
+    assert "not a usable font" in caplog.text
+
+
+def test_caching_resolver_rejects_oversized_download(tmp_path, caplog):
+    r = caching_resolver(str(tmp_path), {"f.ttf": "https://x/f"}, session=_session(FONT_BYTES), max_bytes=1000)
+    assert r("f.ttf") is None
+    assert list(tmp_path.iterdir()) == []
+    assert "limit 1000" in caplog.text
+
+
 def test_caching_resolver_allows_concurrent_cold_downloads(tmp_path):
     barrier = threading.Barrier(2)
 
     class Response:
-        content = b"font bytes"
+        content = FONT_BYTES
 
         @staticmethod
         def raise_for_status():
@@ -96,7 +130,7 @@ def test_caching_resolver_allows_concurrent_cold_downloads(tmp_path):
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(resolver, ["font.ttf", "font.ttf"]))
     assert results == [str(tmp_path / "font.ttf")] * 2
-    assert (tmp_path / "font.ttf").read_bytes() == b"font bytes"
+    assert (tmp_path / "font.ttf").read_bytes() == FONT_BYTES
     assert sorted(p.name for p in tmp_path.iterdir()) == ["font.ttf"]
 
 

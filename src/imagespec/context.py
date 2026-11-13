@@ -30,6 +30,7 @@ from PIL import ImageFont
 
 from .colors import DEFAULT_PALETTE, get_palette, resolve_color
 from .exceptions import RenderError
+from .utils import describe_url
 
 _LOGGER = logging.getLogger(__name__)
 _WARNED_FONTS: set[str] = set()
@@ -160,7 +161,9 @@ class RenderContext:
         if self.image_fetcher is not None:
             data = self.image_fetcher(url)
             if len(data) > self.max_image_bytes:
-                raise RenderError(f"image at {url} is {len(data)} bytes, over max_image_bytes={self.max_image_bytes}")
+                raise RenderError(
+                    f"image at {describe_url(url)} is {len(data)} bytes, over max_image_bytes={self.max_image_bytes}"
+                )
         else:
             data = self._download(url, timeout)
         if self.image_cache_ttl > 0:
@@ -178,12 +181,12 @@ class RenderContext:
             response.raise_for_status()
             declared = response.headers.get("Content-Length")
             if declared and declared.isdigit() and int(declared) > limit:
-                raise RenderError(f"image at {url} is {declared} bytes, over max_image_bytes={limit}")
+                raise RenderError(f"image at {describe_url(url)} is {declared} bytes, over max_image_bytes={limit}")
             buf = bytearray()
             for chunk in response.iter_content(_DOWNLOAD_CHUNK):
                 buf += chunk
                 if len(buf) > limit:
-                    raise RenderError(f"image at {url} exceeds max_image_bytes={limit}; download aborted")
+                    raise RenderError(f"image at {describe_url(url)} exceeds max_image_bytes={limit}; download aborted")
         return bytes(buf)
 
     def history(self, entity_ids: Sequence[str], start, end) -> dict[str, Any]:

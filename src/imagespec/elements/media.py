@@ -10,13 +10,13 @@ import os
 import urllib.parse
 
 import requests
-from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
 
 from ..exceptions import RenderError
 from ..registry import element
 from ..spec import boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import blit, int_xy, mono_draw, require
+from ..utils import blit, describe_url, int_xy, mono_draw, require
 
 # MDI metadata is large (~3MB); load+cache once per file path.
 _mdi_meta_cache: dict[str, list] = {}
@@ -206,8 +206,26 @@ def icon(state: RenderState, element: dict) -> None:
     )
 
 
+def _fetch_error(exc: requests.RequestException) -> str:
+    """Exception summary without its message: requests embeds the full URL (query, credentials) there."""
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    return f"{type(exc).__name__} (HTTP {status})" if status else type(exc).__name__
+
+
+def _decode_image(data: bytes, source: str) -> Image.Image:
+    try:
+        return Image.open(io.BytesIO(data))
+    except UnidentifiedImageError as exc:
+        raise RenderError(f"dlimg: {source} is not a readable image ({len(data)} bytes)") from exc
+    except OSError as exc:
+        raise RenderError(f"dlimg: {source} could not be read ({len(data)} bytes): {exc}") from exc
+
+
 def _resize_image(imgdl, xsize, ysize, mode):
     """Resize per fit mode: stretch (default), fit/contain, fill."""
+    if xsize <= 0 or ysize <= 0:
+        raise RenderError(f"dlimg: 'xsize' and 'ysize' must be positive, got {xsize}x{ysize}")
     target_ratio = xsize / ysize
     src_w, src_h = imgdl.size
     src_ratio = src_w / src_h if src_h else 1
@@ -260,12 +278,12 @@ def dlimg(state: RenderState, element: dict) -> None:
     fit_mode = element.get("mode", "stretch")
 
     imgdl: Image.Image
-    if url.startswith(("http://", "https://")):
+    if url.lower().startswith(("http://", "https://")):
         try:
             data = state.context.fetch_image(url, timeout=element.get("timeout", 30))
         except requests.RequestException as exc:
-            raise RenderError(f"dlimg: failed to fetch {url}: {exc}") from exc
-        imgdl = Image.open(io.BytesIO(data))
+            raise RenderError(f"dlimg: failed to fetch {describe_url(url)}: {_fetch_error(exc)}") from exc
+        imgdl = _decode_image(data, describe_url(url))
     elif url.startswith("data:"):
         s = url[5:]
         if not s or "," not in s:
@@ -281,7 +299,7 @@ def dlimg(state: RenderState, element: dict) -> None:
                 raise RenderError("dlimg: invalid base64 in data url") from exc
         else:
             data = urllib.parse.unquote_to_bytes(raw_data)
-        imgdl = Image.open(io.BytesIO(data))
+        imgdl = _decode_image(data, describe_url(url))
     else:
         # Local / relative filesystem path — gated for safety.
         if not state.context.allow_local_images:

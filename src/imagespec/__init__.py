@@ -26,7 +26,7 @@ from .colors import (
 from .context import RenderContext
 from .core import ROTATE_MODE_CANVAS, ROTATE_MODE_IMAGE, render
 from .dither import DITHER_METHODS, resolve_dither_method
-from .exceptions import RenderError
+from .exceptions import RenderArgumentError, RenderError
 from .registry import get_spec, known_types, specs
 from .resolvers import (
     GOOGLE_FONTS_SOURCES,
@@ -41,6 +41,7 @@ from .validate import Issue, validate
 __all__ = [
     "render",
     "RenderContext",
+    "RenderArgumentError",
     "RenderError",
     "ROTATE_MODE_CANVAS",
     "ROTATE_MODE_IMAGE",
