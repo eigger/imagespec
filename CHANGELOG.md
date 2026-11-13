@@ -14,6 +14,13 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ### Fixed
 
+- `caching_resolver` enforces `max_bytes` while streaming (the body is never held in
+  memory past the cap) and remembers a failed download for `failure_ttl` seconds
+  (default 300, `0` disables): a network error, an HTTP error, a non-font or an
+  oversized response now logs a warning and falls back to the bundled font instead of
+  raising or re-downloading on every render.
+- `scripts/inject_element_previews.py` is idempotent: re-running it no longer adds
+  duplicate preview images to `docs/elements.md`.
 - `plot`: a non-positive or non-finite `yaxis.tick_every` raised nothing and looped
   forever; it is now a `RenderError`, and the tick count is capped at one per pixel
   row. Fractional `tick_every` values no longer drop the top tick (ticks are placed

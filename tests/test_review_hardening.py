@@ -135,17 +135,13 @@ def test_describe_exception():
 def test_caching_resolver_replace_race(tmp_path, monkeypatch):
     import os
 
+    from tests.test_resolvers import FakeResponse
+
     from imagespec.resolvers import caching_resolver
 
-    class Resp:
-        content = FONT
-
-        def raise_for_status(self):
-            pass
-
     class Http:
-        def get(self, url, timeout):
-            return Resp()
+        def get(self, url, timeout, stream=False):
+            return FakeResponse(FONT)
 
     def boom(src, dst):
         open(dst, "wb").write(FONT)  # a concurrent download won the race

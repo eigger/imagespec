@@ -15,6 +15,7 @@ import io
 import logging
 import os
 import tempfile
+import time
 
 import requests
 from PIL import ImageFont
@@ -71,6 +72,7 @@ def caching_resolver(
     session: requests.Session | None = None,
     timeout: float = 30,
     max_bytes: int = MAX_FONT_BYTES,
+    failure_ttl: float = 300,
 ) -> FontResolver:
     """Download fonts named in ``sources`` on first use, cache them, reuse offline.
 
@@ -86,12 +88,42 @@ def caching_resolver(
     max_bytes:
         Largest download accepted. A response that is larger, or is not a
         loadable font (e.g. an HTML error page), is logged and not cached —
-        the resolver returns ``None`` so the bundled font is used.
+        the resolver returns ``None`` so the bundled font is used. The size is
+        enforced while streaming, so an oversized body is never held in memory.
+    failure_ttl:
+        Seconds to remember a failed download (network error, non-font, too
+        large) and skip retrying it; the resolver returns ``None`` meanwhile so
+        renders fall back to the bundled font instead of blocking on a dead
+        network every time. ``0`` retries on every call.
     """
     cache_dir = os.path.expanduser(cache_dir)
     os.makedirs(cache_dir, exist_ok=True)
     sources = sources or {}
     http = session or requests
+
+    failed: dict[str, float] = {}  # base name -> time.monotonic() of the last failure
+
+    def fail(base: str, message: str, *args: object) -> None:
+        _LOGGER.warning(message, *args)
+        failed[base] = time.monotonic()
+
+    def download(url: str, name: str) -> bytes | None:
+        resp = http.get(url, timeout=timeout, stream=True)
+        try:
+            resp.raise_for_status()
+            declared = resp.headers.get("Content-Length")
+            if declared and declared.isdigit() and int(declared) > max_bytes:
+                fail(name, "Font %r from %s is %s bytes (limit %d) - not cached", name, url, declared, max_bytes)
+                return None
+            buf = bytearray()
+            for chunk in resp.iter_content(64 * 1024):
+                buf += chunk
+                if len(buf) > max_bytes:
+                    fail(name, "Font %r from %s exceeds %d bytes - download aborted, not cached", name, url, max_bytes)
+                    return None
+        finally:
+            resp.close()
+        return bytes(buf)
 
     def resolver(name: str) -> str | None:
         base = os.path.basename(name)
@@ -101,16 +133,27 @@ def caching_resolver(
         url = sources.get(name) or sources.get(base)
         if not url:
             return None
-        resp = http.get(url, timeout=timeout)
-        resp.raise_for_status()
-        data = resp.content
-        if len(data) > max_bytes:
-            _LOGGER.warning("Font %r from %s is %d bytes (limit %d) - not cached", name, url, len(data), max_bytes)
+        last_failure = failed.get(base)
+        if last_failure is not None and time.monotonic() - last_failure < failure_ttl:
+            return None
+        try:
+            data = download(url, base)
+        except requests.RequestException as exc:
+            fail(
+                base,
+                "Font %r could not be downloaded from %s (%s) - using the bundled font",
+                name,
+                url,
+                type(exc).__name__,
+            )
+            return None
+        if data is None:
             return None
         if not _is_font(data):
             # e.g. a captive portal's HTML answered 200: caching it would break every later render
-            _LOGGER.warning("Download for font %r from %s is not a usable font file - not cached", name, url)
+            fail(base, "Download for font %r from %s is not a usable font file - not cached", name, url)
             return None
+        failed.pop(base, None)
         fd, tmp = tempfile.mkstemp(prefix=base + ".", suffix=".part", dir=cache_dir)
         try:
             with os.fdopen(fd, "wb") as f:
