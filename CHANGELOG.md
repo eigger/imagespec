@@ -12,6 +12,20 @@ contract (keys, kinds, required-ness, `null` semantics) changes shape.
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-11-21
+
+### Fixed
+
+- Reject non-finite numeric strings and unsupported container rotations. Clip
+  containers at negative offsets, keep positive subpixel outlines visible, and
+  omit hidden children from stack layout.
+- Resolve custom default fonts through the host resolver, redact font download
+  URLs in warnings, and protect render caches against concurrent updates.
+- Clip plots to the requested time window and plot area, preserve one-pixel
+  progress fills, and support transparent barcode backgrounds.
+- Preserve exact palette colors in ordered dithering, respect nested dither
+  overrides, and prevent transparent pixels from diffusing quantization error.
+
 ## [1.2.0] — 2026-11-13
 
 ### Fixed
