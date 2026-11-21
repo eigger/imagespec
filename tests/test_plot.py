@@ -179,27 +179,43 @@ def test_plot_yaxis_zero_width_and_out_of_window_samples():
 
 
 @pytest.mark.parametrize(
-    ("x_end", "y_end", "ylegend_width"),
+    ("x_start", "y_start", "x_end", "y_end", "ylegend_width"),
     [
-        (15, 20, 10),  # diag_width <= 0
-        (80, 10, 0),  # diag_height <= 0 due to xlegend_height
-        (5, 20, 0),  # x_end < x_start
+        (10, 0, 15, 20, 10),  # diag_width <= 0
+        (10, 0, 80, 10, 0),  # diag_height <= 0 due to xlegend_height
+        (10, 0, 5, 20, 0),  # x_end < x_start
+        (10, 20, 80, 5, 0),  # y_end < y_start
     ],
 )
-def test_plot_collapsed_area_does_not_crash(history_ctx, x_end, y_end, ylegend_width):
+def test_plot_collapsed_area_does_not_crash(history_ctx, x_start, y_start, x_end, y_end, ylegend_width):
     el = {
         "type": "plot",
-        "x_start": 10,
-        "y_start": 0,
+        "x_start": x_start,
+        "y_start": y_start,
         "x_end": x_end,
         "y_end": y_end,
-        "debug": True,
         "yaxis": {},
         "xlegend": {},
         "ylegend": {"width": ylegend_width},
         "data": [{"entity": "sensor.temp"}],
     }
-    assert render([el], 90, 40, context=history_ctx).size == (90, 40)
+    img = render([el], 90, 40, background="white", context=history_ctx)
+    assert img.size == (90, 40)
+    assert img.getcolors(maxcolors=1 << 24) == [(90 * 40, (255, 255, 255))]
+    assert render([{**el, "debug": True}], 90, 40, background="white", context=history_ctx).size == (90, 40)
+
+
+def test_clip_segment_time_handles_float_cancellation_edges():
+    from imagespec.elements.charts import _clip_segment_time
+
+    assert _clip_segment_time((-100.0, 0.1), (-1e-15, 0.9)) is None
+    assert _clip_segment_time((-1e17, 0.1), (-1.0, 0.9)) is None
+
+    clipped = _clip_segment_time((-1e17, 0.1), (2.0, 0.9))
+    assert clipped is not None
+    (c0_t, _), (c1_t, _) = clipped
+    assert 0.0 <= c0_t <= 1.0
+    assert 0.0 <= c1_t <= 1.0
 
 
 def test_plot_clips_segment_joining_back_in_and_out_of_window():

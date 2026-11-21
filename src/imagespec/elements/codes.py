@@ -198,8 +198,11 @@ def barcode(state: RenderState, element: dict) -> None:
         rgb = imagebc.convert("RGB")
         bg_ref = Image.new("RGB", rgb.size, sentinel_rgb)
         dr, dg, db = ImageChops.difference(rgb, bg_ref).split()
-        mask = ImageChops.lighter(ImageChops.lighter(dr, dg), db).point(lambda v: 255 if v else 0)
-        imagebc.putalpha(mask)
+        peak = max(abs(fg_rgba[i] - sentinel_rgb[i]) for i in range(3))
+        threshold = peak / 2
+        mask = ImageChops.lighter(ImageChops.lighter(dr, dg), db).point(lambda v: 255 if v > threshold else 0)
+        imagebc = Image.new("RGBA", rgb.size, (0, 0, 0, 0))
+        imagebc.paste(fg_rgba, mask=mask)
 
     state.img.paste(imagebc, int_xy(pos_x, pos_y), imagebc)
 

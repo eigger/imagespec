@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from PIL import Image
 
 from imagespec import RenderContext, render
@@ -35,7 +36,8 @@ def test_progress_bar_percentage_text_is_1bit_crisp():
     assert pixels <= {(0, 0, 0, 255), (255, 255, 255, 255)}
 
 
-def test_progress_bar_zero_progress_with_radius_draws_no_fill():
+@pytest.mark.parametrize("direction", ["right", "left", "up", "down"])
+def test_progress_bar_zero_progress_with_radius_draws_no_fill(direction):
     ctx = RenderContext(palette="4")
     img = render(
         [
@@ -47,6 +49,7 @@ def test_progress_bar_zero_progress_with_radius_draws_no_fill():
                 "y_end": 25,
                 "progress": 0,
                 "radius": 4,
+                "direction": direction,
                 "fill": "red",
                 "outline": None,
             }
@@ -61,35 +64,57 @@ def test_progress_bar_zero_progress_with_radius_draws_no_fill():
 
 def test_fractional_widths_on_progress_bar_and_sparkline(ctx):
     els = [
-        {"type": "progress_bar", "x_start": 2, "y_start": 2, "x_end": 50, "y_end": 16, "progress": 50, "width": 1.5},
-        {"type": "sparkline", "x": 2, "y": 20, "width": 48, "height": 18, "values": [1, 4, 2, 5], "width_line": 1.5},
+        {
+            "type": "progress_bar",
+            "x_start": 2,
+            "y_start": 2,
+            "x_end": 50,
+            "y_end": 16,
+            "progress": 50,
+            "width": 1.5,
+            "outline": "black",
+            "fill": "red",
+        },
+        {
+            "type": "sparkline",
+            "x": 2,
+            "y": 20,
+            "width": 48,
+            "height": 18,
+            "values": [1, 4, 2, 5],
+            "width_line": 1.5,
+            "color": "yellow",
+        },
     ]
-    assert render(els, 60, 40, strict=True, context=ctx).size == (60, 40)
-
-
-def test_barcode_null_bgcolor_is_transparent_over_background(ctx):
-    img = render(
-        [
-            {
-                "type": "barcode",
-                "x": 5,
-                "y": 2,
-                "data": "1234",
-                "bgcolor": None,
-                "color": "black",
-                "width": 50,
-                "height": 16,
-                "write_text": False,
-            }
-        ],
-        60,
-        20,
-        background="yellow",
-        context=ctx,
-    )
+    img = render(els, 60, 40, background="white", strict=True, context=ctx)
+    assert img.size == (60, 40)
     colors = _colors(img)
     assert (0, 0, 0) in colors
+    assert (255, 0, 0) in colors
     assert (255, 255, 0) in colors
+
+
+@pytest.mark.parametrize("color,expected_fg", [("black", (0, 0, 0)), ("white", (255, 255, 255))])
+@pytest.mark.parametrize("scaled", [True, False])
+@pytest.mark.parametrize("write_text", [True, False])
+def test_barcode_null_bgcolor_is_transparent_over_background(ctx, color, expected_fg, scaled, write_text):
+    spec: dict[str, object] = {
+        "type": "barcode",
+        "x": 5,
+        "y": 2,
+        "data": "1234",
+        "bgcolor": None,
+        "color": color,
+        "write_text": write_text,
+    }
+    if scaled:
+        spec["width"] = 80
+        spec["height"] = 30
+    img = render([spec], 160, 100, background="red", context=ctx)
+    colors = _colors(img)
+    assert expected_fg in colors
+    assert (255, 0, 0) in colors
+    assert colors == {expected_fg, (255, 0, 0)}
 
 
 def test_barcode_null_color_draws_solid_bgcolor_and_both_null_is_noop(ctx):

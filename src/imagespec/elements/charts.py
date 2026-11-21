@@ -332,6 +332,8 @@ def _clip_segment_time(
     """Clip a ``(rel_time, rel_value)`` segment to ``rel_time`` in ``[0.0, 1.0]``."""
     t0, v0 = p0
     t1, v1 = p1
+    if max(t0, t1) < 0.0 or min(t0, t1) > 1.0:
+        return None
     dt = t1 - t0
     if dt == 0.0:
         return (p0, p1) if 0.0 <= t0 <= 1.0 else None
@@ -341,8 +343,8 @@ def _clip_segment_time(
     u_exit = min(1.0, max(u0, u1))
     if u_enter > u_exit:
         return None
-    c0 = p0 if u_enter == 0.0 else (0.0 if t0 < 0.0 else 1.0, v0 + u_enter * (v1 - v0))
-    c1 = p1 if u_exit == 1.0 else (0.0 if t1 < 0.0 else 1.0, v0 + u_exit * (v1 - v0))
+    c0 = p0 if 0.0 <= t0 <= 1.0 else (0.0 if t0 < 0.0 else 1.0, v0 + u_enter * (v1 - v0))
+    c1 = p1 if 0.0 <= t1 <= 1.0 else (0.0 if t1 < 0.0 else 1.0, v0 + u_exit * (v1 - v0))
     return c0, c1
 
 
@@ -622,7 +624,7 @@ def plot(state: RenderState, element: dict) -> None:
                     joint=p.get("joint", None),
                 )
 
-    if ylegend is not None:
+    if ylegend is not None and has_plot_area:
         if ylegend_pos == "left":
             draw.text((x_start, y_start), str(max_v), fill=ylegend_color, font=ylegend_font, anchor="lt")
             draw.text(
@@ -645,7 +647,7 @@ def plot(state: RenderState, element: dict) -> None:
                     fill=yaxis_color,
                 )
 
-    if xlegend is not None and diag_width > 0:
+    if xlegend is not None and has_plot_area:
         label_y = diag_y + diag_height + 2
         for i in range(xlegend_ticks):
             ratio = i / max(xlegend_ticks - 1, 1)
