@@ -112,7 +112,7 @@ def line(state: RenderState, element: dict) -> None:
         y_end = element.get("y_end", y_start)
 
     fill = state.context.color(element["fill"]) if "fill" in element else state.context.color("black")
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     dash = element.get("dash", None)
 
     if dash:
@@ -142,7 +142,7 @@ def rectangle(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     fill = state.context.color(element["fill"]) if "fill" in element else None
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     radius, corners = _rounding(element)
     _draw_box(
         draw,
@@ -183,7 +183,7 @@ def rectangle_pattern(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     fill = state.context.color(element["fill"]) if "fill" in element else None
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     radius, corners = _rounding(element)
     for x in range(int(element["x_repeat"])):
         for y in range(int(element["y_repeat"])):
@@ -217,7 +217,7 @@ def circle(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     fill = state.context.color(element["fill"]) if "fill" in element else None
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     draw.circle((element["x"], element["y"]), element["radius"], fill=fill, outline=outline, width=width)
 
 
@@ -239,7 +239,7 @@ def ellipse(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     fill = state.context.color(element["fill"]) if "fill" in element else None
     outline = state.context.color(element["outline"]) if "outline" in element else state.context.color("black")
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     draw.ellipse(
         [(element["x_start"], element["y_start"]), (element["x_end"], element["y_end"])],
         fill=fill,
@@ -269,7 +269,7 @@ def arc(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     fill = state.context.color(element.get("fill", None))
     outline = state.context.color(element.get("outline", "black"))
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     bbox = [(element["x_start"], element["y_start"]), (element["x_end"], element["y_end"])]
     if element.get("pie", False):
         draw.pieslice(
@@ -294,7 +294,7 @@ def polygon(state: RenderState, element: dict) -> None:
     draw = ImageDraw.Draw(state.img)
     fill = state.context.color(element.get("fill", None))
     outline = state.context.color(element.get("outline", "black"))
-    width = element.get("width", 1)
+    width = int(round(element.get("width", 1)))
     try:
         pts = []
         for pair in element["points"].split(";"):
@@ -333,7 +333,7 @@ def gauge(state: RenderState, element: dict) -> None:
     progress = float(element["progress"])
     min_val = element.get("min_value", 0)
     max_val = element.get("max_value", 100)
-    bar_width = element.get("width", 8)
+    bar_width = int(round(element.get("width", 8)))
     fill_color = state.context.color(element.get("fill", "black"))
     bg_color = state.context.color(element.get("background", "white"))
     outline_color = state.context.color(element.get("outline", "black"))

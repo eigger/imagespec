@@ -20,6 +20,7 @@ Hosts call it to surface authoring mistakes before (or instead of) rendering::
 from __future__ import annotations
 
 import difflib
+import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -229,6 +230,8 @@ def _is_numberish(value: Any, kind: str) -> bool:
             value = to_number(value)
         except ValueError:
             return False
+    if isinstance(value, float) and not math.isfinite(value):
+        return False
     if kind == "integer":
         return isinstance(value, int) or (isinstance(value, float) and value.is_integer())
     return isinstance(value, (int, float))

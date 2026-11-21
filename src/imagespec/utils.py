@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 import unicodedata
 from collections.abc import Iterable
@@ -49,6 +50,8 @@ def to_number(value, key: str = "value"):
         f = float(s)
     except ValueError:
         raise ValueError(f"'{key}' must be a number, got {value!r}") from None
+    if not math.isfinite(f):
+        raise ValueError(f"'{key}' must be a finite number, got {value!r}")
     return int(f) if f.is_integer() else f
 
 

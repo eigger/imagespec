@@ -38,9 +38,16 @@ from ..utils import (
     mono_draw,
     multiline_anchor,
     require,
+    should_show,
     subtract_mask,
     wrap_words,
 )
+
+
+def _quarter_turn(value: object, etype: str) -> int:
+    if isinstance(value, bool) or value not in (0, 90, 180, 270):
+        raise RenderError(f"rotate must be 0/90/180/270 for '{etype}', got {value!r}")
+    return int(value)
 
 
 @element(
@@ -53,7 +60,7 @@ from ..utils import (
         num("y", 0),
         num("width", doc="Defaults to the canvas width"),
         num("height", doc="Defaults to the canvas height"),
-        num("rotate", 0, doc="0/90/180/270, clockwise"),
+        num("rotate", 0, enum=(0, 90, 180, 270), doc="0/90/180/270, clockwise"),
     ],
 )
 def group(state: RenderState, element: dict) -> None:
@@ -62,7 +69,7 @@ def group(state: RenderState, element: dict) -> None:
     oy = element.get("y", 0)
     gw = round(element.get("width", state.canvas_width))
     gh = round(element.get("height", state.canvas_height))
-    rotate = int(element.get("rotate", 0) or 0)
+    rotate = _quarter_turn(element.get("rotate", 0), "group")
 
     sub = Image.new("RGBA", (gw, gh), (0, 0, 0, 0))
     substate = RenderState(
@@ -93,7 +100,7 @@ def group(state: RenderState, element: dict) -> None:
         result = result.rotate(-rotate, expand=True)
 
     offset = int_xy(ox, oy)
-    state.img.alpha_composite(result, offset)
+    blit(state.img, result, *offset)
     if substate.dither_protected is not None:
         protected = substate.dither_protected
         if rotate in (90, 180, 270):
@@ -553,7 +560,7 @@ def _justify_offsets(justify: str, free: float, n: int, gap: int) -> tuple[float
             doc="Defaults to the canvas height — or, with `background`/`outline`, to the content height "
             "(see `width` for the size-required-children caveat)",
         ),
-        num("rotate", 0, doc="0/90/180/270, clockwise"),
+        num("rotate", 0, enum=(0, 90, 180, 270), doc="0/90/180/270, clockwise"),
         num("padding", doc="All sides"),
         num("padding_x"),
         num("padding_y"),
@@ -586,13 +593,13 @@ def stack(state: RenderState, element: dict) -> None:
     styled = element.get("background") is not None or element.get("outline") is not None
     hug_w = styled and element.get("width") is None
     hug_h = styled and element.get("height") is None
-    rotate = int(element.get("rotate", 0) or 0)
+    rotate = _quarter_turn(element.get("rotate", 0), etype or "stack")
 
     pl, pt, pr, pb = _resolve_padding(element, cls)
     inner_w = max(0, cw - pl - pr)
     inner_h = max(0, ch - pt - pb)
 
-    source_idx = [i for i, c in enumerate(element["elements"]) if isinstance(c, dict)]
+    source_idx = [i for i, c in enumerate(element["elements"]) if isinstance(c, dict) and should_show(c)]
     children = [element["elements"][i] for i in source_idx]
 
     # Render each child onto its own transparent layer and measure its drawn
@@ -813,7 +820,7 @@ def stack(state: RenderState, element: dict) -> None:
     if rotate in (90, 180, 270):
         canvas = canvas.rotate(-rotate, expand=True)
         protected_canvas = protected_canvas.rotate(-rotate, expand=True)
-    state.img.alpha_composite(canvas, (ox, oy))
+    blit(state.img, canvas, ox, oy)
     if state.dither_protected is None:
         state.dither_protected = Image.new("L", state.img.size, 0)
     merge_mask(state.dither_protected, protected_canvas, ox, oy)

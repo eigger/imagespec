@@ -275,3 +275,67 @@ def test_bad_numeric_string_inside_container_names_child(ctx):
     el = {"type": "group", "x": 0, "y": 0, "elements": [{"type": "circle", "x": "5", "y": "abc", "radius": 3}]}
     with pytest.raises(RenderError, match=r"child #0 \(type 'circle'\): 'y' must be a number"):
         render([el], 20, 20, context=ctx)
+
+
+@pytest.mark.parametrize("raw", ["nan", "NaN", "inf", "-inf", "1e999"])
+def test_to_number_rejects_non_finite_strings(raw):
+    with pytest.raises(ValueError, match="'x' must be a finite number"):
+        to_number(raw, "x")
+
+
+@pytest.mark.parametrize(
+    "el",
+    [
+        {"type": "line", "x_start": 0, "x_end": 10, "y_start": 5, "width": 1.5},
+        {"type": "rectangle", "x_start": 1, "y_start": 1, "x_end": 15, "y_end": 15, "width": "2.5"},
+        {
+            "type": "rectangle_pattern",
+            "x_start": 0,
+            "y_start": 0,
+            "x_size": 4,
+            "y_size": 4,
+            "x_repeat": 2,
+            "y_repeat": 2,
+            "x_offset": 1,
+            "y_offset": 1,
+            "width": 1.5,
+        },
+        {"type": "circle", "x": 15, "y": 15, "radius": 8, "width": 1.5},
+        {"type": "ellipse", "x_start": 1, "y_start": 1, "x_end": 20, "y_end": 15, "width": 1.5},
+        {
+            "type": "arc",
+            "x_start": 1,
+            "y_start": 1,
+            "x_end": 20,
+            "y_end": 20,
+            "start_angle": 0,
+            "end_angle": 90,
+            "width": 1.5,
+        },
+        {"type": "polygon", "points": "1,1;20,1;10,20", "width": 1.5},
+        {"type": "gauge", "x": 15, "y": 15, "radius": 10, "progress": 50, "width": 3.5},
+        {"type": "text_box", "x": 1, "y": 1, "value": "hi", "size": 8, "outline": "black", "width": 1.5},
+        {"type": "table", "x": 0, "y": 0, "columns": [15], "rows": [["a"]], "font_size": 8, "border_width": 1.5},
+        {
+            "type": "text_fit",
+            "x": 0,
+            "y": 0,
+            "width": 30,
+            "height": 15,
+            "value": "hi",
+            "outline": "black",
+            "width_outline": 1.5,
+        },
+        {"type": "battery", "x": 1, "y": 1, "width": 24, "height": 12, "level": 50, "width_outline": 1.5},
+        {
+            "type": "legend",
+            "x": 1,
+            "y": 1,
+            "swatch_size": 12.5,
+            "shape": "line",
+            "items": [{"label": "a", "color": "black"}],
+        },
+    ],
+)
+def test_float_stroke_widths_render_under_strict(ctx, el):
+    assert render([el], 40, 40, strict=True, context=ctx).size == (40, 40)
