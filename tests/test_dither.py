@@ -6,7 +6,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 import imagespec.dither as dither_mod
-from imagespec import DITHER_METHODS, RenderContext, render, resolve_dither_method
+from imagespec import DITHER_METHODS, RenderContext, RenderError, render, resolve_dither_method
 from imagespec.colors import PALETTE_7, PALETTE_BW, PALETTE_BWR
 from imagespec.dither import _KERNELS, DITHER_ATKINSON, dither_to_palette
 
@@ -459,3 +459,127 @@ def test_numpy_stevenson_arce_handles_images_narrower_than_its_kernel():
 def test_unrepresentable_palettes_still_diffuse(pal):
     img = Image.new("RGB", (6, 6), (128, 0, 0))
     assert dither_to_palette(img, pal, dither="floyd").size == (6, 6)
+
+
+@pytest.mark.parametrize("pal", [[(i % 256, (i * 7) % 256, 0) for i in range(300)]])
+def test_unrepresentable_palette_none_dither_matches_numpy_and_pure(monkeypatch, pal):
+    img = Image.new("RGB", (12, 12), (128, 90, 10))
+    fast = dither_to_palette(img, pal, dither="none")
+    monkeypatch.setattr(dither_mod, "np", None)
+    pure = dither_to_palette(img, pal, dither="none")
+    assert fast.tobytes() == pure.tobytes()
+    assert _colors(fast) <= set(pal)
+
+
+@pytest.mark.parametrize("method", ["bayer2", "bayer4", "bayer8", "bayer16", "clustered4", "clustered8"])
+@pytest.mark.parametrize("color", [(0, 128, 0), (255, 165, 0)])
+def test_ordered_dither_preserves_exact_in_palette_colors(monkeypatch, method, color):
+    img = Image.new("RGB", (16, 16), color)
+    fast = dither_to_palette(img, PALETTE_7, dither=method)
+    assert _colors(fast) == {color}
+    monkeypatch.setattr(dither_mod, "np", None)
+    pure = dither_to_palette(img, PALETTE_7, dither=method)
+    assert _colors(pure) == {color}
+
+
+def test_later_off_palette_element_replaces_earlier_dither_override():
+    ctx = RenderContext(palette="7")
+    rect = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 15,
+        "fill": "#208020",
+        "outline": None,
+    }
+    expected = render([rect], 16, 16, dither="bayer8", context=ctx)
+    actual = render([{**rect, "dither": False}, rect], 16, 16, dither="bayer8", context=ctx)
+    assert len(_colors(expected)) > 1
+    assert actual.tobytes() == expected.tobytes()
+
+
+@pytest.mark.parametrize("outer_dither", ["bayer8", "floyd"])
+@pytest.mark.parametrize("rotate", [0, 90])
+def test_nested_child_dither_false_preserved_inside_isolated_group(outer_dither, rotate):
+    bw_ctx = RenderContext(palette="bw")
+    grp = {
+        "type": "group",
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16,
+        "rotate": rotate,
+        "dither": outer_dither,
+        "elements": [
+            {
+                "type": "rectangle",
+                "x_start": 0,
+                "y_start": 0,
+                "x_end": 15,
+                "y_end": 15,
+                "fill": "#808080",
+                "outline": None,
+                "dither": False,
+            }
+        ],
+    }
+    img = render([grp], 16, 16, dither=False, context=bw_ctx)
+    assert len(_colors(img)) == 1
+
+    ctx7 = RenderContext(palette="7")
+    grp7 = {
+        "type": "group",
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16,
+        "rotate": rotate,
+        "dither": outer_dither,
+        "elements": [
+            {
+                "type": "rectangle",
+                "x_start": 0,
+                "y_start": 0,
+                "x_end": 15,
+                "y_end": 15,
+                "fill": "green",
+                "outline": None,
+                "dither": False,
+            }
+        ],
+    }
+    img7 = render([grp7], 16, 16, dither=False, context=ctx7)
+    assert _colors(img7) == {(0, 128, 0)}
+
+
+def test_isolated_floyd_does_not_bleed_transparent_error_into_opaque_shape():
+    pal_no_black = [(60, 60, 60, 255), (255, 255, 255, 255)]
+    ctx = RenderContext(palette=pal_no_black)
+    el = {"type": "circle", "x": 20, "y": 20, "radius": 10, "fill": "white", "outline": None, "dither": "floyd"}
+    img = render([el], 40, 40, background="white", context=ctx)
+    assert _colors(img) == {(255, 255, 255)}
+
+
+def test_dispatch_restores_state_on_handler_exception():
+    from imagespec.dispatch import _draw_isolated, render_element
+    from imagespec.state import RenderState
+
+    ctx = RenderContext(palette="bw")
+    base = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
+    mask = Image.new("L", (16, 16), 255)
+    state = RenderState(img=base, canvas_width=16, canvas_height=16, context=ctx, dither_protected=mask)
+
+    def boom(st, el):
+        st.img = Image.new("RGBA", (4, 4), (0, 0, 0, 255))
+        st.dither_protected = Image.new("L", (4, 4), 0)
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        _draw_isolated(state, {"type": "rectangle"}, boom, "floyd")
+    assert state.img is base and state.dither_protected is mask
+
+    # Also exercise render_element's old_protected isolation branch when a handler raises.
+    with pytest.raises(RenderError):
+        render_element(state, {"type": "polygon", "points": "bad"})
+    assert state.img is base and state.dither_protected is mask

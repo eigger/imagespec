@@ -314,6 +314,24 @@ def _quantize_nearest_pillow(img: Image.Image, palette) -> Image.Image:
     return rgb.quantize(palette=pal_img, dither=Image.Dither.NONE).convert("RGB")
 
 
+def _quantize_nearest_exact(img: Image.Image, palette: list[tuple[int, int, int]]) -> Image.Image:
+    """Flat nearest-color snap without Pillow's 256-entry uint8 palette limit."""
+    src = img.convert("RGB")
+    w, h = src.size
+    if np is not None:
+        arr = np.asarray(src, dtype=np.float64)
+        pal = np.asarray(palette, dtype=np.float64)
+        d = arr[:, :, None, :] - pal[None, None, :, :]
+        dist = d[..., 0] * d[..., 0] + d[..., 1] * d[..., 1] + d[..., 2] * d[..., 2]
+        idx = np.argmin(dist, axis=-1)
+        return Image.fromarray(np.asarray(palette, dtype=np.uint8)[idx], "RGB")
+    data = src.tobytes()
+    out = bytearray(len(data))
+    for i in range(0, len(data), 3):
+        out[i], out[i + 1], out[i + 2] = _nearest(data[i], data[i + 1], data[i + 2], palette)
+    return Image.frombytes("RGB", (w, h), bytes(out))
+
+
 _INF = float("inf")
 
 
@@ -491,7 +509,8 @@ def _ordered_dither(
     levels = float(n * n)
     ox, oy = origin
     if np is not None:
-        arr = np.asarray(src, dtype=np.float64)  # (h, w, 3)
+        src_u8 = np.asarray(src, dtype=np.uint8)
+        arr = src_u8.astype(np.float64)  # (h, w, 3)
         tile = np.asarray(matrix, dtype=np.float64)[(np.arange(h) + oy) % n][:, (np.arange(w) + ox) % n]
         v = arr + (((tile + 0.5) / levels - 0.5) * 255.0)[..., None]
         pal = np.asarray(palette, dtype=np.float64)
@@ -501,13 +520,19 @@ def _ordered_dither(
         idx = np.argmin(dist, axis=-1)  # first minimum, like the strict `<` search
         if protect_mask is not None:
             protected = np.asarray(protect_mask.convert("L")) > 0
-            original = np.asarray(src, dtype=np.uint8)
-            base_d = original[:, :, None, :].astype(np.float64) - pal[None, None, :, :]
-            base_dist = base_d[..., 0] ** 2 + base_d[..., 1] ** 2 + base_d[..., 2] ** 2
+            base_d = arr[:, :, None, :] - pal[None, None, :, :]
+            base_dist = (
+                base_d[..., 0] * base_d[..., 0] + base_d[..., 1] * base_d[..., 1] + base_d[..., 2] * base_d[..., 2]
+            )
             idx = np.where(protected, np.argmin(base_dist, axis=-1), idx)
-        return Image.fromarray(np.asarray(palette, dtype=np.uint8)[idx], "RGB")
+        out_arr = np.asarray(palette, dtype=np.uint8)[idx]
+        pal_i64 = np.asarray(palette, dtype=np.int64)
+        exact = np.any(np.all(src_u8[:, :, None, :] == pal_i64[None, None, :, :], axis=-1), axis=-1)
+        out_arr = np.where(exact[..., None], src_u8, out_arr)
+        return Image.fromarray(out_arr, "RGB")
     data = src.tobytes()
     out = bytearray(len(data))
+    pal_set = set(palette)
     protected = protect_mask.convert("L").tobytes() if protect_mask is not None else None
     for y in range(h):
         row = matrix[(y + oy) % n]
@@ -515,13 +540,14 @@ def _ordered_dither(
         for x in range(w):
             bias = ((row[(x + ox) % n] + 0.5) / levels - 0.5) * 255.0
             i = base + x * 3
-            if protected is not None and protected[y * w + x]:
-                r, g, b = _nearest(data[i], data[i + 1], data[i + 2], palette)
+            sr, sg, sb = data[i], data[i + 1], data[i + 2]
+            if (sr, sg, sb) in pal_set:
+                out[i], out[i + 1], out[i + 2] = sr, sg, sb
+            elif protected is not None and protected[y * w + x]:
+                r, g, b = _nearest(sr, sg, sb, palette)
                 out[i], out[i + 1], out[i + 2] = r, g, b
             else:
-                out[i], out[i + 1], out[i + 2] = _nearest(
-                    data[i] + bias, data[i + 1] + bias, data[i + 2] + bias, palette
-                )
+                out[i], out[i + 1], out[i + 2] = _nearest(sr + bias, sg + bias, sb + bias, palette)
     return Image.frombytes("RGB", (w, h), bytes(out))
 
 
@@ -549,7 +575,9 @@ def dither_to_palette(
         raise ValueError("palette must contain at least one color")
 
     if method == DITHER_NONE:
-        return _quantize_nearest_pillow(img, palette)
+        if len(rgbs) <= 256 and all(0 <= v <= 255 for c in rgbs for v in c):
+            return _quantize_nearest_pillow(img, palette)
+        return _quantize_nearest_exact(img, rgbs)
 
     kernel_spec = _KERNELS.get(method)
     if kernel_spec is not None:
