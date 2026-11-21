@@ -24,7 +24,7 @@ import time
 from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import requests
 from PIL import ImageFont
@@ -105,13 +105,26 @@ class RenderContext:
         self._fetch_seq: int = 0
         self._image_cache_seq: dict[str, int] = {}
 
-    def __getstate__(self) -> dict[str, Any]:
-        state = self.__dict__.copy()
+    def __getstate__(self) -> dict[str, Any] | tuple[dict[str, Any], dict[str, Any]]:
+        # object.__getstate__ also collects initialized slots from subclasses,
+        # including inherited and name-mangled slots.
+        state = cast(dict[str, Any] | tuple[dict[str, Any], dict[str, Any]], object.__getstate__(self))
+        if isinstance(state, tuple):
+            attributes, slots = state
+            attributes = attributes.copy()
+            attributes.pop("_lock", None)
+            return attributes, slots
+        state = state.copy()
         state.pop("_lock", None)
         return state
 
-    def __setstate__(self, state: dict[str, Any]) -> None:
+    def __setstate__(self, state: dict[str, Any] | tuple[dict[str, Any], dict[str, Any]]) -> None:
+        slots: dict[str, Any] = {}
+        if isinstance(state, tuple):
+            state, slots = state
         self.__dict__.update(state)
+        for name, value in slots.items():
+            setattr(self, name, value)
         self._lock = threading.RLock()
         self.__dict__.setdefault("_fetch_seq", 0)
         self.__dict__.setdefault("_image_cache_seq", {})
@@ -120,12 +133,12 @@ class RenderContext:
         cls = type(self)
         copied = cls.__new__(cls)
         with self._lock:
-            state = self.__dict__.copy()
-            state["_font_cache"] = OrderedDict(self._font_cache)
-            state["_image_cache"] = dict(self._image_cache)
-            state["_image_cache_seq"] = dict(self._image_cache_seq)
-            state["_lock"] = threading.RLock()
-        copied.__dict__.update(state)
+            state = RenderContext.__getstate__(self)
+            attributes = state[0] if isinstance(state, tuple) else state
+            attributes["_font_cache"] = OrderedDict(self._font_cache)
+            attributes["_image_cache"] = dict(self._image_cache)
+            attributes["_image_cache_seq"] = dict(self._image_cache_seq)
+        RenderContext.__setstate__(copied, state)
         return copied
 
     def color(self, value):

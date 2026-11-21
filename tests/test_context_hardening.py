@@ -109,6 +109,51 @@ def test_render_context_supports_deepcopy_pickle_and_asdict():
     assert deep_ctx.fetch_image("https://example.test/a.png") == b"ok"
 
 
+class SlottedContextBase(RenderContext):
+    __slots__ = ("base_slot", "__private", "unset")
+
+    def set_private(self, value):
+        self.__private = value
+
+    def get_private(self):
+        return self.__private
+
+
+class SlottedContext(SlottedContextBase):
+    __slots__ = ("child_slot",)
+
+
+@pytest.mark.parametrize("clone", [copy.copy, copy.deepcopy, lambda ctx: pickle.loads(pickle.dumps(ctx))])
+def test_copy_and_pickle_preserve_subclass_slots(clone):
+    ctx = SlottedContext()
+    ctx.base_slot = ["base"]
+    ctx.set_private("private")
+    ctx.child_slot = ["child"]
+    ctx.extra = "dictionary attribute"
+
+    result = clone(ctx)
+
+    assert type(result) is SlottedContext
+    assert result.base_slot == ["base"]
+    assert result.get_private() == "private"
+    assert result.child_slot == ["child"]
+    assert result.extra == "dictionary attribute"
+    assert not hasattr(result, "unset")
+    assert result._lock is not ctx._lock
+    assert result._image_cache is not ctx._image_cache
+    assert (result.base_slot is ctx.base_slot) is (clone is copy.copy)
+    assert ctx._lock is not None
+
+
+def test_setstate_accepts_legacy_dictionary_state():
+    ctx = RenderContext.__new__(RenderContext)
+    ctx.__setstate__({"default_font": "legacy.ttf"})
+    assert ctx.default_font == "legacy.ttf"
+    assert ctx._fetch_seq == 0
+    assert ctx._image_cache_seq == {}
+    assert ctx._lock is not None
+
+
 def test_fetch_image_overlapping_stale_response_does_not_overwrite_newer():
     req1_started = threading.Event()
     req2_finished = threading.Event()
