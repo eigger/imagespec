@@ -668,6 +668,17 @@ def test_odd_radius_and_outline_widths_do_not_raise(ctx, extra):
     assert render([card], 30, 30, context=ctx).size == (30, 30)
 
 
+@pytest.mark.parametrize("kind", ["row", "column", "stack"])
+@pytest.mark.parametrize(
+    "width, visible",
+    [(0.5, True), ("0.5", True), (0, False), (float("nan"), True), (float("inf"), True), (-float("inf"), True)],
+)
+def test_stack_outline_width_preserves_subpixels_and_nonfinite_fallback(ctx, kind, width, visible):
+    card = {"type": kind, "width": 10, "height": 10, "outline": "black", "width_outline": width, "elements": []}
+    img = render([card], 12, 12, background="white", context=ctx)
+    assert (img.getpixel((0, 0)) == BLACK) is visible
+
+
 def test_card_of_only_size_required_stretched_children_falls_back_to_the_available_cross_size(ctx):
     """Pinned: with nothing measurable the cross size is the available space (documented on width/height)."""
     chip = {"type": "text_fit", "width": 20, "value": "a", "background": "black", "color": "white", "size": 8}

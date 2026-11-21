@@ -39,6 +39,7 @@ from ..utils import (
     multiline_anchor,
     require,
     should_show,
+    stroke_width,
     subtract_mask,
     wrap_words,
 )
@@ -784,11 +785,16 @@ def stack(state: RenderState, element: dict) -> None:
     canvas = Image.new("RGBA", (max(1, cw), max(1, ch)), (0, 0, 0, 0))
     protected_canvas = Image.new("L", canvas.size, 0)
     if styled and cw > 0 and ch > 0:
+        try:
+            outline_width = float(element.get("width_outline", 1))
+            outline_width = stroke_width(outline_width) if math.isfinite(outline_width) else 1
+        except (OverflowError, ValueError):
+            outline_width = 1
         mono_draw(canvas).rounded_rectangle(
             [(0, 0), (cw - 1, ch - 1)],
             fill=state.context.color(element.get("background")),
             outline=state.context.color(element.get("outline")),
-            width=max(0, _px_or(element.get("width_outline", 1), 1)),
+            width=outline_width,
             radius=max(0, _px_or(element.get("radius", 0))),
         )
     cursor = leading
