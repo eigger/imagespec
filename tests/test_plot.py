@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 
 from imagespec import RenderContext, RenderError, render
 
@@ -349,3 +349,71 @@ def test_plot_all_samples_outside_window_renders_without_crashing():
     }
     img = render([el], 80, 40, background="white", context=ctx)
     assert img.getcolors(maxcolors=1 << 24) == [(80 * 40, (255, 255, 255))]
+
+
+def test_plot_layer_allocation_is_clamped_to_canvas_size(history_ctx, monkeypatch):
+    sizes: list[tuple[int, int]] = []
+    orig_new = Image.new
+
+    def spy_new(mode, size, color=0):
+        sizes.append(size)
+        return orig_new(mode, size, color)
+
+    monkeypatch.setattr(Image, "new", spy_new)
+    oversized = {
+        "type": "plot",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 1200,
+        "y_end": 900,
+        "yaxis": None,
+        "ylegend": None,
+        "data": [{"entity": "sensor.temp"}],
+    }
+    assert render([oversized], 30, 20, context=history_ctx).size == (30, 20)
+    assert all(w <= 30 and h <= 20 for w, h in sizes)
+
+    sizes.clear()
+    offscreen = {
+        "type": "plot",
+        "x_start": 100,
+        "y_start": 100,
+        "x_end": 500,
+        "y_end": 500,
+        "yaxis": None,
+        "ylegend": None,
+        "data": [{"entity": "sensor.temp"}],
+    }
+    assert render([offscreen], 30, 20, context=history_ctx).size == (30, 20)
+    assert all(w <= 30 and h <= 20 for w, h in sizes)
+
+
+@pytest.mark.parametrize("extra", [{"low": 100}, {"high": 0}])
+def test_plot_out_of_window_fallback_does_not_invert_y_axis_with_low_or_high(monkeypatch, extra):
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "10", "last_changed": (now - timedelta(hours=48)).isoformat()},
+        {"state": "15", "last_changed": (now - timedelta(hours=36)).isoformat()},
+    ]
+    ctx = RenderContext(palette="4", history_provider=lambda ids, s, e: {"sensor.a": samples})
+    drawn: list[tuple[str, float]] = []
+    orig_text = ImageDraw.ImageDraw.text
+
+    def spy_text(self, xy, text, *args, **kwargs):
+        drawn.append((text, xy[1]))
+        return orig_text(self, xy, text, *args, **kwargs)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", spy_text)
+    el = {
+        "type": "plot",
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": {},
+        "data": [{"entity": "sensor.a"}],
+        **extra,
+    }
+    render([el], 100, 50, context=ctx)
+    y_by_label = dict(drawn)
+    assert "15" in y_by_label and "10" in y_by_label
+    # Upper label (15) must sit strictly above lower label (10).
+    assert y_by_label["15"] < y_by_label["10"]

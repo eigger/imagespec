@@ -503,8 +503,8 @@ def plot(state: RenderState, element: dict) -> None:
         xlegend_ticks = int(xlegend.get("ticks", 3))
         xlegend_height = xlegend_size + 4
 
-    min_v: float | None = element.get("low", None)
-    max_v: float | None = element.get("high", None)
+    low: float | None = element.get("low", None)
+    high: float | None = element.get("high", None)
     for i, p in enumerate(element["data"]):
         if not isinstance(p, dict) or "entity" not in p:
             raise RenderError(f"plot: data[{i}] must be an object with an 'entity' key")
@@ -514,6 +514,7 @@ def plot(state: RenderState, element: dict) -> None:
     all_states = state.context.history(entity_ids, start, end)
 
     clipped_series: list[list[list[tuple[float, float]]]] = []
+    visible_values: list[float] = []
     fallback_values: list[float] = []
     for p in element["data"]:
         if p["entity"] not in all_states:
@@ -541,18 +542,16 @@ def plot(state: RenderState, element: dict) -> None:
         clipped_series.append(runs)
         visible_vals = [val for run in runs for _, val in run]
         if visible_vals:
-            lo, hi = min(visible_vals), max(visible_vals)
-            # `low`/`high` widen the range but never clip data; `is None` (not
-            # truthiness) so an explicit `low: 0` counts.
-            min_v = lo if min_v is None else min(min_v, lo)
-            max_v = hi if max_v is None else max(max_v, hi)
+            visible_values.extend(visible_vals)
         else:
             fallback_values.extend(v for _, v in parsed_states)
 
-    if min_v is None:
-        min_v = min(fallback_values)
-    if max_v is None:
-        max_v = max(fallback_values)
+    data_values = visible_values or fallback_values
+    lo, hi = min(data_values), max(data_values)
+    # `low`/`high` widen the range but never clip data; `is None` (not
+    # truthiness) so an explicit `low: 0` counts.
+    min_v = lo if low is None else min(low, lo)
+    max_v = hi if high is None else max(high, hi)
     max_v = math.ceil(max_v)
     min_v = math.floor(min_v)
     if max_v == min_v:
@@ -609,49 +608,51 @@ def plot(state: RenderState, element: dict) -> None:
         draw.point(grid_points, fill=yaxis_grid_color)
 
     if has_plot_area:
-        layer_x0 = math.floor(diag_x)
-        layer_y0 = math.floor(diag_y)
-        layer_x1 = math.ceil(diag_x + diag_width - 1)
-        layer_y1 = math.ceil(diag_y + diag_height - 1)
-        plot_layer = Image.new("RGBA", (layer_x1 - layer_x0 + 1, layer_y1 - layer_y0 + 1), (0, 0, 0, 0))
-        plot_draw = ImageDraw.Draw(plot_layer)
-        baseline_y = round(diag_y + diag_height - 1) - layer_y0
+        cw, ch = state.img.size
+        layer_x0 = max(0, math.floor(diag_x))
+        layer_y0 = max(0, math.floor(diag_y))
+        layer_x1 = min(cw - 1, math.ceil(diag_x + diag_width - 1))
+        layer_y1 = min(ch - 1, math.ceil(diag_y + diag_height - 1))
+        if layer_x1 >= layer_x0 and layer_y1 >= layer_y0:
+            plot_layer = Image.new("RGBA", (layer_x1 - layer_x0 + 1, layer_y1 - layer_y0 + 1), (0, 0, 0, 0))
+            plot_draw = ImageDraw.Draw(plot_layer)
+            baseline_y = round(diag_y + diag_height - 1) - layer_y0
 
-        for p, runs in zip(element["data"], clipped_series, strict=False):
-            for run in runs:
-                xy_raw = [
-                    (
-                        round(diag_x + rel_time * (diag_width - 1)),
-                        round(diag_y + (1 - (val - min_v) / spread) * (diag_height - 1)),
+            for p, runs in zip(element["data"], clipped_series, strict=False):
+                for run in runs:
+                    xy_raw = [
+                        (
+                            round(diag_x + rel_time * (diag_width - 1)),
+                            round(diag_y + (1 - (val - min_v) / spread) * (diag_height - 1)),
+                        )
+                        for rel_time, val in run
+                    ]
+                    # Collapse samples that land on the same pixel column to their mean y.
+                    xy: list[tuple[int, int]] = []
+                    ys: list[int] = []
+                    last_x = xy_raw[0][0]
+                    for x, y in xy_raw:
+                        if x != last_x:
+                            xy.append((last_x, round(sum(ys) / len(ys))))
+                            ys = []
+                            last_x = x
+                        ys.append(y)
+                    xy.append((last_x, round(sum(ys) / len(ys))))
+                    local_xy = [(x - layer_x0, y - layer_y0) for x, y in xy]
+
+                    area_fill = p.get("area_fill", None)
+                    if area_fill and len(local_xy) >= 2:
+                        poly_pts = [(local_xy[0][0], baseline_y)] + local_xy + [(local_xy[-1][0], baseline_y)]
+                        plot_draw.polygon(poly_pts, fill=state.context.color(area_fill))
+
+                    plot_draw.line(
+                        local_xy,
+                        fill=state.context.color(p.get("color", "black")),
+                        width=_stroke_width(p.get("width", 1)),
+                        joint=p.get("joint", None),
                     )
-                    for rel_time, val in run
-                ]
-                # Collapse samples that land on the same pixel column to their mean y.
-                xy: list[tuple[int, int]] = []
-                ys: list[int] = []
-                last_x = xy_raw[0][0]
-                for x, y in xy_raw:
-                    if x != last_x:
-                        xy.append((last_x, round(sum(ys) / len(ys))))
-                        ys = []
-                        last_x = x
-                    ys.append(y)
-                xy.append((last_x, round(sum(ys) / len(ys))))
-                local_xy = [(x - layer_x0, y - layer_y0) for x, y in xy]
 
-                area_fill = p.get("area_fill", None)
-                if area_fill and len(local_xy) >= 2:
-                    poly_pts = [(local_xy[0][0], baseline_y)] + local_xy + [(local_xy[-1][0], baseline_y)]
-                    plot_draw.polygon(poly_pts, fill=state.context.color(area_fill))
-
-                plot_draw.line(
-                    local_xy,
-                    fill=state.context.color(p.get("color", "black")),
-                    width=_stroke_width(p.get("width", 1)),
-                    joint=p.get("joint", None),
-                )
-
-        blit(state.img, plot_layer, layer_x0, layer_y0)
+            blit(state.img, plot_layer, layer_x0, layer_y0)
 
     if ylegend is not None and has_plot_area:
         if ylegend_pos == "left":
