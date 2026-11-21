@@ -306,9 +306,9 @@ def test_non_finite_numbers_and_strings_are_rejected(bad):
 
 @pytest.mark.parametrize("ctype", ["group", "stack", "row", "column"])
 def test_group_and_stack_rotate_validates_quarter_turns(ctx, ctype):
-    for good in (0, 90, 180, 270, "90"):
+    for good in (0, 90, 180, 270, 90.0, "90"):
         assert validate([{"type": ctype, "rotate": good, "elements": []}]) == []
-    for bad in (45, "45", 90.5, True):
+    for bad in (45, "45", 90.5, True, False):
         assert _paths([{"type": ctype, "rotate": bad, "elements": []}]) == ["[0].rotate"]
         with pytest.raises(RenderError, match="rotate must be 0/90/180/270"):
             render([{"type": ctype, "rotate": bad, "elements": []}], 20, 20, context=ctx)

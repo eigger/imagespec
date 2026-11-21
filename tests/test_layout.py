@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from PIL import Image, ImageChops
 
-from imagespec import RenderError, render
+from imagespec import RenderContext, RenderError, render
 from imagespec.classutil import parse_class
 
 BLACK = (0, 0, 0)
@@ -1395,6 +1395,26 @@ def test_containers_clip_at_negative_coordinates(ctx, ctype, coord):
     img = render([el], 30, 30, background="white", context=ctx)
     reds = sum(1 for y in range(30) for x in range(30) if img.getpixel((x, y)) == RED)
     assert reds == (15 * 15 if coord == -5 else 0)
+
+
+@pytest.mark.parametrize("ctype", ["group", "row"])
+def test_rotated_containers_with_dither_protected_clip_at_negative_coordinates(ctype):
+    bw = RenderContext(palette="bw")
+    child = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 9,
+        "fill": "#808080",
+        "outline": None,
+        "dither": False,
+    }
+    el = {"type": ctype, "x": -4, "y": -4, "width": 16, "height": 10, "rotate": 90, "elements": [child]}
+    img = render([el], 20, 20, background="white", dither="floyd", context=bw)
+    # 10x16 rotated box at (-4, -4) -> 6x12 visible flat-quantized interior without error diffusion
+    assert {img.getpixel((x, y)) for y in range(12) for x in range(6)} <= {(0, 0, 0), (255, 255, 255)}
+    assert len({img.getpixel((x, y)) for y in range(12) for x in range(6)}) == 1
 
 
 @pytest.mark.parametrize("vis", [False, "False", "0", None])
