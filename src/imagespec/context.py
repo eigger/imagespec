@@ -97,11 +97,24 @@ class RenderContext:
     )
     # url -> (monotonic fetch time, bytes); bounded, oldest entry evicted.
     _image_cache: dict[str, tuple[float, bytes]] = field(default_factory=dict, repr=False)
-    _lock: threading.RLock = field(default_factory=threading.RLock, repr=False, compare=False)
 
     def __post_init__(self):
         # Allow palette to be given as a friendly name ("7", "bw", ...).
         self.palette = get_palette(self.palette)
+        self._lock: threading.RLock = threading.RLock()
+        self._fetch_seq: int = 0
+        self._image_cache_seq: dict[str, int] = {}
+
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        state.pop("_lock", None)
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self._lock = threading.RLock()
+        self.__dict__.setdefault("_fetch_seq", 0)
+        self.__dict__.setdefault("_image_cache_seq", {})
 
     def color(self, value):
         """Resolve a requested color to its **true** RGBA (or ``None``).
@@ -167,12 +180,14 @@ class RenderContext:
         Network errors propagate as ``requests.RequestException`` for the
         caller to wrap.
         """
-        now = time.monotonic()
-        if self.image_cache_ttl > 0:
-            with self._lock:
+        with self._lock:
+            fetch_started = time.monotonic()
+            if self.image_cache_ttl > 0:
                 hit = self._image_cache.get(url)
-                if hit is not None and now - hit[0] < self.image_cache_ttl:
+                if hit is not None and fetch_started - hit[0] < self.image_cache_ttl:
                     return hit[1]
+            self._fetch_seq += 1
+            seq = self._fetch_seq
         if self.image_fetcher is not None:
             data = self.image_fetcher(url)
             if len(data) > self.max_image_bytes:
@@ -184,12 +199,20 @@ class RenderContext:
         if self.image_cache_ttl > 0:
             with self._lock:
                 now = time.monotonic()
-                # Refreshing an existing (expired) url reuses its slot; only a new
-                # url needs room, taking it from the oldest entry.
-                if url not in self._image_cache and len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:
-                    oldest = min(self._image_cache, key=lambda k: self._image_cache[k][0])
-                    del self._image_cache[oldest]
-                self._image_cache[url] = (now, data)
+                if now - fetch_started < self.image_cache_ttl and seq > self._image_cache_seq.get(url, 0):
+                    # Refreshing an existing (expired) url reuses its slot; only a new
+                    # url needs room, taking it from the oldest entry.
+                    can_store = True
+                    if url not in self._image_cache and len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:
+                        oldest = min(self._image_cache, key=lambda k: self._image_cache[k][0])
+                        if fetch_started >= self._image_cache[oldest][0]:
+                            del self._image_cache[oldest]
+                            self._image_cache_seq.pop(oldest, None)
+                        else:
+                            can_store = False
+                    if can_store:
+                        self._image_cache[url] = (fetch_started, data)
+                        self._image_cache_seq[url] = seq
         return data
 
     def _download(self, url: str, timeout: float) -> bytes:
