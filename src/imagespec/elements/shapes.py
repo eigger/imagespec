@@ -115,10 +115,11 @@ def line(state: RenderState, element: dict) -> None:
     width = stroke_width(element.get("width", 1))
     dash = element.get("dash", None)
 
-    if dash:
-        _draw_dashed_line(draw, element["x_start"], y_start, element["x_end"], y_end, dash, fill, width)
-    else:
-        draw.line([(element["x_start"], y_start), (element["x_end"], y_end)], fill=fill, width=width)
+    if width > 0:
+        if dash:
+            _draw_dashed_line(draw, element["x_start"], y_start, element["x_end"], y_end, dash, fill, width)
+        else:
+            draw.line([(element["x_start"], y_start), (element["x_end"], y_end)], fill=fill, width=width)
     state.pos_y = y_start
 
 
