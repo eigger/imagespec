@@ -16,7 +16,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import array, boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import mono_draw, require
+from ..utils import mono_draw, require, stroke_width
 from .media import mdi_char, mdi_font, resolve_icon
 
 
@@ -183,7 +183,7 @@ def battery(state: RenderState, element: dict) -> None:
     outline = state.context.color(element.get("outline", "black"))
     bg = state.context.color(element.get("background", "white"))
     fill = state.context.color(element.get("fill", "black"))
-    border = int(round(element.get("width_outline", 1)))
+    border = stroke_width(element.get("width_outline", 1))
     radius = element.get("radius", 2)
     pad = element.get("padding", 2)
 

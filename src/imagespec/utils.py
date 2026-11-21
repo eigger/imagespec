@@ -279,3 +279,12 @@ def describe_url(url: str) -> str:
         # '#'/'?'. Can't tell which, so show nothing rather than risk a leak.
         return f"{scheme.lower()}://<redacted>"
     return f"{scheme.lower()}://{authority.rpartition('@')[2]}{path}"[:120]
+
+
+def stroke_width(value: float | int) -> int:
+    """Convert a stroke/outline width to an integer pixel count for Pillow.
+
+    Positive sub-pixel values (e.g. ``0.5``) stay visible at 1px instead of
+    rounding down to 0, while explicit ``0`` (or negative) stays ``0``.
+    """
+    return max(1, int(round(value))) if value > 0 else 0

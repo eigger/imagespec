@@ -10,7 +10,7 @@ from PIL import ImageDraw
 from imagespec import RenderError, render
 from imagespec.registry import get_spec
 from imagespec.spec import COMMON_FIELDS
-from imagespec.utils import coerce_element, to_bool, to_dither, to_number
+from imagespec.utils import coerce_element, stroke_width, to_bool, to_dither, to_number
 from test_elements import _samples  # tests/ is on sys.path via conftest (prepend import mode)
 
 # ── unit: helpers ──────────────────────────────────────────────────────────
@@ -339,3 +339,41 @@ def test_to_number_rejects_non_finite_strings(raw):
 )
 def test_float_stroke_widths_render_under_strict(ctx, el):
     assert render([el], 40, 40, strict=True, context=ctx).size == (40, 40)
+
+
+@pytest.mark.parametrize("value, expected", [(0, 0), (-1, 0), (0.1, 1), (0.5, 1), (1.5, 2), (3, 3)])
+def test_stroke_width_preserves_positive_subpixel_and_explicit_zero(value, expected):
+    assert stroke_width(value) == expected
+
+
+@pytest.mark.parametrize("width, expect_ink", [(0.5, True), (0, False)])
+def test_positive_subpixel_stroke_width_stays_visible_while_zero_hides(bw_ctx, width, expect_ink):
+    rect_img = render(
+        [
+            {
+                "type": "rectangle",
+                "x_start": 2,
+                "y_start": 2,
+                "x_end": 18,
+                "y_end": 18,
+                "outline": "black",
+                "width": width,
+            }
+        ],
+        24,
+        24,
+        background="white",
+        context=bw_ctx,
+    )
+    rect_colors = {c for _, c in rect_img.getcolors(maxcolors=1 << 24)}
+    assert ((0, 0, 0) in rect_colors) is expect_ink
+
+    line_img = render(
+        [{"type": "line", "x_start": 2, "y_start": 10, "x_end": 18, "y_end": 10, "fill": "black", "width": width}],
+        24,
+        24,
+        background="white",
+        context=bw_ctx,
+    )
+    line_colors = {c for _, c in line_img.getcolors(maxcolors=1 << 24)}
+    assert ((0, 0, 0) in line_colors) is expect_ink
