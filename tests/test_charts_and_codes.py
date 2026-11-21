@@ -1,0 +1,124 @@
+"""Regression tests for progress_bar, sparkline, and barcode edge cases."""
+
+from __future__ import annotations
+
+from PIL import Image
+
+from imagespec import RenderContext, render
+from imagespec.elements.charts import progress_bar
+from imagespec.state import RenderState
+
+
+def _colors(img: Image.Image) -> set[tuple[int, ...]]:
+    return {color for _, color in img.getcolors(maxcolors=1 << 24)}
+
+
+def test_progress_bar_percentage_text_is_1bit_crisp():
+    ctx = RenderContext(palette="bw")
+    raw = Image.new("RGBA", (100, 30), "white")
+    state = RenderState(img=raw, canvas_width=100, canvas_height=30, context=ctx)
+    progress_bar(
+        state,
+        {
+            "x_start": 0,
+            "y_start": 0,
+            "x_end": 99,
+            "y_end": 29,
+            "progress": 20,
+            "fill": "black",
+            "background": "white",
+            "outline": "black",
+            "show_percentage": True,
+        },
+    )
+    pixels = _colors(raw)  # RGBA bytes before any final palette snap
+    assert pixels <= {(0, 0, 0, 255), (255, 255, 255, 255)}
+
+
+def test_progress_bar_zero_progress_with_radius_draws_no_fill():
+    ctx = RenderContext(palette="4")
+    img = render(
+        [
+            {
+                "type": "progress_bar",
+                "x_start": 5,
+                "y_start": 5,
+                "x_end": 45,
+                "y_end": 25,
+                "progress": 0,
+                "radius": 4,
+                "fill": "red",
+                "outline": None,
+            }
+        ],
+        50,
+        30,
+        background="white",
+        context=ctx,
+    )
+    assert (255, 0, 0) not in _colors(img)
+
+
+def test_fractional_widths_on_progress_bar_and_sparkline(ctx):
+    els = [
+        {"type": "progress_bar", "x_start": 2, "y_start": 2, "x_end": 50, "y_end": 16, "progress": 50, "width": 1.5},
+        {"type": "sparkline", "x": 2, "y": 20, "width": 48, "height": 18, "values": [1, 4, 2, 5], "width_line": 1.5},
+    ]
+    assert render(els, 60, 40, strict=True, context=ctx).size == (60, 40)
+
+
+def test_barcode_null_bgcolor_is_transparent_over_background(ctx):
+    img = render(
+        [
+            {
+                "type": "barcode",
+                "x": 5,
+                "y": 2,
+                "data": "1234",
+                "bgcolor": None,
+                "color": "black",
+                "width": 50,
+                "height": 16,
+                "write_text": False,
+            }
+        ],
+        60,
+        20,
+        background="yellow",
+        context=ctx,
+    )
+    colors = _colors(img)
+    assert (0, 0, 0) in colors
+    assert (255, 255, 0) in colors
+
+
+def test_barcode_null_color_draws_solid_bgcolor_and_both_null_is_noop(ctx):
+    solid = render(
+        [
+            {
+                "type": "barcode",
+                "x": 0,
+                "y": 0,
+                "data": "1234",
+                "color": None,
+                "bgcolor": "red",
+                "width": 30,
+                "height": 10,
+                "write_text": False,
+            }
+        ],
+        30,
+        10,
+        background="white",
+        context=ctx,
+    )
+    assert _colors(solid) == {(255, 0, 0)}
+
+    noop = render(
+        [{"type": "barcode", "x": 0, "y": 0, "data": "1234", "color": None, "bgcolor": None}],
+        30,
+        10,
+        background="yellow",
+        context=ctx,
+    )
+    assert _colors(noop) == {(255, 255, 0)}

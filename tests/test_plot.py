@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+
 import pytest
 from PIL import ImageDraw
 
-from imagespec import RenderError, render
+from imagespec import RenderContext, RenderError, render
 
 
 def _ylegend_labels(monkeypatch, ctx, **extra):
@@ -104,3 +107,121 @@ def test_plot_xlegend_format_with_a_newline_renders(history_ctx):
         "xlegend": {"format": "%H\n%M"},
     }
     assert render([el], 200, 100, context=history_ctx).size == (200, 100)
+
+
+def test_plot_clips_pre_and_post_window_samples():
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "10", "last_changed": (now - timedelta(hours=48)).isoformat()},
+        {"state": "20", "last_changed": (now - timedelta(hours=12)).isoformat()},
+        {"state": "30", "last_changed": (now + timedelta(hours=12)).isoformat()},
+    ]
+    ctx = RenderContext(history_provider=lambda ids, s, e: {"sensor.a": samples})
+    el = {
+        "type": "plot",
+        "x_start": 30,
+        "y_start": 0,
+        "x_end": 89,
+        "y_end": 39,
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": None,
+        "data": [{"entity": "sensor.a", "color": "red", "area_fill": "yellow"}],
+    }
+    img = render([el], 100, 40, background="white", context=ctx)
+    # No red or yellow pixels should ever leak left of diag_x=30 or right of diag_x+diag_width-1=89.
+    assert all(img.getpixel((x, y)) == (255, 255, 255) for y in range(40) for x in range(30))
+    assert all(img.getpixel((x, y)) == (255, 255, 255) for y in range(40) for x in range(90, 100))
+    # Inside [30, 89], clipped segments still produce a line touching both boundaries.
+    assert any(img.getpixel((30, y)) == (255, 0, 0) for y in range(40))
+    assert any(img.getpixel((89, y)) == (255, 0, 0) for y in range(40))
+
+
+@pytest.mark.parametrize("state", ["1e-05", "+12.5", " 15.0 "])
+def test_plot_accepts_scientific_signed_and_padded_string_states(state):
+    now = datetime.now(UTC)
+    samples = [
+        {"state": state, "last_changed": (now - timedelta(hours=2)).isoformat()},
+        {"state": "20", "last_changed": (now - timedelta(hours=1)).isoformat()},
+    ]
+    ctx = RenderContext(history_provider=lambda ids, s, e: {"sensor.a": samples})
+    assert render([{"type": "plot", "data": [{"entity": "sensor.a"}]}], 80, 40, context=ctx).size == (80, 40)
+
+
+def test_plot_accepts_all_object_samples():
+    now = datetime.now(UTC)
+    samples = [
+        SimpleNamespace(state="10", last_changed=(now - timedelta(hours=2)).isoformat()),
+        SimpleNamespace(state="15", last_changed=(now - timedelta(hours=1)).isoformat()),
+    ]
+    ctx = RenderContext(history_provider=lambda ids, s, e: {"sensor.a": samples})
+    assert render([{"type": "plot", "data": [{"entity": "sensor.a"}]}], 80, 40, context=ctx).size == (80, 40)
+
+
+def test_plot_yaxis_zero_width_and_out_of_window_samples():
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "10", "last_changed": (now - timedelta(hours=72)).isoformat()},
+        {"state": "15", "last_changed": (now - timedelta(hours=48)).isoformat()},
+    ]
+    ctx = RenderContext(history_provider=lambda ids, s, e: {"sensor.a": samples})
+    el = {
+        "type": "plot",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 79,
+        "y_end": 39,
+        "duration": 3600,
+        "yaxis": {"width": 0, "tick_width": 0, "grid": None},
+        "data": [{"entity": "sensor.a", "width": 1.5}],
+    }
+    assert render([el], 80, 40, context=ctx).size == (80, 40)
+
+
+@pytest.mark.parametrize(
+    ("x_end", "y_end", "ylegend_width"),
+    [
+        (15, 20, 10),  # diag_width <= 0
+        (80, 10, 0),  # diag_height <= 0 due to xlegend_height
+        (5, 20, 0),  # x_end < x_start
+    ],
+)
+def test_plot_collapsed_area_does_not_crash(history_ctx, x_end, y_end, ylegend_width):
+    el = {
+        "type": "plot",
+        "x_start": 10,
+        "y_start": 0,
+        "x_end": x_end,
+        "y_end": y_end,
+        "debug": True,
+        "yaxis": {},
+        "xlegend": {},
+        "ylegend": {"width": ylegend_width},
+        "data": [{"entity": "sensor.temp"}],
+    }
+    assert render([el], 90, 40, context=history_ctx).size == (90, 40)
+
+
+def test_plot_clips_segment_joining_back_in_and_out_of_window():
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "10", "last_changed": (now - timedelta(hours=36)).isoformat()},
+        {"state": "20", "last_changed": (now - timedelta(hours=12)).isoformat()},
+        {"state": "15", "last_changed": (now - timedelta(hours=30)).isoformat()},
+        {"state": "25", "last_changed": (now - timedelta(hours=6)).isoformat()},
+    ]
+    ctx = RenderContext(history_provider=lambda ids, s, e: {"sensor.a": samples})
+    el = {
+        "type": "plot",
+        "x_start": 10,
+        "y_start": 0,
+        "x_end": 69,
+        "y_end": 39,
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": None,
+        "data": [{"entity": "sensor.a", "color": "black"}],
+    }
+    img = render([el], 80, 40, background="white", context=ctx)
+    assert all(img.getpixel((x, y)) == (255, 255, 255) for y in range(40) for x in range(10))
+    assert any(img.getpixel((x, y)) == (0, 0, 0) for y in range(40) for x in range(10, 70))
