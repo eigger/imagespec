@@ -35,10 +35,16 @@ def _draw_isolated(state, element, handler, dither) -> None:
     from .dither import ORDERED_ORIGIN_ALIGN, dither_to_palette
 
     base = state.img
+    old_protected = state.dither_protected
     state.img = Image.new("RGBA", base.size, (0, 0, 0, 0))
-    handler(state, element)  # draws into the fresh layer (a handler may also assign state.img)
-    layer = state.img.convert("RGBA")
-    state.img = base
+    state.dither_protected = Image.new("L", base.size, 0)
+    try:
+        handler(state, element)  # draws into the fresh layer (a handler may also assign state.img)
+        layer = state.img.convert("RGBA")
+        additions = state.dither_protected
+    finally:
+        state.img = base
+        state.dither_protected = old_protected
 
     bbox = layer.getbbox()
     if bbox is None:
@@ -48,12 +54,18 @@ def _draw_isolated(state, element, handler, dither) -> None:
     ox = (left // ORDERED_ORIGIN_ALIGN) * ORDERED_ORIGIN_ALIGN
     oy = (top // ORDERED_ORIGIN_ALIGN) * ORDERED_ORIGIN_ALIGN
     cropped = layer.crop((ox, oy, right, bottom))
-    alpha = cropped.split()[-1]
+    alpha = cropped.getchannel("A")
+    transparent_mask = alpha.point(lambda p: 0 if p else 255)
+    child_protected = additions.crop((ox, oy, right, bottom)) if additions is not None else None
+    quant_protect = (
+        ImageChops.lighter(child_protected, transparent_mask) if child_protected is not None else transparent_mask
+    )
     quant = dither_to_palette(
         cropped,
         state.context.palette,
         dither=dither,
         origin=(ox, oy),
+        protect_mask=quant_protect,
     ).convert("RGBA")
     quant.putalpha(alpha)
     base.alpha_composite(quant, dest=(ox, oy))
@@ -85,20 +97,19 @@ def _draw_rotated(state, element, handler, rotation: int, dither) -> None:
         additions = state.dither_protected
         new_pos_y = state.pos_y
     except Exception:
-        state.img = base
-        state.dither_protected = old_protected
         state.pos_y = old_pos_y
         raise
-    state.img = base
+    finally:
+        state.img = base
+        state.dither_protected = old_protected
 
     bbox = layer.getchannel("A").getbbox()
     if bbox is None:
-        state.dither_protected = old_protected
         return
 
     left, top, right, bottom = bbox
     source = layer.crop(bbox)
-    source_mask = additions.crop(bbox)
+    source_mask = additions.crop(bbox) if additions is not None else Image.new("L", source.size, 0)
     transpose = {
         90: Image.Transpose.ROTATE_270,
         180: Image.Transpose.ROTATE_180,
@@ -118,11 +129,14 @@ def _draw_rotated(state, element, handler, rotation: int, dither) -> None:
         quant_input = Image.new("RGBA", (dest_x + tile.width - ox, dest_y + tile.height - oy), (0, 0, 0, 0))
         quant_input.alpha_composite(tile, (dest_x - ox, dest_y - oy))
         alpha = quant_input.getchannel("A")
+        quant_protect = alpha.point(lambda p: 0 if p else 255)
+        merge_mask(quant_protect, tile_mask, dest_x - ox, dest_y - oy)
         quant = dither_to_palette(
             quant_input,
             state.context.palette,
             dither=dither,
             origin=(ox, oy),
+            protect_mask=quant_protect,
         ).convert("RGBA")
         quant.putalpha(alpha)
         blit(base, quant, ox, oy)
@@ -133,13 +147,10 @@ def _draw_rotated(state, element, handler, rotation: int, dither) -> None:
     else:
         blit(base, tile, dest_x, dest_y)
         coverage = tile.getchannel("A").point(lambda p: 255 if p else 0)
-        if old_protected is not None:
-            surviving = old_protected.copy()
-            subtract_mask(surviving, coverage, dest_x, dest_y)
-            state.dither_protected = surviving
-        else:
-            state.dither_protected = Image.new("L", base.size, 0)
-        merge_mask(state.dither_protected, tile_mask, dest_x, dest_y)
+        protected = old_protected.copy() if old_protected is not None else Image.new("L", base.size, 0)
+        subtract_mask(protected, coverage, dest_x, dest_y)
+        merge_mask(protected, tile_mask, dest_x, dest_y)
+        state.dither_protected = protected
 
     # These handlers own the flow cursor even when they intentionally write its
     # current value (for example, an explicit-y line). Do not infer ownership by
@@ -186,13 +197,18 @@ def render_element(state, element: dict) -> None:
             base = state.img
             state.img = Image.new("RGBA", base.size, (0, 0, 0, 0))
             state.dither_protected = Image.new("L", base.size, 0)
-            handler(state, element)
-            layer = state.img.convert("RGBA")
-            additions = state.dither_protected
-            coverage = layer.getchannel("A").point(lambda p: 255 if p else 0)
-            state.img = base
-            base.alpha_composite(layer)
-            surviving = ImageChops.subtract(old_protected, coverage)
-            state.dither_protected = ImageChops.lighter(surviving, additions)
+            try:
+                handler(state, element)
+                layer = state.img.convert("RGBA")
+                additions = state.dither_protected or Image.new("L", base.size, 0)
+                coverage = layer.getchannel("A").point(lambda p: 255 if p else 0)
+                base.alpha_composite(layer)
+                surviving = ImageChops.subtract(old_protected, coverage)
+                state.dither_protected = ImageChops.lighter(surviving, additions)
+            except Exception:
+                state.dither_protected = old_protected
+                raise
+            finally:
+                state.img = base
         else:
             handler(state, element)
