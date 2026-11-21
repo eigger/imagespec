@@ -15,12 +15,14 @@ import io
 import logging
 import os
 import tempfile
+import threading
 import time
 
 import requests
 from PIL import ImageFont
 
 from .context import FontResolver
+from .utils import describe_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +50,7 @@ def chain_resolvers(*resolvers: FontResolver | None) -> FontResolver:
             if r is None:
                 continue
             path = r(name)
-            if path and os.path.exists(path):
+            if path and os.path.isfile(path):
                 return path
         return None
 
@@ -59,8 +61,11 @@ def directory_resolver(directory: str) -> FontResolver:
     """Resolve a font name to ``<directory>/<basename>`` if it exists."""
 
     def resolver(name: str) -> str | None:
-        path = os.path.join(directory, os.path.basename(name))
-        return path if os.path.exists(path) else None
+        base = os.path.basename(name)
+        if not base or base in (".", ".."):
+            return None
+        path = os.path.join(directory, base)
+        return path if os.path.isfile(path) else None
 
     return resolver
 
@@ -101,25 +106,34 @@ def caching_resolver(
     sources = sources or {}
     http = session or requests
 
+    lock = threading.Lock()
     failed: dict[str, float] = {}  # base name -> time.monotonic() of the last failure
 
     def fail(base: str, message: str, *args: object) -> None:
         _LOGGER.warning(message, *args)
-        failed[base] = time.monotonic()
+        with lock:
+            failed[base] = time.monotonic()
 
     def download(url: str, name: str) -> bytes | None:
+        safe_url = describe_url(url)
         resp = http.get(url, timeout=timeout, stream=True)
         try:
             resp.raise_for_status()
             declared = resp.headers.get("Content-Length")
             if declared and declared.isdigit() and int(declared) > max_bytes:
-                fail(name, "Font %r from %s is %s bytes (limit %d) - not cached", name, url, declared, max_bytes)
+                fail(name, "Font %r from %s is %s bytes (limit %d) - not cached", name, safe_url, declared, max_bytes)
                 return None
             buf = bytearray()
             for chunk in resp.iter_content(64 * 1024):
                 buf += chunk
                 if len(buf) > max_bytes:
-                    fail(name, "Font %r from %s exceeds %d bytes - download aborted, not cached", name, url, max_bytes)
+                    fail(
+                        name,
+                        "Font %r from %s exceeds %d bytes - download aborted, not cached",
+                        name,
+                        safe_url,
+                        max_bytes,
+                    )
                     return None
         finally:
             resp.close()
@@ -127,13 +141,16 @@ def caching_resolver(
 
     def resolver(name: str) -> str | None:
         base = os.path.basename(name)
+        if not base or base in (".", ".."):
+            return None
         cached = os.path.join(cache_dir, base)
-        if os.path.exists(cached):
+        if os.path.isfile(cached):
             return cached
         url = sources.get(name) or sources.get(base)
         if not url:
             return None
-        last_failure = failed.get(base)
+        with lock:
+            last_failure = failed.get(base)
         if last_failure is not None and time.monotonic() - last_failure < failure_ttl:
             return None
         try:
@@ -143,7 +160,7 @@ def caching_resolver(
                 base,
                 "Font %r could not be downloaded from %s (%s) - using the bundled font",
                 name,
-                url,
+                describe_url(url),
                 type(exc).__name__,
             )
             return None
@@ -151,9 +168,10 @@ def caching_resolver(
             return None
         if not _is_font(data):
             # e.g. a captive portal's HTML answered 200: caching it would break every later render
-            fail(base, "Download for font %r from %s is not a usable font file - not cached", name, url)
+            fail(base, "Download for font %r from %s is not a usable font file - not cached", name, describe_url(url))
             return None
-        failed.pop(base, None)
+        with lock:
+            failed.pop(base, None)
         fd, tmp = tempfile.mkstemp(prefix=base + ".", suffix=".part", dir=cache_dir)
         try:
             with os.fdopen(fd, "wb") as f:

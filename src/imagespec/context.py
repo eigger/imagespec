@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 from collections import OrderedDict
 from collections.abc import Callable, Sequence
@@ -34,6 +35,8 @@ from .utils import describe_url
 
 _LOGGER = logging.getLogger(__name__)
 _WARNED_FONTS: set[str] = set()
+_WARNED_FONTS_LOCK = threading.Lock()
+_FONT_EXTENSIONS = frozenset({".ttf", ".otf", ".ttc", ".otc"})
 
 FontResolver = Callable[[str], str | None]
 HistoryProvider = Callable[[Sequence[str], Any, Any], dict[str, Any]]
@@ -50,8 +53,11 @@ BUNDLED_ICONS_DIR = os.path.join(_PKG_DIR, "icons")
 
 
 def _bundled_font_path(name: str) -> str | None:
-    path = os.path.join(BUNDLED_FONTS_DIR, os.path.basename(name))
-    return path if os.path.exists(path) else None
+    base = os.path.basename(name)
+    if not base or os.path.splitext(base)[1].lower() not in _FONT_EXTENSIONS:
+        return None
+    path = os.path.join(BUNDLED_FONTS_DIR, base)
+    return path if os.path.isfile(path) else None
 
 
 @dataclass
@@ -91,6 +97,7 @@ class RenderContext:
     )
     # url -> (monotonic fetch time, bytes); bounded, oldest entry evicted.
     _image_cache: dict[str, tuple[float, bytes]] = field(default_factory=dict, repr=False)
+    _lock: threading.RLock = field(default_factory=threading.RLock, repr=False, compare=False)
 
     def __post_init__(self):
         # Allow palette to be given as a friendly name ("7", "bw", ...).
@@ -105,43 +112,49 @@ class RenderContext:
         """
         return resolve_color(value)
 
+    def _resolve_candidate(self, candidate: str) -> str | None:
+        if self.font_resolver is not None:
+            p = self.font_resolver(candidate)
+            if p and os.path.isfile(p):
+                return p
+        return _bundled_font_path(candidate)
+
     def resolve_font_path(self, name: str | None) -> str:
         """Resolve a payload font name to an absolute file path.
 
         Order: injected resolver → bundled font of the same basename →
-        bundled default font.
+        default font (via injected resolver or bundled).
         """
-        name = name or self.default_font
-        if self.font_resolver is not None:
-            p = self.font_resolver(name)
-            if p and os.path.exists(p):
+        requested = name or self.default_font
+        p = self._resolve_candidate(requested)
+        if p:
+            return p
+        if requested != self.default_font:
+            p = self._resolve_candidate(self.default_font)
+            if p:
+                with _WARNED_FONTS_LOCK:
+                    if requested not in _WARNED_FONTS and len(_WARNED_FONTS) < 256:  # bounded: names come from payloads
+                        _WARNED_FONTS.add(requested)
+                        _LOGGER.warning("Font %r not found - using default %r", requested, self.default_font)
                 return p
-        p = _bundled_font_path(name)
-        if p:
-            return p
-        p = _bundled_font_path(self.default_font)
-        if p:
-            if name not in _WARNED_FONTS and len(_WARNED_FONTS) < 256:  # bounded: names come from payloads
-                _WARNED_FONTS.add(name)
-                _LOGGER.warning("Font %r not found - using default %r", name, self.default_font)
-            return p
         raise RenderError(
-            f"Font '{name}' could not be resolved and no bundled default ('{self.default_font}') is available."
+            f"Font '{requested}' could not be resolved and no default ('{self.default_font}') is available."
         )
 
     def font(self, name: str | None, size) -> ImageFont.FreeTypeFont:
         """Return a (cached) truetype font for ``name`` at ``size``."""
         path = self.resolve_font_path(name)
         key = (path, int(size), self.layout_engine)
-        cached = self._font_cache.get(key)
-        if cached is None:
-            cached = ImageFont.truetype(path, int(size), layout_engine=self.layout_engine)
-            self._font_cache[key] = cached
-            while len(self._font_cache) > FONT_CACHE_SIZE:
-                self._font_cache.popitem(last=False)
-        else:
-            self._font_cache.move_to_end(key)
-        return cached
+        with self._lock:
+            cached = self._font_cache.get(key)
+            if cached is None:
+                cached = ImageFont.truetype(path, int(size), layout_engine=self.layout_engine)
+                self._font_cache[key] = cached
+                while len(self._font_cache) > FONT_CACHE_SIZE:
+                    self._font_cache.popitem(last=False)
+            else:
+                self._font_cache.move_to_end(key)
+            return cached
 
     def fetch_image(self, url: str, *, timeout: float = 30) -> bytes:
         """Bytes of an ``http(s)`` image for ``dlimg``: cached per ``image_cache_ttl``.
@@ -155,9 +168,10 @@ class RenderContext:
         """
         now = time.monotonic()
         if self.image_cache_ttl > 0:
-            hit = self._image_cache.get(url)
-            if hit is not None and now - hit[0] < self.image_cache_ttl:
-                return hit[1]
+            with self._lock:
+                hit = self._image_cache.get(url)
+                if hit is not None and now - hit[0] < self.image_cache_ttl:
+                    return hit[1]
         if self.image_fetcher is not None:
             data = self.image_fetcher(url)
             if len(data) > self.max_image_bytes:
@@ -167,12 +181,14 @@ class RenderContext:
         else:
             data = self._download(url, timeout)
         if self.image_cache_ttl > 0:
-            # Refreshing an existing (expired) url reuses its slot; only a new
-            # url needs room, taking it from the oldest entry.
-            if url not in self._image_cache and len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:
-                oldest = min(self._image_cache, key=lambda k: self._image_cache[k][0])
-                del self._image_cache[oldest]
-            self._image_cache[url] = (now, data)
+            now = time.monotonic()
+            with self._lock:
+                # Refreshing an existing (expired) url reuses its slot; only a new
+                # url needs room, taking it from the oldest entry.
+                if url not in self._image_cache and len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:
+                    oldest = min(self._image_cache, key=lambda k: self._image_cache[k][0])
+                    del self._image_cache[oldest]
+                self._image_cache[url] = (now, data)
         return data
 
     def _download(self, url: str, timeout: float) -> bytes:

@@ -207,3 +207,49 @@ def test_caching_resolver_ttl_zero_retries_every_call(tmp_path):
     r("f.ttf")
     r("f.ttf")
     assert session.calls == 2
+
+
+def test_resolvers_ignore_directory_names_and_subdirectories(tmp_path):
+    (tmp_path / "subdir").mkdir()
+    d = directory_resolver(str(tmp_path))
+    c = caching_resolver(str(tmp_path), sources={".": "https://x/dot", "subdir": "https://x/sub"})
+    for bad in (".", "..", "/", "", "subdir", "nested/.."):
+        assert d(bad) is None
+        assert c(bad) is None
+
+
+def test_resolvers_chain_skips_directories(tmp_path):
+    (tmp_path / "dir").mkdir()
+    r = chain_resolvers(lambda _name: str(tmp_path / "dir"), directory_resolver(BUNDLED_FONTS_DIR))
+    assert r("NotoSansKR-Regular.ttf") == os.path.join(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf")
+
+
+def test_caching_resolver_redacts_url_secrets_in_warning_logs(tmp_path, caplog):
+    import requests
+
+    secret_url = "https://user:s3cr3t@example.test/fonts/f.ttf?token=topsecret"
+    r1 = caching_resolver(
+        str(tmp_path),
+        {"bad.ttf": secret_url},
+        session=FakeSession(error=requests.ConnectionError("boom")),
+        failure_ttl=0,
+    )
+    r2 = caching_resolver(
+        str(tmp_path),
+        {"html.ttf": secret_url},
+        session=_session(b"<html>nope</html>"),
+        failure_ttl=0,
+    )
+    r3 = caching_resolver(
+        str(tmp_path),
+        {"big.ttf": secret_url},
+        session=FakeSession(FakeResponse(chunks=[], headers={"Content-Length": "999999"})),
+        max_bytes=100,
+        failure_ttl=0,
+    )
+    r1("bad.ttf")
+    r2("html.ttf")
+    r3("big.ttf")
+    assert "https://example.test/fonts/f.ttf" in caplog.text
+    assert "s3cr3t" not in caplog.text
+    assert "topsecret" not in caplog.text
