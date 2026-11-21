@@ -163,3 +163,51 @@ def test_fetch_image_slow_request_beyond_ttl_does_not_refresh_ttl(monkeypatch):
     assert url not in ctx._image_cache
     assert ctx.fetch_image(url) == b"fresh"
     assert calls == 2
+
+
+def test_shallow_copy_context_can_refresh_expired_image_cache(monkeypatch):
+    clock = 100.0
+    monkeypatch.setattr(ctxmod.time, "monotonic", lambda: clock)
+    payload = b"v1"
+    calls = 0
+
+    def fetcher(_url: str) -> bytes:
+        nonlocal calls
+        calls += 1
+        return payload
+
+    url = "https://example.test/logo.png"
+    ctx = RenderContext(image_fetcher=fetcher, image_cache_ttl=10.0)
+    assert ctx.fetch_image(url) == b"v1"
+    assert calls == 1
+
+    copied = copy.copy(ctx)
+    assert copied._image_cache is not ctx._image_cache
+    assert copied._image_cache_seq is not ctx._image_cache_seq
+    assert copied._font_cache is not ctx._font_cache
+    assert copied._lock is not ctx._lock
+
+    # Advance past TTL and refresh on the shallow copy: cache must update with v2.
+    clock += 11.0
+    payload = b"v2"
+    assert copied.fetch_image(url) == b"v2"
+    assert copied.fetch_image(url) == b"v2"
+    assert calls == 2
+    # Original retains its own expired v1 cache until refreshed independently.
+    payload = b"v3"
+    assert ctx.fetch_image(url) == b"v3"
+    assert calls == 3
+    assert copied.fetch_image(url) == b"v2"
+
+    # Copying before fetching also gives independent cache/sequence state.
+    fresh_orig = RenderContext(image_fetcher=fetcher, image_cache_ttl=10.0)
+    fresh_copy = copy.copy(fresh_orig)
+    assert fresh_copy._image_cache is not fresh_orig._image_cache
+    assert fresh_copy._lock is not fresh_orig._lock
+    assert fresh_orig.fetch_image(url) == b"v3"
+    assert calls == 4
+    clock += 11.0
+    payload = b"v4"
+    assert fresh_copy.fetch_image(url) == b"v4"
+    assert fresh_copy.fetch_image(url) == b"v4"
+    assert calls == 5

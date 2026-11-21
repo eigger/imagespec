@@ -116,6 +116,18 @@ class RenderContext:
         self.__dict__.setdefault("_fetch_seq", 0)
         self.__dict__.setdefault("_image_cache_seq", {})
 
+    def __copy__(self) -> RenderContext:
+        cls = type(self)
+        copied = cls.__new__(cls)
+        with self._lock:
+            state = self.__dict__.copy()
+            state["_font_cache"] = OrderedDict(self._font_cache)
+            state["_image_cache"] = dict(self._image_cache)
+            state["_image_cache_seq"] = dict(self._image_cache_seq)
+            state["_lock"] = threading.RLock()
+        copied.__dict__.update(state)
+        return copied
+
     def color(self, value):
         """Resolve a requested color to its **true** RGBA (or ``None``).
 
