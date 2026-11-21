@@ -147,3 +147,118 @@ def test_barcode_null_color_draws_solid_bgcolor_and_both_null_is_noop(ctx):
         context=ctx,
     )
     assert _colors(noop) == {(255, 255, 0)}
+
+
+@pytest.mark.parametrize("direction", ["right", "left", "up", "down"])
+def test_progress_bar_1px_span_fills_at_100_percent_and_empty_at_0(direction):
+    ctx = RenderContext(palette="4")
+    coords = (
+        {"x_start": 10, "y_start": 2, "x_end": 10, "y_end": 18}
+        if direction in ("right", "left")
+        else {"x_start": 2, "y_start": 10, "x_end": 18, "y_end": 10}
+    )
+    full = render(
+        [
+            {
+                "type": "progress_bar",
+                **coords,
+                "progress": 100,
+                "direction": direction,
+                "width": 0,
+                "fill": "red",
+                "background": "white",
+                "outline": None,
+            }
+        ],
+        24,
+        24,
+        background="white",
+        context=ctx,
+    )
+    assert (255, 0, 0) in _colors(full)
+
+    empty = render(
+        [
+            {
+                "type": "progress_bar",
+                **coords,
+                "progress": 0,
+                "direction": direction,
+                "width": 0,
+                "fill": "red",
+                "background": "white",
+                "outline": None,
+            }
+        ],
+        24,
+        24,
+        background="white",
+        context=ctx,
+    )
+    assert (255, 0, 0) not in _colors(empty)
+
+
+def test_subpixel_positive_width_draws_visible_ink_while_zero_hides(ctx):
+    pb_half = render(
+        [
+            {
+                "type": "progress_bar",
+                "x_start": 2,
+                "y_start": 2,
+                "x_end": 22,
+                "y_end": 14,
+                "progress": 0,
+                "fill": None,
+                "background": None,
+                "outline": "black",
+                "width": 0.5,
+            }
+        ],
+        28,
+        20,
+        background="white",
+        context=ctx,
+    )
+    assert (0, 0, 0) in _colors(pb_half)
+
+    pb_zero = render(
+        [
+            {
+                "type": "progress_bar",
+                "x_start": 2,
+                "y_start": 2,
+                "x_end": 22,
+                "y_end": 14,
+                "progress": 0,
+                "fill": None,
+                "background": None,
+                "outline": "black",
+                "width": 0,
+            }
+        ],
+        28,
+        20,
+        background="white",
+        context=ctx,
+    )
+    assert (0, 0, 0) not in _colors(pb_zero)
+
+    sp_half = render(
+        [
+            {
+                "type": "sparkline",
+                "x": 2,
+                "y": 2,
+                "width": 20,
+                "height": 12,
+                "values": [1, 3, 2],
+                "color": "black",
+                "width_line": 0.5,
+            }
+        ],
+        28,
+        20,
+        background="white",
+        context=ctx,
+    )
+    assert (0, 0, 0) in _colors(sp_half)

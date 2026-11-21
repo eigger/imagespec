@@ -241,3 +241,111 @@ def test_plot_clips_segment_joining_back_in_and_out_of_window():
     img = render([el], 80, 40, background="white", context=ctx)
     assert all(img.getpixel((x, y)) == (255, 255, 255) for y in range(40) for x in range(10))
     assert any(img.getpixel((x, y)) == (0, 0, 0) for y in range(40) for x in range(10, 70))
+
+
+def test_plot_out_of_window_spike_does_not_flatten_visible_y_range(monkeypatch):
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "10000", "last_changed": (now - timedelta(hours=48)).isoformat()},
+        {"state": "10", "last_changed": (now - timedelta(hours=36)).isoformat()},
+        {"state": "10", "last_changed": (now - timedelta(hours=23)).isoformat()},
+        {"state": "20", "last_changed": (now - timedelta(hours=1)).isoformat()},
+    ]
+    ctx = RenderContext(palette="4", history_provider=lambda ids, s, e: {"sensor.a": samples})
+    drawn: list[str] = []
+    orig = ImageDraw.ImageDraw.text
+
+    def spy(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return orig(self, xy, text, *args, **kwargs)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", spy)
+    el = {
+        "type": "plot",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 99,
+        "y_end": 39,
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": {"width": 20},
+        "data": [{"entity": "sensor.a", "color": "red"}],
+    }
+    img = render([el], 100, 40, background="white", context=ctx)
+    assert "10000" not in drawn
+    assert "10" in drawn and "20" in drawn
+    # With 10..20 range (not 10..10000), the rising line reaches the upper half of the plot.
+    assert any(img.getpixel((x, y)) == (255, 0, 0) for x in range(20, 100) for y in range(0, 15))
+    assert any(img.getpixel((x, y)) == (255, 0, 0) for x in range(20, 100) for y in range(25, 40))
+
+
+def test_plot_boundary_interpolated_value_included_in_y_range(monkeypatch):
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "0", "last_changed": (now - timedelta(hours=36)).isoformat()},
+        {"state": "100", "last_changed": (now - timedelta(hours=12)).isoformat()},
+    ]
+    ctx = RenderContext(palette="4", history_provider=lambda ids, s, e: {"sensor.a": samples})
+    drawn: list[str] = []
+    orig = ImageDraw.ImageDraw.text
+
+    def spy(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return orig(self, xy, text, *args, **kwargs)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", spy)
+    el = {
+        "type": "plot",
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": {},
+        "data": [{"entity": "sensor.a", "color": "black"}],
+    }
+    render([el], 120, 50, context=ctx)
+    assert "50" in drawn
+    assert "100" in drawn
+    assert "0" not in drawn
+
+
+def test_plot_thick_line_is_clipped_to_plot_rectangle():
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "0", "last_changed": (now - timedelta(hours=36)).isoformat()},
+        {"state": "20", "last_changed": (now + timedelta(hours=12)).isoformat()},
+    ]
+    ctx = RenderContext(palette="4", history_provider=lambda ids, s, e: {"sensor.a": samples})
+    el = {
+        "type": "plot",
+        "x_start": 20,
+        "y_start": 10,
+        "x_end": 69,
+        "y_end": 39,
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": None,
+        "data": [{"entity": "sensor.a", "color": "red", "width": 5}],
+    }
+    img = render([el], 90, 50, background="white", context=ctx)
+    for y in range(50):
+        for x in range(90):
+            if not (20 <= x <= 69 and 10 <= y <= 39):
+                assert img.getpixel((x, y)) == (255, 255, 255)
+    assert any(img.getpixel((x, y)) == (255, 0, 0) for y in range(10, 40) for x in range(20, 70))
+
+
+def test_plot_all_samples_outside_window_renders_without_crashing():
+    now = datetime.now(UTC)
+    samples = [
+        {"state": "10", "last_changed": (now - timedelta(hours=48)).isoformat()},
+        {"state": "20", "last_changed": (now - timedelta(hours=36)).isoformat()},
+    ]
+    ctx = RenderContext(palette="4", history_provider=lambda ids, s, e: {"sensor.a": samples})
+    el = {
+        "type": "plot",
+        "duration": 86400,
+        "yaxis": None,
+        "ylegend": None,
+        "data": [{"entity": "sensor.a", "color": "black"}],
+    }
+    img = render([el], 80, 40, background="white", context=ctx)
+    assert img.getcolors(maxcolors=1 << 24) == [(80 * 40, (255, 255, 255))]
