@@ -11,7 +11,7 @@ from io import BytesIO
 import barcode as barcode_lib
 import qrcode
 from barcode.writer import ImageWriter
-from PIL import Image
+from PIL import Image, ImageChops
 from qrcode.image.pil import PilImage
 
 from ..exceptions import RenderError
@@ -137,14 +137,32 @@ def barcode(state: RenderState, element: dict) -> None:
     data = str(element["data"])
     pos_x, pos_y = element["x"], element["y"]
     code = element.get("code", "code128")
+    fg_rgba = state.context.color(element.get("color", "black"))
+    bg_rgba = state.context.color(element.get("bgcolor", "white"))
+    if fg_rgba is None and bg_rgba is None:
+        return
+    transparent_bg = bg_rgba is None
+    if transparent_bg:
+        assert fg_rgba is not None
+        sentinel_rgb = (255, 255, 255) if fg_rgba[:3] != (255, 255, 255) else (0, 0, 0)
+        writer_bg = _hex(sentinel_rgb)
+        writer_fg = _hex(fg_rgba)
+    elif fg_rgba is None:
+        sentinel_rgb = (0, 0, 0)
+        writer_bg = _hex(bg_rgba)
+        writer_fg = writer_bg
+    else:
+        sentinel_rgb = (0, 0, 0)
+        writer_bg = _hex(bg_rgba)
+        writer_fg = _hex(fg_rgba)
     options = {
         "module_width": float(element.get("module_width", 0.2)),
         "module_height": float(element.get("module_height", 7)),
         "quiet_zone": float(element.get("quiet_zone", 6.5)),
         "font_size": int(element.get("font_size", 5)),
         "text_distance": float(element.get("text_distance", 5.0)),
-        "background": _hex(state.context.color(element.get("bgcolor", "white"))),
-        "foreground": _hex(state.context.color(element.get("color", "black"))),
+        "background": writer_bg,
+        "foreground": writer_fg,
         "write_text": element.get("write_text", True),
         "dpi": int(element.get("dpi", 300)),
     }
@@ -175,6 +193,16 @@ def barcode(state: RenderState, element: dict) -> None:
         new_size = (w0, h0)
     if new_size != (w0, h0):
         imagebc = imagebc.resize(new_size, Image.Resampling.NEAREST)
+
+    if transparent_bg:
+        rgb = imagebc.convert("RGB")
+        bg_ref = Image.new("RGB", rgb.size, sentinel_rgb)
+        dr, dg, db = ImageChops.difference(rgb, bg_ref).split()
+        peak = max(abs(fg_rgba[i] - sentinel_rgb[i]) for i in range(3))
+        threshold = peak / 2
+        mask = ImageChops.lighter(ImageChops.lighter(dr, dg), db).point(lambda v: 255 if v > threshold else 0)
+        imagebc = Image.new("RGBA", rgb.size, (0, 0, 0, 0))
+        imagebc.paste(fg_rgba, mask=mask)
 
     state.img.paste(imagebc, int_xy(pos_x, pos_y), imagebc)
 

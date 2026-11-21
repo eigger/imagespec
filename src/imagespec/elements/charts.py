@@ -11,14 +11,18 @@ import math
 import numbers
 from datetime import UTC, datetime, timedelta
 
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 
 from ..colors import white
 from ..exceptions import RenderError
 from ..registry import element
 from ..spec import array, boolean, color, enum, num, obj, string
 from ..state import RenderState
-from ..utils import is_decimal, mono_draw, multiline_anchor, require
+from ..utils import blit, mono_draw, multiline_anchor, require
+
+
+def _stroke_width(value: float | int) -> int:
+    return max(1, int(round(value))) if value > 0 else 0
 
 
 @element(
@@ -128,7 +132,7 @@ def sparkline(state: RenderState, element: dict) -> None:
     draw.line(
         pts,
         fill=state.context.color(element.get("color", "black")),
-        width=element.get("width_line", 1),
+        width=_stroke_width(element.get("width_line", 1)),
         joint=element.get("joint"),
     )
     if element.get("dot_last"):
@@ -236,7 +240,7 @@ def diagram(state: RenderState, element: dict) -> None:
 )
 def progress_bar(state: RenderState, element: dict) -> None:
     require(element, ["x_start", "x_end", "y_start", "y_end", "progress"], "progress_bar")
-    draw = ImageDraw.Draw(state.img)
+    draw = mono_draw(state.img)
     x_start, y_start = element["x_start"], element["y_start"]
     x_end, y_end = element["x_end"], element["y_end"]
     progress = max(0.0, min(100.0, float(element["progress"])))
@@ -246,7 +250,7 @@ def progress_bar(state: RenderState, element: dict) -> None:
     bg_color = state.context.color(element.get("background", "white"))
     fill = state.context.color(element.get("fill", "red"))
     outline = state.context.color(element.get("outline", "black"))
-    width = element.get("width", 1)
+    width = _stroke_width(element.get("width", 1))
     radius = element.get("radius", 0)
 
     draw.rounded_rectangle(
@@ -254,17 +258,21 @@ def progress_bar(state: RenderState, element: dict) -> None:
     )
 
     if direction in ("right", "left"):
-        progress_width = int((x_end - x_start) * (progress / 100))
+        span = x_end - x_start
+        progress_width = int(span * (progress / 100))
+        should_fill = span >= 0 and int((span + 1) * (progress / 100)) > 0
     else:
-        progress_height = int((y_end - y_start) * (progress / 100))
+        span = y_end - y_start
+        progress_height = int(span * (progress / 100))
+        should_fill = span >= 0 and int((span + 1) * (progress / 100)) > 0
 
-    if direction == "right":
+    if direction == "right" and should_fill:
         draw.rounded_rectangle([(x_start, y_start), (x_start + progress_width, y_end)], fill=fill, radius=radius)
-    elif direction == "left":
+    elif direction == "left" and should_fill:
         draw.rounded_rectangle([(x_end - progress_width, y_start), (x_end, y_end)], fill=fill, radius=radius)
-    elif direction == "up":
+    elif direction == "up" and should_fill:
         draw.rounded_rectangle([(x_start, y_end - progress_height), (x_end, y_end)], fill=fill, radius=radius)
-    elif direction == "down":
+    elif direction == "down" and should_fill:
         draw.rounded_rectangle([(x_start, y_start), (x_end, y_start + progress_height)], fill=fill, radius=radius)
 
     draw.rounded_rectangle([(x_start, y_start), (x_end, y_end)], fill=None, outline=outline, width=width, radius=radius)
@@ -300,6 +308,79 @@ def _parse_bars(values: object) -> list[tuple[str, float]]:
     if not bars:
         raise RenderError("diagram: 'bars.values' must contain at least one 'label,value' pair")
     return bars
+
+
+def _sample_fields(sample: object) -> tuple[object, object]:
+    """Read ``(state, last_changed)`` from a dict or a State-like object."""
+    if isinstance(sample, dict):
+        return sample["state"], sample["last_changed"]
+    return sample.state, sample.last_changed  # type: ignore[attr-defined]
+
+
+def _parse_numeric_state(raw_state: object) -> float | None:
+    """Parse a finite numeric sample state, returning ``None`` for non-numeric/non-finite values."""
+    if isinstance(raw_state, bool):
+        return None
+    if isinstance(raw_state, numbers.Real):
+        try:
+            val = float(raw_state)
+        except OverflowError:  # an int too large for a float
+            return None
+    else:
+        try:
+            val = float(str(raw_state).strip())
+        except ValueError:
+            return None
+    return val if math.isfinite(val) else None
+
+
+def _clip_segment_time(
+    p0: tuple[float, float], p1: tuple[float, float]
+) -> tuple[tuple[float, float], tuple[float, float]] | None:
+    """Clip a ``(rel_time, rel_value)`` segment to ``rel_time`` in ``[0.0, 1.0]``."""
+    t0, v0 = p0
+    t1, v1 = p1
+    if max(t0, t1) < 0.0 or min(t0, t1) > 1.0:
+        return None
+    dt = t1 - t0
+    if dt == 0.0:
+        return (p0, p1) if 0.0 <= t0 <= 1.0 else None
+    u0 = (0.0 - t0) / dt
+    u1 = (1.0 - t0) / dt
+    u_enter = max(0.0, min(u0, u1))
+    u_exit = min(1.0, max(u0, u1))
+    if u_enter > u_exit:
+        return None
+    c0 = p0 if 0.0 <= t0 <= 1.0 else (0.0 if t0 < 0.0 else 1.0, v0 + u_enter * (v1 - v0))
+    c1 = p1 if 0.0 <= t1 <= 1.0 else (0.0 if t1 < 0.0 else 1.0, v0 + u_exit * (v1 - v0))
+    return c0, c1
+
+
+def _clip_time_runs(pts_rel: list[tuple[float, float]]) -> list[list[tuple[float, float]]]:
+    """Split and clip a relative-time polyline into contiguous runs within ``[0.0, 1.0]``."""
+    if len(pts_rel) == 1:
+        t0, _ = pts_rel[0]
+        return [pts_rel] if 0.0 <= t0 <= 1.0 else []
+    runs: list[list[tuple[float, float]]] = []
+    cur: list[tuple[float, float]] = []
+    for i in range(len(pts_rel) - 1):
+        seg = _clip_segment_time(pts_rel[i], pts_rel[i + 1])
+        if seg is None:
+            if cur:
+                runs.append(cur)
+                cur = []
+            continue
+        c0, c1 = seg
+        if not cur:
+            cur = [c0, c1]
+        elif cur[-1] == c0:
+            cur.append(c1)
+        else:
+            runs.append(cur)
+            cur = [c0, c1]
+    if cur:
+        runs.append(cur)
+    return runs
 
 
 @element(
@@ -401,9 +482,9 @@ def plot(state: RenderState, element: dict) -> None:
         yaxis_width = 0
         yaxis_tick_width = 0
     else:
-        yaxis_width = yaxis.get("width", 1)
+        yaxis_width = _stroke_width(yaxis.get("width", 1))
         yaxis_color = state.context.color(yaxis.get("color", "black"))
-        yaxis_tick_width = yaxis.get("tick_width", 2)
+        yaxis_tick_width = _stroke_width(yaxis.get("tick_width", 2))
         yaxis_tick_every = float(yaxis.get("tick_every", 1))
         if not math.isfinite(yaxis_tick_every) or yaxis_tick_every <= 0:
             raise RenderError(f"plot: 'yaxis.tick_every' must be a positive number, got {yaxis.get('tick_every')!r}")
@@ -422,8 +503,8 @@ def plot(state: RenderState, element: dict) -> None:
         xlegend_ticks = int(xlegend.get("ticks", 3))
         xlegend_height = xlegend_size + 4
 
-    min_v: float | None = element.get("low", None)
-    max_v: float | None = element.get("high", None)
+    low: float | None = element.get("low", None)
+    high: float | None = element.get("high", None)
     for i, p in enumerate(element["data"]):
         if not isinstance(p, dict) or "entity" not in p:
             raise RenderError(f"plot: data[{i}] must be an object with an 'entity' key")
@@ -432,7 +513,9 @@ def plot(state: RenderState, element: dict) -> None:
         raise RenderError("plot: 'data' must list at least one entity")
     all_states = state.context.history(entity_ids, start, end)
 
-    raw_data = []
+    clipped_series: list[list[list[tuple[float, float]]]] = []
+    visible_values: list[float] = []
+    fallback_values: list[float] = []
     for p in element["data"]:
         if p["entity"] not in all_states:
             raise RenderError("no recorded data found for " + p["entity"])
@@ -442,38 +525,33 @@ def plot(state: RenderState, element: dict) -> None:
         # without mutating the caller's list.
         if not states:
             raise RenderError(f"plot: history provider returned no samples for {p['entity']}")
-        head = states[0]
-        if not isinstance(head, dict):
-            head = {"state": head.state, "last_changed": str(head.last_changed)}
-        normalized = [head, *states[1:]]
-        states = []
-        for s in normalized:
-            raw_state = s["state"]
-            if isinstance(raw_state, numbers.Real) and raw_state is not True and raw_state is not False:
-                try:
-                    if not math.isfinite(raw_state):
-                        continue
-                except OverflowError:  # an int too large for a float
-                    continue
-            else:
-                raw_state = str(raw_state)
-                if not is_decimal(raw_state):
-                    continue
-            when = datetime.fromisoformat(str(s["last_changed"]))
+        parsed_states = []
+        for s in states:
+            raw_state, raw_changed = _sample_fields(s)
+            val = _parse_numeric_state(raw_state)
+            if val is None:
+                continue
+            when = datetime.fromisoformat(str(raw_changed))
             if when.tzinfo is None:
                 when = when.replace(tzinfo=UTC)  # providers are expected to send UTC; treat naive as such
-            states.append((when, float(raw_state)))
-        if not states:
+            parsed_states.append((when, val))
+        if not parsed_states:
             raise RenderError(f"plot: no numeric samples for {p['entity']} in the requested window")
-        values = [v for _, v in states]
-        lo, hi = min(values), max(values)
-        # `low`/`high` widen the range but never clip data; `is None` (not
-        # truthiness) so an explicit `low: 0` counts.
-        min_v = lo if min_v is None else min(min_v, lo)
-        max_v = hi if max_v is None else max(max_v, hi)
-        raw_data.append(states)
+        pts_raw = [((time_val - start) / duration, val) for time_val, val in parsed_states]
+        runs = _clip_time_runs(pts_raw)
+        clipped_series.append(runs)
+        visible_vals = [val for run in runs for _, val in run]
+        if visible_vals:
+            visible_values.extend(visible_vals)
+        else:
+            fallback_values.extend(v for _, v in parsed_states)
 
-    assert min_v is not None and max_v is not None  # every series contributed a lo/hi
+    data_values = visible_values or fallback_values
+    lo, hi = min(data_values), max(data_values)
+    # `low`/`high` widen the range but never clip data; `is None` (not
+    # truthiness) so an explicit `low: 0` counts.
+    min_v = lo if low is None else min(low, lo)
+    max_v = hi if high is None else max(high, hi)
     max_v = math.ceil(max_v)
     min_v = math.floor(min_v)
     if max_v == min_v:
@@ -489,18 +567,23 @@ def plot(state: RenderState, element: dict) -> None:
     diag_y = y_start
     diag_width = width - (ylegend_width if ylegend is not None else 0)
     diag_height = height - xlegend_height
+    has_plot_area = diag_width > 0 and diag_height > 0
 
     if element.get("debug", False):
-        draw.rectangle([(x_start, y_start), (x_end, y_end)], fill=None, outline=state.context.color("black"), width=1)
-        draw.rectangle(
-            [(diag_x, diag_y), (diag_x + diag_width - 1, diag_y + diag_height - 1)],
-            fill=None,
-            outline=state.context.color("red"),
-            width=1,
-        )
+        if x_end >= x_start and y_end >= y_start:
+            draw.rectangle(
+                [(x_start, y_start), (x_end, y_end)], fill=None, outline=state.context.color("black"), width=1
+            )
+        if has_plot_area:
+            draw.rectangle(
+                [(diag_x, diag_y), (diag_x + diag_width - 1, diag_y + diag_height - 1)],
+                fill=None,
+                outline=state.context.color("red"),
+                width=1,
+            )
 
     tick_ys: list[int] = []
-    if yaxis is not None:
+    if yaxis is not None and has_plot_area:
         # One tick per pixel row at most: a tiny tick_every over a wide value range
         # would otherwise loop (and allocate) proportionally to spread/tick_every.
         n_ticks = math.floor(spread / yaxis_tick_every + 1e-9) + 1
@@ -518,43 +601,60 @@ def plot(state: RenderState, element: dict) -> None:
                     seen.add(curr_y)
                     tick_ys.append(curr_y)
 
-    if yaxis is not None and yaxis_grid is not None:
+    if yaxis is not None and yaxis_grid is not None and has_plot_area:
         grid_points: list[tuple[int, int]] = []
         for curr_y in tick_ys:
             grid_points.extend((x, curr_y) for x in range(diag_x, diag_x + diag_width, yaxis_grid))
         draw.point(grid_points, fill=yaxis_grid_color)
 
-    for p, data in zip(element["data"], raw_data, strict=False):
-        xy_raw = []
-        for time_val, value in data:
-            rel_time = (time_val - start) / duration
-            rel_value = (value - min_v) / spread
-            xy_raw.append(
-                (round(diag_x + rel_time * (diag_width - 1)), round(diag_y + (1 - rel_value) * (diag_height - 1)))
-            )
-        # Collapse samples that land on the same pixel column to their mean y.
-        xy: list[tuple[int, int]] = []
-        ys: list[int] = []
-        last_x = xy_raw[0][0]
-        for x, y in xy_raw:
-            if x != last_x:
-                xy.append((last_x, round(sum(ys) / len(ys))))
-                ys = []
-                last_x = x
-            ys.append(y)
-        xy.append((last_x, round(sum(ys) / len(ys))))
+    if has_plot_area:
+        cw, ch = state.img.size
+        layer_x0 = max(0, math.floor(diag_x))
+        layer_y0 = max(0, math.floor(diag_y))
+        layer_x1 = min(cw - 1, math.ceil(diag_x + diag_width - 1))
+        layer_y1 = min(ch - 1, math.ceil(diag_y + diag_height - 1))
+        if layer_x1 >= layer_x0 and layer_y1 >= layer_y0:
+            plot_layer = Image.new("RGBA", (layer_x1 - layer_x0 + 1, layer_y1 - layer_y0 + 1), (0, 0, 0, 0))
+            plot_draw = ImageDraw.Draw(plot_layer)
+            baseline_y = round(diag_y + diag_height - 1) - layer_y0
 
-        area_fill = p.get("area_fill", None)
-        if area_fill and len(xy) >= 2:
-            baseline_y = diag_y + diag_height - 1
-            poly_pts = [(xy[0][0], baseline_y)] + xy + [(xy[-1][0], baseline_y)]
-            draw.polygon(poly_pts, fill=state.context.color(area_fill))
+            for p, runs in zip(element["data"], clipped_series, strict=False):
+                for run in runs:
+                    xy_raw = [
+                        (
+                            round(diag_x + rel_time * (diag_width - 1)),
+                            round(diag_y + (1 - (val - min_v) / spread) * (diag_height - 1)),
+                        )
+                        for rel_time, val in run
+                    ]
+                    # Collapse samples that land on the same pixel column to their mean y.
+                    xy: list[tuple[int, int]] = []
+                    ys: list[int] = []
+                    last_x = xy_raw[0][0]
+                    for x, y in xy_raw:
+                        if x != last_x:
+                            xy.append((last_x, round(sum(ys) / len(ys))))
+                            ys = []
+                            last_x = x
+                        ys.append(y)
+                    xy.append((last_x, round(sum(ys) / len(ys))))
+                    local_xy = [(x - layer_x0, y - layer_y0) for x, y in xy]
 
-        draw.line(
-            xy, fill=state.context.color(p.get("color", "black")), width=p.get("width", 1), joint=p.get("joint", None)
-        )
+                    area_fill = p.get("area_fill", None)
+                    if area_fill and len(local_xy) >= 2:
+                        poly_pts = [(local_xy[0][0], baseline_y)] + local_xy + [(local_xy[-1][0], baseline_y)]
+                        plot_draw.polygon(poly_pts, fill=state.context.color(area_fill))
 
-    if ylegend is not None:
+                    plot_draw.line(
+                        local_xy,
+                        fill=state.context.color(p.get("color", "black")),
+                        width=_stroke_width(p.get("width", 1)),
+                        joint=p.get("joint", None),
+                    )
+
+            blit(state.img, plot_layer, layer_x0, layer_y0)
+
+    if ylegend is not None and has_plot_area:
         if ylegend_pos == "left":
             draw.text((x_start, y_start), str(max_v), fill=ylegend_color, font=ylegend_font, anchor="lt")
             draw.text(
@@ -564,10 +664,11 @@ def plot(state: RenderState, element: dict) -> None:
             draw.text((x_end, y_start), str(max_v), fill=ylegend_color, font=ylegend_font, anchor="rt")
             draw.text((x_end, diag_y + diag_height - 1), str(min_v), fill=ylegend_color, font=ylegend_font, anchor="rs")
 
-    if yaxis is not None:
-        draw.rectangle(
-            [(diag_x, diag_y), (diag_x + yaxis_width - 1, diag_y + diag_height - 1)], width=0, fill=yaxis_color
-        )
+    if yaxis is not None and has_plot_area:
+        if yaxis_width > 0:
+            draw.rectangle(
+                [(diag_x, diag_y), (diag_x + yaxis_width - 1, diag_y + diag_height - 1)], width=0, fill=yaxis_color
+            )
         if yaxis_tick_width > 0:
             for curr_y in tick_ys:
                 draw.rectangle(
@@ -576,7 +677,7 @@ def plot(state: RenderState, element: dict) -> None:
                     fill=yaxis_color,
                 )
 
-    if xlegend is not None:
+    if xlegend is not None and has_plot_area:
         label_y = diag_y + diag_height + 2
         for i in range(xlegend_ticks):
             ratio = i / max(xlegend_ticks - 1, 1)
