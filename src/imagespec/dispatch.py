@@ -97,20 +97,19 @@ def _draw_rotated(state, element, handler, rotation: int, dither) -> None:
         additions = state.dither_protected
         new_pos_y = state.pos_y
     except Exception:
-        state.img = base
-        state.dither_protected = old_protected
         state.pos_y = old_pos_y
         raise
-    state.img = base
+    finally:
+        state.img = base
+        state.dither_protected = old_protected
 
     bbox = layer.getchannel("A").getbbox()
     if bbox is None:
-        state.dither_protected = old_protected
         return
 
     left, top, right, bottom = bbox
     source = layer.crop(bbox)
-    source_mask = additions.crop(bbox)
+    source_mask = additions.crop(bbox) if additions is not None else Image.new("L", source.size, 0)
     transpose = {
         90: Image.Transpose.ROTATE_270,
         180: Image.Transpose.ROTATE_180,
@@ -148,13 +147,10 @@ def _draw_rotated(state, element, handler, rotation: int, dither) -> None:
     else:
         blit(base, tile, dest_x, dest_y)
         coverage = tile.getchannel("A").point(lambda p: 255 if p else 0)
-        if old_protected is not None:
-            surviving = old_protected.copy()
-            subtract_mask(surviving, coverage, dest_x, dest_y)
-            state.dither_protected = surviving
-        else:
-            state.dither_protected = Image.new("L", base.size, 0)
-        merge_mask(state.dither_protected, tile_mask, dest_x, dest_y)
+        protected = old_protected.copy() if old_protected is not None else Image.new("L", base.size, 0)
+        subtract_mask(protected, coverage, dest_x, dest_y)
+        merge_mask(protected, tile_mask, dest_x, dest_y)
+        state.dither_protected = protected
 
     # These handlers own the flow cursor even when they intentionally write its
     # current value (for example, an explicit-y line). Do not infer ownership by
@@ -205,14 +201,14 @@ def render_element(state, element: dict) -> None:
                 handler(state, element)
                 layer = state.img.convert("RGBA")
                 additions = state.dither_protected or Image.new("L", base.size, 0)
+                coverage = layer.getchannel("A").point(lambda p: 255 if p else 0)
+                base.alpha_composite(layer)
+                surviving = ImageChops.subtract(old_protected, coverage)
+                state.dither_protected = ImageChops.lighter(surviving, additions)
             except Exception:
-                state.img = base
                 state.dither_protected = old_protected
                 raise
-            coverage = layer.getchannel("A").point(lambda p: 255 if p else 0)
-            state.img = base
-            base.alpha_composite(layer)
-            surviving = ImageChops.subtract(old_protected, coverage)
-            state.dither_protected = ImageChops.lighter(surviving, additions)
+            finally:
+                state.img = base
         else:
             handler(state, element)

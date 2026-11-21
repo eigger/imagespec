@@ -461,14 +461,29 @@ def test_unrepresentable_palettes_still_diffuse(pal):
     assert dither_to_palette(img, pal, dither="floyd").size == (6, 6)
 
 
-@pytest.mark.parametrize("pal", [[(i % 256, (i * 7) % 256, 0) for i in range(300)]])
+@pytest.mark.parametrize(
+    "pal",
+    [
+        [(i % 256, (i * 7) % 256, 0) for i in range(300)],
+        # Equidistant tie-breaking: (10, 0, 0) is distance^2 100 from both (0, 0, 0) and (20, 0, 0), plus >256 colors.
+        [(0, 0, 0), (20, 0, 0), *[(i % 256, 128, (i // 256) * 50 + 50) for i in range(260)]],
+    ],
+)
 def test_unrepresentable_palette_none_dither_matches_numpy_and_pure(monkeypatch, pal):
-    img = Image.new("RGB", (12, 12), (128, 90, 10))
+    img = Image.new("RGB", (12, 70), (10, 0, 0))
     fast = dither_to_palette(img, pal, dither="none")
     monkeypatch.setattr(dither_mod, "np", None)
     pure = dither_to_palette(img, pal, dither="none")
     assert fast.tobytes() == pure.tobytes()
     assert _colors(fast) <= set(pal)
+
+
+@pytest.mark.parametrize("bad_pal", [[(300, 0, 0), (0, 0, 0)], [(-10, 0, 0), (255, 255, 255)]])
+@pytest.mark.parametrize("method", ["none", "floyd", "bayer8"])
+def test_out_of_range_palette_channels_raise_value_error(bad_pal, method):
+    img = Image.new("RGB", (4, 4), (128, 128, 128))
+    with pytest.raises(ValueError, match="0..255"):
+        dither_to_palette(img, bad_pal, dither=method)
 
 
 @pytest.mark.parametrize("method", ["bayer2", "bayer4", "bayer8", "bayer16", "clustered4", "clustered8"])
@@ -499,58 +514,64 @@ def test_later_off_palette_element_replaces_earlier_dither_override():
     assert actual.tobytes() == expected.tobytes()
 
 
-@pytest.mark.parametrize("outer_dither", ["bayer8", "floyd"])
 @pytest.mark.parametrize("rotate", [0, 90])
-def test_nested_child_dither_false_preserved_inside_isolated_group(outer_dither, rotate):
-    bw_ctx = RenderContext(palette="bw")
-    grp = {
+def test_nested_child_dither_false_preserved_inside_isolated_group(rotate):
+    # Floyd diffusion from off-palette #000000 background (-150 error) would flip inset white
+    # pixels to (150, 150, 150) if child dither=False protection were not propagated.
+    pal = [(150, 150, 150, 255), (255, 255, 255, 255)]
+    floyd_ctx = RenderContext(palette=pal)
+    grp_floyd = {
         "type": "group",
         "x": 0,
         "y": 0,
         "width": 16,
         "height": 16,
         "rotate": rotate,
-        "dither": outer_dither,
+        "dither": "floyd",
         "elements": [
+            {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 15, "y_end": 15, "fill": "#000000"},
             {
                 "type": "rectangle",
-                "x_start": 0,
-                "y_start": 0,
-                "x_end": 15,
-                "y_end": 15,
+                "x_start": 4,
+                "y_start": 4,
+                "x_end": 11,
+                "y_end": 11,
+                "fill": "white",
+                "outline": None,
+                "dither": False,
+            },
+        ],
+    }
+    img_floyd = render([grp_floyd], 16, 16, background="white", dither=False, context=floyd_ctx)
+    assert _colors(img_floyd.crop((4, 4, 12, 12))) == {(255, 255, 255)}
+
+    # Ordered dithering on BW dithers the outer #808080 fill while keeping the inset flat.
+    bw_ctx = RenderContext(palette="bw")
+    grp_bayer = {
+        "type": "group",
+        "x": 0,
+        "y": 0,
+        "width": 16,
+        "height": 16,
+        "rotate": rotate,
+        "dither": "bayer8",
+        "elements": [
+            {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 15, "y_end": 15, "fill": "#808080"},
+            {
+                "type": "rectangle",
+                "x_start": 4,
+                "y_start": 4,
+                "x_end": 11,
+                "y_end": 11,
                 "fill": "#808080",
                 "outline": None,
                 "dither": False,
-            }
+            },
         ],
     }
-    img = render([grp], 16, 16, dither=False, context=bw_ctx)
-    assert len(_colors(img)) == 1
-
-    ctx7 = RenderContext(palette="7")
-    grp7 = {
-        "type": "group",
-        "x": 0,
-        "y": 0,
-        "width": 16,
-        "height": 16,
-        "rotate": rotate,
-        "dither": outer_dither,
-        "elements": [
-            {
-                "type": "rectangle",
-                "x_start": 0,
-                "y_start": 0,
-                "x_end": 15,
-                "y_end": 15,
-                "fill": "green",
-                "outline": None,
-                "dither": False,
-            }
-        ],
-    }
-    img7 = render([grp7], 16, 16, dither=False, context=ctx7)
-    assert _colors(img7) == {(0, 128, 0)}
+    img_bayer = render([grp_bayer], 16, 16, dither=False, context=bw_ctx)
+    assert _colors(img_bayer) == {(0, 0, 0), (255, 255, 255)}
+    assert _colors(img_bayer.crop((4, 4, 12, 12))) == {(255, 255, 255)}
 
 
 def test_isolated_floyd_does_not_bleed_transparent_error_into_opaque_shape():
@@ -560,9 +581,54 @@ def test_isolated_floyd_does_not_bleed_transparent_error_into_opaque_shape():
     img = render([el], 40, 40, background="white", context=ctx)
     assert _colors(img) == {(255, 255, 255)}
 
+    rot_el = {**el, "rotate": 90}
+    rot_img = render([rot_el], 40, 40, background="white", context=ctx)
+    assert _colors(rot_img) == {(255, 255, 255)}
+
+
+def test_draw_rotated_rotates_dither_protected_mask_and_isolates_failures():
+    from imagespec.dispatch import _draw_rotated
+    from imagespec.state import RenderState
+
+    # Top half is off-palette #000000 (-150 error on pal) on the left; rotate=90 turns left->top
+    # and right->bottom, so the protected bottom half receives diffused error from above unless
+    # tile_mask is preserved through rotation.
+    pal = [(150, 150, 150, 255), (255, 255, 255, 255)]
+    ctx = RenderContext(palette=pal)
+    base = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
+    state = RenderState(img=base, canvas_width=16, canvas_height=16, context=ctx)
+
+    def paint_split(st, el):
+        st.img.paste((0, 0, 0, 255), (0, 0, 8, 16))
+        st.img.paste((255, 255, 255, 255), (8, 0, 16, 16))
+        assert st.dither_protected is not None
+        st.dither_protected.paste(255, (8, 0, 16, 16))
+
+    _draw_rotated(state, {"type": "rectangle"}, paint_split, 90, "floyd")
+    assert state.img is base
+    assert _colors(base.crop((0, 8, 16, 16)).convert("RGB")) == {(255, 255, 255)}
+    assert state.dither_protected is not None and state.dither_protected.getbbox() == (0, 0, 16, 16)
+
+    # Non-dithered rotation preserves the rotated child protection mask on state.dither_protected.
+    base2 = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
+    old_mask = Image.new("L", (16, 16), 0)
+    state2 = RenderState(img=base2, canvas_width=16, canvas_height=16, context=ctx, dither_protected=old_mask)
+    _draw_rotated(state2, {"type": "rectangle"}, paint_split, 90, None)
+    assert state2.dither_protected is not None
+    assert state2.dither_protected.getbbox() == (0, 8, 16, 16)
+
+    # Invalid dither method during _draw_rotated leaves state.img and state.dither_protected intact.
+    base3 = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
+    sentinel_mask = Image.new("L", (16, 16), 123)
+    state3 = RenderState(img=base3, canvas_width=16, canvas_height=16, context=ctx, dither_protected=sentinel_mask)
+    with pytest.raises(ValueError):
+        _draw_rotated(state3, {"type": "rectangle"}, paint_split, 90, "invalid-method")
+    assert state3.img is base3
+    assert state3.dither_protected is sentinel_mask
+
 
 def test_dispatch_restores_state_on_handler_exception():
-    from imagespec.dispatch import _draw_isolated, render_element
+    from imagespec.dispatch import _draw_isolated, _draw_rotated, render_element
     from imagespec.state import RenderState
 
     ctx = RenderContext(palette="bw")
@@ -577,6 +643,10 @@ def test_dispatch_restores_state_on_handler_exception():
 
     with pytest.raises(RuntimeError, match="boom"):
         _draw_isolated(state, {"type": "rectangle"}, boom, "floyd")
+    assert state.img is base and state.dither_protected is mask
+
+    with pytest.raises(RuntimeError, match="boom"):
+        _draw_rotated(state, {"type": "rectangle"}, boom, 90, "floyd")
     assert state.img is base and state.dither_protected is mask
 
     # Also exercise render_element's old_protected isolation branch when a handler raises.

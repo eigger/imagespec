@@ -321,10 +321,15 @@ def _quantize_nearest_exact(img: Image.Image, palette: list[tuple[int, int, int]
     if np is not None:
         arr = np.asarray(src, dtype=np.float64)
         pal = np.asarray(palette, dtype=np.float64)
-        d = arr[:, :, None, :] - pal[None, None, :, :]
-        dist = d[..., 0] * d[..., 0] + d[..., 1] * d[..., 1] + d[..., 2] * d[..., 2]
-        idx = np.argmin(dist, axis=-1)
-        return Image.fromarray(np.asarray(palette, dtype=np.uint8)[idx], "RGB")
+        pal_u8 = np.asarray(palette, dtype=np.uint8)
+        out_arr = np.empty((h, w, 3), dtype=np.uint8)
+        for y0 in range(0, h, 64):
+            chunk = arr[y0 : y0 + 64]
+            d = chunk[:, :, None, :] - pal[None, None, :, :]
+            dist = d[..., 0] * d[..., 0] + d[..., 1] * d[..., 1] + d[..., 2] * d[..., 2]
+            idx = np.argmin(dist, axis=-1)
+            out_arr[y0 : y0 + 64] = pal_u8[idx]
+        return Image.fromarray(out_arr, "RGB")
     data = src.tobytes()
     out = bytearray(len(data))
     for i in range(0, len(data), 3):
@@ -573,9 +578,11 @@ def dither_to_palette(
     rgbs = _palette_rgbs(palette)
     if not rgbs:
         raise ValueError("palette must contain at least one color")
+    if any(not (0 <= v <= 255) for c in rgbs for v in c):
+        raise ValueError("palette RGB channels must be in 0..255")
 
     if method == DITHER_NONE:
-        if len(rgbs) <= 256 and all(0 <= v <= 255 for c in rgbs for v in c):
+        if len(rgbs) <= 256:
             return _quantize_nearest_pillow(img, palette)
         return _quantize_nearest_exact(img, rgbs)
 
