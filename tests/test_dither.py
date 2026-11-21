@@ -467,15 +467,72 @@ def test_unrepresentable_palettes_still_diffuse(pal):
         [(i % 256, (i * 7) % 256, 0) for i in range(300)],
         # Equidistant tie-breaking: (10, 0, 0) is distance^2 100 from both (0, 0, 0) and (20, 0, 0), plus >256 colors.
         [(0, 0, 0), (20, 0, 0), *[(i % 256, 128, (i // 256) * 50 + 50) for i in range(260)]],
+        # Cross palette-chunk tie (chunk 0 vs chunk 1 at index >= 256) and chunk-1 winner across >4096 pixels.
+        [
+            (0, 0, 0),
+            *[(i % 256, 128, (i // 256) * 50 + 50) for i in range(255)],
+            (20, 0, 0),
+            (10, 0, 2),
+        ],
     ],
 )
 def test_unrepresentable_palette_none_dither_matches_numpy_and_pure(monkeypatch, pal):
-    img = Image.new("RGB", (12, 70), (10, 0, 0))
+    # Alternating pixels hit both the equidistant cross-chunk tie and the strictly closer chunk-1 winner.
+    w, h = 70, 70  # 4900 pixels > _NEAREST_PIXEL_CHUNK (4096)
+    img = Image.new("RGB", (w, h), (10, 0, 0))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            if (x + y) % 2:
+                px[x, y] = (10, 0, 2)
     fast = dither_to_palette(img, pal, dither="none")
     monkeypatch.setattr(dither_mod, "np", None)
     pure = dither_to_palette(img, pal, dither="none")
     assert fast.tobytes() == pure.tobytes()
     assert _colors(fast) <= set(pal)
+
+
+def test_ordered_dither_multi_chunk_parity_and_bounded_memory(monkeypatch):
+    import resource
+    import sys
+    import tracemalloc
+
+    # >256 colors spans 2 palette chunks; 70x60 = 4200 pixels > _NEAREST_PIXEL_CHUNK (4096).
+    pal = [(i % 256, (i * 11) % 256, (i // 256) * 80) for i in range(270)]
+    w, h = 70, 60
+    img = Image.new("RGB", (w, h))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            px[x, y] = ((x * 5) % 256, (y * 7) % 256, (x + y) % 256)
+    mask = Image.new("L", (w, h), 0)
+    mask.paste(255, (10, 10, 40, 35))
+
+    fast = dither_to_palette(img, pal, dither="bayer8", protect_mask=mask)
+    monkeypatch.setattr(dither_mod, "np", None)
+    pure = dither_to_palette(img, pal, dither="bayer8", protect_mask=mask)
+    monkeypatch.undo()
+    assert fast.tobytes() == pure.tobytes()
+
+    # Large 800x480 quantization with >256 colors must not spike NumPy memory.
+    # Guarded on numpy availability because CI `test` installs without `[fast]`.
+    if dither_mod.np is not None:
+        large = Image.new("RGB", (800, 480), (123, 45, 67))
+        small_pal = [(i % 256, (i * 5) % 256, 0) for i in range(257)]
+        rss_scale = 1024 * 1024 if sys.platform == "darwin" else 1024
+        rss_before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rss_scale
+        tracemalloc.start()
+        try:
+            out_none = dither_to_palette(large, small_pal, dither="none")
+            out_bayer = dither_to_palette(large, small_pal, dither="bayer8")
+            _, peak = tracemalloc.get_traced_memory()
+        finally:
+            tracemalloc.stop()
+        rss_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rss_scale
+        assert out_none.size == (800, 480)
+        assert out_bayer.size == (800, 480)
+        assert peak < 64 * 1024 * 1024
+        assert rss_after - rss_before < 200
 
 
 @pytest.mark.parametrize("bad_pal", [[(300, 0, 0), (0, 0, 0)], [(-10, 0, 0), (255, 255, 255)]])
