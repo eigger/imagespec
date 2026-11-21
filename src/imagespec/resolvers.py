@@ -146,6 +146,8 @@ def caching_resolver(
         cached = os.path.join(cache_dir, base)
         if os.path.isfile(cached):
             return cached
+        if os.path.exists(cached):
+            return None
         url = sources.get(name) or sources.get(base)
         if not url:
             return None
@@ -181,7 +183,7 @@ def caching_resolver(
             except OSError:
                 # Windows refuses to replace a file a concurrent download just
                 # published (PermissionError); that file is identical, so use it.
-                if not os.path.exists(cached):
+                if not os.path.isfile(cached):
                     raise
         finally:
             if os.path.exists(tmp):

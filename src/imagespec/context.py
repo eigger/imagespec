@@ -144,11 +144,12 @@ class RenderContext:
     def font(self, name: str | None, size) -> ImageFont.FreeTypeFont:
         """Return a (cached) truetype font for ``name`` at ``size``."""
         path = self.resolve_font_path(name)
-        key = (path, int(size), self.layout_engine)
         with self._lock:
+            engine = self.layout_engine
+            key = (path, int(size), engine)
             cached = self._font_cache.get(key)
             if cached is None:
-                cached = ImageFont.truetype(path, int(size), layout_engine=self.layout_engine)
+                cached = ImageFont.truetype(path, int(size), layout_engine=engine)
                 self._font_cache[key] = cached
                 while len(self._font_cache) > FONT_CACHE_SIZE:
                     self._font_cache.popitem(last=False)
@@ -181,8 +182,8 @@ class RenderContext:
         else:
             data = self._download(url, timeout)
         if self.image_cache_ttl > 0:
-            now = time.monotonic()
             with self._lock:
+                now = time.monotonic()
                 # Refreshing an existing (expired) url reuses its slot; only a new
                 # url needs room, taking it from the oldest entry.
                 if url not in self._image_cache and len(self._image_cache) >= _IMAGE_CACHE_MAX_ENTRIES:

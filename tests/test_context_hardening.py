@@ -5,15 +5,18 @@ from __future__ import annotations
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
 from imagespec import RenderContext, RenderError, render
-from imagespec.context import BUNDLED_FONTS_DIR
+from imagespec import context as ctxmod
+from imagespec.context import _IMAGE_CACHE_MAX_ENTRIES, BUNDLED_FONTS_DIR, FONT_CACHE_SIZE
 
 
-@pytest.mark.parametrize("bad_name", [".", "/", "..", "README.md", "OFL.txt"])
-def test_resolve_font_path_falls_back_on_directories_and_non_font_bundled_files(bad_name):
+@pytest.mark.parametrize("bad_name", [".", "/", "..", "README.md", "OFL.txt", ""])
+def test_resolve_font_path_falls_back_on_directories_and_non_font_bundled_files(monkeypatch, bad_name):
+    monkeypatch.setattr(ctxmod, "_WARNED_FONTS", set())
     ctx = RenderContext()
     expected = os.path.join(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf")
     assert ctx.resolve_font_path(bad_name) == expected
@@ -21,9 +24,17 @@ def test_resolve_font_path_falls_back_on_directories_and_non_font_bundled_files(
     assert img.size == (30, 20)
 
 
-def test_custom_default_font_resolved_via_font_resolver_is_used_as_fallback(tmp_path, caplog):
+def test_resolve_font_path_skips_directory_from_font_resolver(tmp_path, monkeypatch):
+    monkeypatch.setattr(ctxmod, "_WARNED_FONTS", set())
+    ctx = RenderContext(font_resolver=lambda _name: str(tmp_path))
+    expected = os.path.join(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf")
+    assert ctx.resolve_font_path("any.ttf") == expected
+
+
+def test_custom_default_font_resolved_via_font_resolver_is_used_as_fallback(tmp_path, caplog, monkeypatch):
+    monkeypatch.setattr(ctxmod, "_WARNED_FONTS", set())
     custom_font = tmp_path / "custom.ttf"
-    custom_font.write_bytes(open(os.path.join(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf"), "rb").read())
+    custom_font.write_bytes(Path(BUNDLED_FONTS_DIR, "NotoSansKR-Regular.ttf").read_bytes())
 
     ctx = RenderContext(
         default_font="custom.ttf",
@@ -53,6 +64,7 @@ def test_render_context_font_cache_is_thread_safe_under_eviction():
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(worker, range(32)))
+    assert len(ctx._font_cache) == FONT_CACHE_SIZE
 
 
 def test_render_context_image_cache_is_thread_safe_under_eviction():
@@ -69,3 +81,4 @@ def test_render_context_image_cache_is_thread_safe_under_eviction():
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(worker, range(16)))
+    assert len(ctx._image_cache) == _IMAGE_CACHE_MAX_ENTRIES
