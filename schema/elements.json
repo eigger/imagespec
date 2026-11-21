@@ -3601,6 +3601,13 @@
             "number",
             "null"
           ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
+          ],
           "description": "0/90/180/270, clockwise",
           "default": 0
         },
@@ -3817,6 +3824,13 @@
           "type": [
             "number",
             "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
           ],
           "description": "0/90/180/270, clockwise",
           "default": 0
@@ -4038,6 +4052,13 @@
           "type": [
             "number",
             "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
           ],
           "description": "0/90/180/270, clockwise",
           "default": 0
@@ -4412,6 +4433,13 @@
           "type": [
             "number",
             "null"
+          ],
+          "enum": [
+            0,
+            90,
+            180,
+            270,
+            null
           ],
           "description": "0/90/180/270, clockwise",
           "default": 0

@@ -15,7 +15,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import any_, array, boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import blit, int_xy, mono_draw, multiline_anchor, require, wrap_words
+from ..utils import blit, int_xy, mono_draw, multiline_anchor, require, stroke_width, wrap_words
 from .media import resolve_icon
 
 
@@ -214,7 +214,7 @@ def text_box(state: RenderState, element: dict) -> None:
     fill_color = state.context.color(element.get("fill", "black"))
     text_color = state.context.color(element.get("color", "white"))
     outline_color = state.context.color(element.get("outline", None))
-    outline_width = element.get("width", 1)
+    outline_width = stroke_width(element.get("width", 1))
     radius = element.get("radius", 5)
     tbbox = d.textbbox((element["x"] + padding, element["y"] + padding), value, font=font)
     box_x0, box_y0 = element["x"], element["y"]
@@ -436,7 +436,7 @@ def table(state: RenderState, element: dict) -> None:
     header_color = state.context.color(element.get("header_color", "white"))
     cell_color = state.context.color(element.get("cell_color", "black"))
     border_color = state.context.color(element.get("border_color", "black"))
-    border_width = element.get("border_width", 1)
+    border_width = stroke_width(element.get("border_width", 1))
     align = element.get("align", "left")
 
     cur_y = table_y
@@ -629,7 +629,7 @@ def text_fit(state: RenderState, element: dict) -> None:
             [(x, y), (x + box_w, y + box_h)],
             fill=state.context.color(element.get("background")),
             outline=state.context.color(element.get("outline")),
-            width=element.get("width_outline", 1),
+            width=stroke_width(element.get("width_outline", 1)),
             radius=element.get("radius", 0),
         )
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from PIL import Image, ImageChops
 
-from imagespec import render
+from imagespec import RenderContext, RenderError, render
 from imagespec.classutil import parse_class
 
 BLACK = (0, 0, 0)
@@ -666,6 +666,17 @@ def test_zero_or_negative_card_size_draws_nothing(ctx, size):
 def test_odd_radius_and_outline_widths_do_not_raise(ctx, extra):
     card = {"type": "column", "width": 20, "height": 20, "outline": "black", "elements": [], **extra}
     assert render([card], 30, 30, context=ctx).size == (30, 30)
+
+
+@pytest.mark.parametrize("kind", ["row", "column", "stack"])
+@pytest.mark.parametrize(
+    "width, visible",
+    [(0.5, True), ("0.5", True), (0, False), (float("nan"), True), (float("inf"), True), (-float("inf"), True)],
+)
+def test_stack_outline_width_preserves_subpixels_and_nonfinite_fallback(ctx, kind, width, visible):
+    card = {"type": kind, "width": 10, "height": 10, "outline": "black", "width_outline": width, "elements": []}
+    img = render([card], 12, 12, background="white", context=ctx)
+    assert (img.getpixel((0, 0)) == BLACK) is visible
 
 
 def test_card_of_only_size_required_stretched_children_falls_back_to_the_available_cross_size(ctx):
@@ -1385,3 +1396,61 @@ def test_stack_long_text_uses_bounded_temporary_layer(ctx, stack_type, rotation,
     monkeypatch.setattr(Image, "new", bounded_new)
     img = render([{"type": stack_type, "width": 200, "height": 50, "elements": [text]}], 200, 50, context=ctx)
     assert img.size == (200, 50)
+
+
+@pytest.mark.parametrize("ctype", ["group", "row"])
+@pytest.mark.parametrize("coord", [-5, -50])
+def test_containers_clip_at_negative_coordinates(ctx, ctype, coord):
+    child = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 19, "y_end": 19, "fill": "red", "outline": None}
+    el = {"type": ctype, "x": coord, "y": coord, "width": 20, "height": 20, "elements": [child]}
+    img = render([el], 30, 30, background="white", context=ctx)
+    reds = sum(1 for y in range(30) for x in range(30) if img.getpixel((x, y)) == RED)
+    assert reds == (15 * 15 if coord == -5 else 0)
+
+
+@pytest.mark.parametrize("ctype", ["group", "row"])
+def test_rotated_containers_with_dither_protected_clip_at_negative_coordinates(ctype):
+    bw = RenderContext(palette="bw")
+    child = {
+        "type": "rectangle",
+        "x_start": 0,
+        "y_start": 0,
+        "x_end": 15,
+        "y_end": 9,
+        "fill": "#808080",
+        "outline": None,
+        "dither": False,
+    }
+    el = {"type": ctype, "x": -4, "y": -4, "width": 16, "height": 10, "rotate": 90, "elements": [child]}
+    img = render([el], 20, 20, background="white", dither="floyd", context=bw)
+    # 10x16 rotated box at (-4, -4) -> 6x12 visible flat-quantized interior without error diffusion
+    assert {img.getpixel((x, y)) for y in range(12) for x in range(6)} <= {(0, 0, 0), (255, 255, 255)}
+    assert len({img.getpixel((x, y)) for y in range(12) for x in range(6)}) == 1
+
+
+@pytest.mark.parametrize("vis", [False, "False", "0", None])
+def test_stack_skips_hidden_children_without_ghost_gaps(ctx, vis):
+    a = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 9, "y_end": 9, "fill": "black", "outline": None}
+    hidden = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 9, "y_end": 9, "fill": "yellow", "visible": vis}
+    b = {"type": "rectangle", "x_start": 0, "y_start": 0, "x_end": 9, "y_end": 9, "fill": "red", "outline": None}
+    expected = render([{"type": "row", "width": 60, "height": 20, "gap": 10, "elements": [a, b]}], 60, 20, context=ctx)
+    actual = render(
+        [{"type": "row", "width": 60, "height": 20, "gap": 10, "elements": [a, hidden, b]}],
+        60,
+        20,
+        context=ctx,
+    )
+    assert actual.tobytes() == expected.tobytes()
+
+
+def test_stack_error_path_preserves_index_after_hidden_child(ctx):
+    row = {
+        "type": "row",
+        "elements": [
+            {"type": "text", "value": "skip", "visible": False},
+            {"type": "circle", "radius": "oops"},
+        ],
+    }
+    with pytest.raises(RenderError) as exc:
+        render([row], 40, 20, context=ctx)
+    assert exc.value.path == "[0].elements[1]"

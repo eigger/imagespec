@@ -105,10 +105,14 @@ def num(
     required: bool = False,
     doc: str = "",
     nullable: bool = False,
+    enum: Iterable[Any] | None = None,
     required_when: Iterable[tuple[str, Iterable[Any]]] = (),
 ) -> Field:
     when = tuple((k, tuple(v)) for k, v in required_when)
-    return _f("number", name, default, required=required, doc=doc, nullable=nullable, required_when=when)
+    enum_vals = tuple(enum) if enum is not None else None
+    return _f(
+        "number", name, default, required=required, doc=doc, nullable=nullable, enum=enum_vals, required_when=when
+    )
 
 
 def integer(name: str, default: Any = UNSET, *, required: bool = False, doc: str = "") -> Field:

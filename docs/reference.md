@@ -598,7 +598,7 @@ Container: children use coordinates relative to the group's top-left, are clippe
 | `y` | number | `0` |  |
 | `width` | number |  | Defaults to the canvas width |
 | `height` | number |  | Defaults to the canvas height |
-| `rotate` | number | `0` | 0/90/180/270, clockwise |
+| `rotate` | `0` \| `90` \| `180` \| `270` | `0` | 0/90/180/270, clockwise |
 
 ### `stack` (aliases: `row`, `column`)
 
@@ -619,7 +619,7 @@ Flexbox-style auto-layout: children need no coordinates; they are measured and p
 | `y` | number | `0` |  |
 | `width` | number |  | Defaults to the canvas width — or, with `background`/`outline`, to the content width (a card hugs its content unless sized; a card holding only `text_fit`-style children, which have no intrinsic size, needs an explicit cross size) |
 | `height` | number |  | Defaults to the canvas height — or, with `background`/`outline`, to the content height (see `width` for the size-required-children caveat) |
-| `rotate` | number | `0` | 0/90/180/270, clockwise |
+| `rotate` | `0` \| `90` \| `180` \| `270` | `0` | 0/90/180/270, clockwise |
 | `padding` | number |  | All sides |
 | `padding_x` | number |  |  |
 | `padding_y` | number |  |  |

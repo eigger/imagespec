@@ -16,7 +16,7 @@ from ..exceptions import RenderError
 from ..registry import element
 from ..spec import array, boolean, color, enum, num, string
 from ..state import RenderState
-from ..utils import mono_draw, require
+from ..utils import mono_draw, require, stroke_width
 from .media import mdi_char, mdi_font, resolve_icon
 
 
@@ -95,7 +95,7 @@ def legend(state: RenderState, element: dict) -> None:
         elif shape == "circle":
             d.ellipse([(cursor_x, cy - swatch / 2), (cursor_x + swatch, cy + swatch / 2)], fill=col)
         elif shape == "line":
-            d.line([(cursor_x, cy), (cursor_x + swatch, cy)], fill=col, width=max(2, swatch // 3))
+            d.line([(cursor_x, cy), (cursor_x + swatch, cy)], fill=col, width=max(2, int(swatch) // 3))
         else:  # square
             d.rectangle([(cursor_x, cy - swatch / 2), (cursor_x + swatch, cy + swatch / 2)], fill=col)
         label_x = cursor_x + swatch + gap
@@ -183,7 +183,7 @@ def battery(state: RenderState, element: dict) -> None:
     outline = state.context.color(element.get("outline", "black"))
     bg = state.context.color(element.get("background", "white"))
     fill = state.context.color(element.get("fill", "black"))
-    border = element.get("width_outline", 1)
+    border = stroke_width(element.get("width_outline", 1))
     radius = element.get("radius", 2)
     pad = element.get("padding", 2)
 

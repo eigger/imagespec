@@ -282,10 +282,10 @@ Full list & all keys: [`reference.md`](reference.md) and
 [`elements.md`](elements.md) (copy-paste examples per type).
 `(req)` = required.
 
-- **`text`** — `x`(req), `value`(req), `y`, `size`(=12), `color`(="black"), `font`, `anchor`. *Inside a stack, omit `x`/`y`.*
+- **`text`** — `x`(req), `value`(req), `y`, `size`(=20), `color`(="black"), `font`, `anchor`. *Inside a stack, omit `x`/`y`.*
 - **`rectangle`** — `x_start`/`y_start`/`x_end`/`y_end`(req), `fill`, `outline`, `width`, `radius`.
-- **`line`** — `x_start`/`y_start`/`x_end`/`y_end`(req), `fill`, `width`, `dash`.
-- **`icon`** — `x`/`y`(req outside a stack), `value`(req, e.g. `"mdi:home"`), `size`(=24), `color`.
+- **`line`** — `x_start`/`x_end`(req), `y_start`/`y_end`, `fill`, `width`, `dash`.
+- **`icon`** — `x`/`y`(req outside a stack), `value`(req, e.g. `"mdi:home"`), `size`(req), `color`.
 - **`qrcode`** — `x`/`y`(req), `data`(req), `boxsize` **or** `width`/`height` (px box), `eclevel`.
 - **`barcode`** — `x`/`y`(req), `data`(req), `code`(="code128"), `width`/`height` (px box), `write_text`.
 - **`dlimg`** — `x`/`y`/`xsize`/`ysize`(req), `url`(req, http(s)/data:), `mode` (stretch/fit/fill/contain), `dither`, `circle`.
